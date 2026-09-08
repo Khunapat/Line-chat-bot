@@ -90,12 +90,16 @@ else
 fi
 
 bold "4/7  Google Cloud project"
-PROJECT="$(gcloud config get-value project 2>/dev/null || true)"
-if [ -z "$PROJECT" ] || [ "$PROJECT" = "(unset)" ]; then
-  gcloud projects list --format='table(projectId,name)'
-  read -r -p "   Project ID to deploy into: " PROJECT
-  gcloud config set project "$PROJECT" >/dev/null
+PROJECT="$(getenv GCP_PROJECT)"
+if [ -z "$PROJECT" ]; then
+  PROJECT="$(gcloud config get-value project 2>/dev/null || true)"
+  if [ -z "$PROJECT" ] || [ "$PROJECT" = "(unset)" ]; then
+    gcloud projects list --format='table(projectId,name)'
+    read -r -p "   Project ID to deploy into: " PROJECT
+  fi
+  setenv GCP_PROJECT "$PROJECT"
 fi
+gcloud config set project "$PROJECT" >/dev/null 2>&1
 note "project: $PROJECT, region: $REGION"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com cloudscheduler.googleapis.com compute.googleapis.com --quiet
 # New projects give the default build service account no permissions, which
