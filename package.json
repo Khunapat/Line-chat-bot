@@ -16,7 +16,8 @@
     "setup": "bash scripts/setup.sh",
     "check": "for f in src/*.js scripts/*.js; do node --check $f || exit 1; done",
     "test": "node --test",
-    "icons": "node scripts/render-icons.mjs"
+    "icons": "node scripts/render-icons.mjs",
+    "richmenu-image": "node scripts/render-richmenu.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
