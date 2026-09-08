@@ -12,32 +12,46 @@ import { sortOpportunities, describeDeadline, KIND_THAI } from './opportunities.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function signGalleryToken(secret, ttlMs = DAY_MS) {
+export function signGalleryToken(secret, tenantId, ttlMs = DAY_MS) {
   const exp = String(Date.now() + ttlMs);
-  return `${exp}.${hmac(secret, exp)}`;
+  const tid = Buffer.from(String(tenantId)).toString('base64url');
+  return `${exp}.${tid}.${hmac(secret, `${exp}.${tid}`)}`;
 }
 
+/** Returns the tenant id when the token is valid, otherwise null. */
 export function verifyGalleryToken(secret, token) {
-  if (!secret || typeof token !== 'string') return false;
-  const [exp, sig] = token.split('.');
-  if (!exp || !sig || !/^\d+$/.test(exp)) return false;
-  if (Number(exp) < Date.now()) return false;
-  const expected = hmac(secret, exp);
-  return sig.length === expected.length && timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  if (!secret || typeof token !== 'string') return null;
+  const [exp, tid, sig] = token.split('.');
+  if (!exp || !tid || !sig || !/^\d+$/.test(exp)) return null;
+  if (Number(exp) < Date.now()) return null;
+  const expected = hmac(secret, `${exp}.${tid}`);
+  if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  return Buffer.from(tid, 'base64url').toString();
 }
 
 function hmac(secret, data) {
   return createHmac('sha256', secret).update(data).digest('base64url');
 }
 
-export function galleryUrl(base, secret) {
-  return `${base.replace(/\/+$/, '')}/gallery?t=${signGalleryToken(secret)}`;
+export function galleryUrl(base, secret, tenantId) {
+  return `${base.replace(/\/+$/, '')}/gallery?t=${signGalleryToken(secret, tenantId)}`;
 }
 
-export function registerGalleryRoutes(app, { drive, store, secret, timeZone, botName }) {
-  const guard = (req, res, next) => {
-    if (verifyGalleryToken(secret, req.query.t)) return next();
-    res.status(401).send('ลิงก์หมดอายุแล้ว กดเมนู "ไฟล์/รูป" ในแชทเพื่อขอลิงก์ใหม่');
+/**
+ * `resolve(tenantId)` returns { drive, store } for a tenant, or null.
+ */
+export function registerGalleryRoutes(app, { resolve, secret, timeZone, botName }) {
+  const guard = async (req, res, next) => {
+    try {
+      const tenantId = verifyGalleryToken(secret, req.query.t);
+      const svc = tenantId ? await resolve(tenantId) : null;
+      if (!svc) return res.status(401).send('ลิงก์หมดอายุแล้ว กดเมนู "ไฟล์/รูป" ในแชทเพื่อขอลิงก์ใหม่');
+      req.svc = svc;
+      next();
+    } catch (err) {
+      console.error('gallery auth failed', err?.message || err);
+      res.status(500).send('failed');
+    }
   };
 
   app.get('/gallery', (req, res) => {
@@ -51,8 +65,9 @@ export function registerGalleryRoutes(app, { drive, store, secret, timeZone, bot
     const m = /^\d{4}-\d{2}$/.test(req.query.m || '') ? req.query.m : null;
     if (!m) return res.status(400).json({ error: 'm=YYYY-MM' });
     try {
+      const { drive, store } = req.svc;
       const [files, index, opps] = await Promise.all([drive.allFiles(), store.fileIndex(), store.opportunities()]);
-      const inMonth = files.filter((f) => (f.day || '').startsWith(m)).map((f) => publicFile(f, index[f.id]));
+      const inMonth = files.filter((f) => (f.day || '').startsWith(m) && !isMeta(f)).map((f) => publicFile(f, index[f.id]));
       const deadlines = opps.filter((o) => (o.deadline || '').startsWith(m)).map(publicOpp);
       const counts = {};
       for (const f of inMonth) counts[f.day] = (counts[f.day] || 0) + 1;
@@ -67,11 +82,12 @@ export function registerGalleryRoutes(app, { drive, store, secret, timeZone, bot
     const q = String(req.query.q || '').trim();
     if (!q) return res.json({ files: [], opportunities: [], memories: [] });
     try {
+      const { drive, store } = req.svc;
       const [files, index, opps, memories] = await Promise.all([drive.allFiles(), store.fileIndex(), store.opportunities(), store.searchMemory(q, 10)]);
       const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
       const hit = (s) => { const h = String(s || '').toLowerCase(); return terms.some((t) => h.includes(t)); };
       const matched = files
-        .filter((f) => hit(f.name) || hit(index[f.id]?.caption) || (index[f.id]?.tags || []).some(hit))
+        .filter((f) => !isMeta(f) && (hit(f.name) || hit(index[f.id]?.caption) || (index[f.id]?.tags || []).some(hit)))
         .sort((a, b) => (a.day < b.day ? 1 : -1))
         .slice(0, 60)
         .map((f) => publicFile(f, index[f.id]));
@@ -86,7 +102,7 @@ export function registerGalleryRoutes(app, { drive, store, secret, timeZone, bot
   app.get('/api/gallery/thumb/:id', guard, async (req, res) => {
     try {
       const size = Math.min(Math.max(Number(req.query.s) || 400, 64), 1600);
-      const t = await drive.thumbnail(req.params.id, size);
+      const t = await req.svc.drive.thumbnail(req.params.id, size);
       if (!t) return res.status(204).end();
       res.set('Content-Type', t.contentType);
       res.set('Cache-Control', 'private, max-age=86400');
@@ -97,6 +113,10 @@ export function registerGalleryRoutes(app, { drive, store, secret, timeZone, bot
     }
   });
 
+  /** Markdown notes / tables the bot writes for itself are not gallery items. */
+  function isMeta(f) {
+    return /\.md$/i.test(f.name || '') || f.mimeType === 'text/markdown';
+  }
   function publicFile(f, idx) {
     return {
       id: f.id, name: f.name, day: f.day, mimeType: f.mimeType, size: f.size,

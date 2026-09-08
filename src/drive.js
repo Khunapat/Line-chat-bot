@@ -13,14 +13,15 @@ const DATA_FOLDER = '_data'; // JSON state (reminders, memory) lives here
  * personal Gmail accounts, which is why we don't use one.)
  */
 export class DriveArchive {
-  constructor({ clientId, clientSecret, refreshToken, rootFolderName = 'LineArchive', timeZone = 'UTC' }) {
+  constructor({ clientId, clientSecret, refreshToken, rootFolderName = 'LineArchive', subFolders = [], timeZone = 'UTC' }) {
     if (!clientId || !clientSecret || !refreshToken) {
-      throw new Error('GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN are required');
+      throw new Error('Google OAuth client id, secret and a refresh token are required');
     }
     this.auth = new google.auth.OAuth2(clientId, clientSecret);
     this.auth.setCredentials({ refresh_token: refreshToken });
     this.drive = google.drive({ version: 'v3', auth: this.auth });
     this.rootFolderName = rootFolderName;
+    this.subFolders = subFolders; // e.g. ['Groups', 'Family'] -> LineArchive/Groups/Family
     this.timeZone = timeZone;
     this.folderCache = new Map(); // "parentId/name" -> folderId
     this.fileIdCache = new Map(); // "parentId/name" -> fileId (json docs, notes)
@@ -67,8 +68,32 @@ export class DriveArchive {
     return id;
   }
 
-  rootFolder() {
-    return this.findOrCreateFolder(this.rootFolderName, 'root');
+  async rootFolder() {
+    let id = await this.findOrCreateFolder(this.rootFolderName, 'root');
+    for (const name of this.subFolders) id = await this.findOrCreateFolder(name, id);
+    return id;
+  }
+
+  /** Web link to the root folder. */
+  async rootFolderLink() {
+    return `https://drive.google.com/drive/folders/${await this.rootFolder()}`;
+  }
+
+  /** Make the root folder viewable by anyone with the link and return it. */
+  async shareRootFolder() {
+    const id = await this.rootFolder();
+    await this.drive.permissions.create({ fileId: id, requestBody: { role: 'reader', type: 'anyone' } });
+    return `https://drive.google.com/drive/folders/${id}`;
+  }
+
+  /** The Google account behind this token (email), for the settings card. */
+  async accountEmail() {
+    try {
+      const { data } = await this.drive.about.get({ fields: 'user(emailAddress)' });
+      return data.user?.emailAddress || '';
+    } catch {
+      return '';
+    }
   }
 
   /** `<root>/YYYY-MM-DD` (created on demand). */

@@ -62,6 +62,10 @@ ask GOOGLE_CLIENT_ID           "Google OAuth client ID (Desktop app)"
 ask GOOGLE_CLIENT_SECRET       "Google OAuth client secret" secret
 askopt GEMINI_API_KEY          "Gemini API key, free at https://aistudio.google.com/apikey (Enter to skip)" secret
 askopt ANTHROPIC_API_KEY       "Anthropic API key, paid (Enter to skip)" secret
+note "Optional: let family/friends connect their own Drive (needs a 'Web application' OAuth client, see README)"
+askopt GOOGLE_WEB_CLIENT_ID    "Google OAuth WEB client ID (Enter to skip)"
+askopt GOOGLE_WEB_CLIENT_SECRET "Google OAuth WEB client secret (Enter to skip)" secret
+askopt INVITE_CODE             "Invite code new people must type first (Enter for none)"
 if [ -z "$(getenv BOT_NAME)" ]; then read -r -p "   Bot name as shown in LINE [JaiJa]: " v; setenv BOT_NAME "${v:-JaiJa}"; fi
 if [ -z "$(getenv USER_NAME)" ]; then read -r -p "   What should the bot call you? (optional): " v; setenv USER_NAME "${v:-}"; fi
 [ -n "$(getenv TIMEZONE)" ]     || setenv TIMEZONE "Asia/Bangkok"
@@ -116,7 +120,7 @@ envyaml="$(mktemp --suffix=.yaml 2>/dev/null || mktemp)"
 # Only the variables the app reads; quoted so tokens with + / = are safe.
 for key in LINE_CHANNEL_SECRET LINE_CHANNEL_ACCESS_TOKEN ALLOWED_USER_IDS GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET \
            GOOGLE_REFRESH_TOKEN GOOGLE_CALENDAR_ID DRIVE_ROOT_FOLDER_NAME TIMEZONE LLM_PROVIDER GEMINI_API_KEY GEMINI_MODEL ANTHROPIC_API_KEY CLAUDE_MODEL \
-           CLAUDE_EFFORT AUTO_SCAN BOT_NAME USER_NAME CRON_SECRET; do
+           CLAUDE_EFFORT AUTO_SCAN BOT_NAME USER_NAME CRON_SECRET GOOGLE_WEB_CLIENT_ID GOOGLE_WEB_CLIENT_SECRET INVITE_CODE GALLERY_SECRET PUBLIC_URL; do
   val="$(getenv "$key")"
   [ -n "$val" ] && printf '%s: "%s"\n' "$key" "${val//\"/\\\"}" >> "$envyaml"
 done
@@ -150,5 +154,9 @@ LINE_CHANNEL_ACCESS_TOKEN="$(getenv LINE_CHANNEL_ACCESS_TOKEN)" node scripts/set
 echo
 bold "Done."
 note "Health check: $URL"
+if [ -n "$(getenv GOOGLE_WEB_CLIENT_ID)" ]; then
+  note "Multi-user is ON. Make sure the WEB OAuth client lists this redirect URI:"
+  note "   $URL/oauth/callback"
+fi
 note "Open LINE, add the bot as a friend, and send it a photo or \"เตือนกินยา 19.00\"."
 note "Re-run ./scripts/setup.sh any time to redeploy after pulling new code."

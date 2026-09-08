@@ -171,38 +171,56 @@ export function reminderCard(reminder, { timeZone, now, title = '⏰ ตั้�
   return flexMessage(`${title}: ${reminder.text} ${repeat ? repeat + ' ' : ''}${when}`, bubble({ contents, footer }));
 }
 
-export function reminderListCard(reminders, { timeZone, now } = {}) {
+/** Urgency colour for a time: red within a day, orange within 3 days, olive otherwise. */
+function urgencyColor(atIso, now = new Date()) {
+  const hours = (new Date(atIso).getTime() - now.getTime()) / 3_600_000;
+  if (hours <= 24) return '#B5482F';
+  if (hours <= 72) return '#C98A2B';
+  return '#6F7658';
+}
+
+export function reminderListCard(reminders, { timeZone, now = new Date() } = {}) {
   const rows = reminders.length === 0
     ? [muted('ยังไม่มีการเตือนเลย บอกได้เลยว่าให้เตือนอะไรตอนไหน')]
-    : reminders.map((r) => ({
-      type: 'box',
-      layout: 'horizontal',
-      spacing: 'sm',
-      margin: 'md',
-      contents: [
-        {
-          type: 'box',
-          layout: 'vertical',
-          flex: 5,
-          contents: [
-            body(r.text, { size: 'sm', extra: { weight: 'bold' } }),
-            muted(`${describeRepeat(r.repeat)} ${describeWhen(r.at, timeZone, now)}`.trim()),
-          ],
-        },
-        {
-          type: 'text',
-          text: 'ยกเลิก',
-          size: 'xs',
-          color: C.link,
-          align: 'end',
-          gravity: 'center',
-          decoration: 'underline',
-          flex: 2,
-          action: postbackAction('ยกเลิก', `action=cancel&id=${r.id}`, `ยกเลิกเตือน: ${r.text}`.slice(0, 300)),
-        },
-      ],
-    }));
+    : reminders.slice(0, 12).map((r) => {
+      const color = urgencyColor(r.at, now);
+      return {
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'sm',
+        margin: 'md',
+        paddingAll: '10px',
+        backgroundColor: C.cardAlt,
+        borderWidth: '2px',
+        borderColor: C.stroke,
+        cornerRadius: '12px',
+        contents: [
+          { type: 'box', layout: 'vertical', width: '6px', backgroundColor: color, cornerRadius: '3px', contents: [{ type: 'filler' }] },
+          {
+            type: 'box',
+            layout: 'vertical',
+            flex: 5,
+            contents: [
+              body(r.text, { size: 'sm', extra: { weight: 'bold' } }),
+              { type: 'text', text: `${describeRepeat(r.repeat)} ${describeWhen(r.at, timeZone, now)}`.trim(), size: 'xs', color, wrap: true },
+            ],
+          },
+          {
+            type: 'text',
+            text: 'ยกเลิก',
+            size: 'xs',
+            color: C.link,
+            align: 'end',
+            gravity: 'center',
+            decoration: 'underline',
+            flex: 2,
+            action: postbackAction('ยกเลิก', `action=cancel&id=${r.id}`, `ยกเลิกเตือน: ${r.text}`.slice(0, 300)),
+          },
+        ],
+      };
+    });
   const contents = [heading('⏰ การเตือนทั้งหมด'), ...rows];
+  if (reminders.length > 12) contents.push(muted(`และอีก ${reminders.length - 12} รายการ`));
   return flexMessage(`การเตือนทั้งหมด ${reminders.length} รายการ`, bubble({ contents, size: 'mega' }));
 }
 
@@ -247,6 +265,7 @@ function deadlineColor(o, timeZone, now) {
   const d = daysUntil(o.deadline, timeZone, now);
   if (d < 0) return C.muted;
   if (d <= 3) return '#B5482F';
+  if (d <= 7) return '#C98A2B';
   return '#6F7658';
 }
 
@@ -299,16 +318,34 @@ export function opportunityCard(o, opts) {
 export function opportunityListCard(list, { timeZone, now } = {}) {
   const rows = list.length === 0
     ? [muted('ยังไม่มีรายการเลย ส่งโปสเตอร์หรือลิงก์รับสมัครมาได้เลย เดี๋ยวจดให้')]
-    : list.slice(0, 10).map((o) => ({
-      type: 'box',
-      layout: 'vertical',
-      margin: 'md',
-      action: (o.link || o.source?.webViewLink) ? uriAction('เปิด', o.link || o.source.webViewLink) : undefined,
-      contents: [
-        body(o.title, { size: 'sm', extra: { weight: 'bold' } }),
-        { type: 'text', text: `${describeDeadline(o.deadline, timeZone, now)} · ${KIND_THAI[o.kind] || ''}`, size: 'xs', color: deadlineColor(o, timeZone, now), wrap: true },
-      ],
-    }));
+    : list.slice(0, 10).map((o) => {
+      const color = deadlineColor(o, timeZone, now);
+      const link = o.link || o.source?.webViewLink;
+      return {
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'sm',
+        margin: 'md',
+        paddingAll: '10px',
+        backgroundColor: C.cardAlt,
+        borderWidth: '2px',
+        borderColor: C.stroke,
+        cornerRadius: '12px',
+        action: link ? uriAction('เปิด', link) : undefined,
+        contents: [
+          { type: 'box', layout: 'vertical', width: '6px', backgroundColor: color, cornerRadius: '3px', contents: [{ type: 'filler' }] },
+          {
+            type: 'box',
+            layout: 'vertical',
+            flex: 1,
+            contents: [
+              body(o.title, { size: 'sm', extra: { weight: 'bold' } }),
+              { type: 'text', text: `${describeDeadline(o.deadline, timeZone, now)} · ${KIND_THAI[o.kind] || ''}`, size: 'xs', color, wrap: true },
+            ],
+          },
+        ],
+      };
+    });
   const contents = [heading('🎯 Deadline ทั้งหมด'), ...rows];
   if (list.length > 10) contents.push(muted(`และอีก ${list.length - 10} รายการใน Opportunities.md`));
   return flexMessage(`Deadline ทั้งหมด ${list.length} รายการ`, bubble({ contents, size: 'mega' }));

@@ -61,6 +61,7 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `src/calendar.js` – Google Calendar events.
 * `src/opportunities.js` – reads posters / pages with the model (deadlines, captions, tags), deadline maths, `Opportunities.md`.
 * `src/gallery.js` – the calendar gallery page and its API, signed expiring links, thumbnail proxy.
+* `src/tenants.js`, `src/oauth.js` – one Drive per person or group; the "connect your Drive" flow.
 * `src/flex.js` – the beige cards with olive buttons.
 * `scripts/get-refresh-token.js` – one-time Google OAuth (Drive + Calendar scopes).
 * `scripts/setup-rich-menu.js` + `assets/richmenu.png` – the bottom menu.
@@ -71,6 +72,36 @@ key at <https://aistudio.google.com/apikey> and set `GEMINI_API_KEY`. Or set
 archives everything and understands the keyword commands (`ขอไฟล์ …`,
 `เก็บไฟล์ …`, `ช่วยจำ …`, `ขอ … หน่อย`), but reminders, calendar and free chat
 are off.
+
+## Sharing with family and friends
+
+Out of the box the bot serves only the LINE user ids in `ALLOWED_USER_IDS`,
+using the Drive you connected at setup. To let other people use it **with
+their own Google Drive**:
+
+1. In the Cloud Console, **Google Auth Platform → Clients → Create client**,
+   type **Web application**. Under *Authorised redirect URIs* add
+   `https://<your Cloud Run URL>/oauth/callback`. Copy the client id and secret.
+2. Put them in `.env` as `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_WEB_CLIENT_SECRET`
+   (the setup script asks for them), optionally set `INVITE_CODE`, and re-run
+   `./scripts/setup.sh`.
+3. Anyone who adds the bot now gets a **เชื่อม Google Drive** button (after
+   typing the invite code, if you set one). After consenting, everything they
+   send goes to `LineArchive/` in *their* Drive: files, memory, reminders,
+   deadlines, gallery, and calendar entries. Your Drive is never touched.
+   They can disconnect from ตั้งค่า at any time.
+
+**Groups.** Invite the bot into a LINE group. It asks for a host; a member
+who has connected their Drive taps **ใช้ Drive ของฉันเป็นที่เก็บของกลุ่ม**.
+From then on photos, files and links posted in the group are archived to
+`LineArchive/Groups/<group name>` in the host's Drive, deadline posters are
+recorded, and reminders are posted to the group. The bot answers text in a
+group only when mentioned or addressed by name (`@JaiJa เตือน...`). The host
+can tap **แชร์ลิงก์โฟลเดอร์ให้กลุ่ม** to post an anyone-with-the-link view
+link to the folder.
+
+Where things are stored: each person's tokens live in the owner's Drive at
+`LineArchive/_data/tenants.json`. Treat that file as private.
 
 ## Fastest setup: one script in Cloud Shell
 
@@ -213,6 +244,8 @@ artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
 | `LLM_PROVIDER` | Force `gemini`, `anthropic` or `none`; auto-detected from keys when unset |
 | `GALLERY_SECRET` | Signs gallery links. Optional; falls back to `CRON_SECRET` |
 | `PUBLIC_URL` | Base URL of the service for gallery links. Optional; learned from the first webhook |
+| `GOOGLE_WEB_CLIENT_ID` / `GOOGLE_WEB_CLIENT_SECRET` | "Web application" OAuth client; enables other people connecting their own Drive |
+| `INVITE_CODE` | Word new people must send before they can connect. Optional |
 | `AUTO_SCAN` | `always` (default): read every poster and link and record deadlines; `ask`: offer a button first; `off` |
 | `BOT_NAME` / `USER_NAME` | How the bot refers to itself and to you |
 | `CRON_SECRET` | Shared secret for `/cron/reminders` |

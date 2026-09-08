@@ -32,6 +32,15 @@ export const config = {
   botName: env.BOT_NAME || 'น้องไดรฟ์',
   userName: env.USER_NAME || '',
 
+  // Multi-user: a "Web application" OAuth client lets other people connect
+  // their own Google Drive from a link. Without it, only ALLOWED_USER_IDS work.
+  googleWeb: {
+    clientId: env.GOOGLE_WEB_CLIENT_ID,
+    clientSecret: env.GOOGLE_WEB_CLIENT_SECRET,
+  },
+  // Optional word new people must send before they can connect.
+  inviteCode: env.INVITE_CODE || '',
+
   // Shared secret Cloud Scheduler sends in X-Cron-Secret to /cron/reminders.
   cronSecret: env.CRON_SECRET,
   // Signs the expiring gallery links. Falls back to other secrets so it needs no setup.
@@ -48,6 +57,10 @@ export function resolveProvider() {
   if (config.geminiApiKey) return 'gemini';
   if (config.anthropicApiKey) return 'anthropic';
   return 'none';
+}
+
+export function multiUserEnabled() {
+  return Boolean(config.googleWeb.clientId && config.googleWeb.clientSecret);
 }
 
 export function requireConfig() {

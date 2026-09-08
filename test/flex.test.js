@@ -40,7 +40,7 @@ test('reminderCard carries reschedule/cancel postbacks with the id', () => {
 test('reminderListCard handles empty and populated lists', () => {
   assert.equal(cardOf(reminderListCard([], { timeZone: TZ }).contents).contents.length, 2);
   const msg = reminderListCard([{ id: 'x', text: 'a', at: '2026-09-09T02:00:00Z', repeat: 'none' }], { timeZone: TZ });
-  assert.equal(cardOf(msg.contents).contents[1].contents[1].action.data, 'action=cancel&id=x');
+  assert.equal(cardOf(msg.contents).contents[1].contents[2].action.data, 'action=cancel&id=x');
 });
 
 test('eventCard and infoCard build valid bubbles', () => {

@@ -20,14 +20,15 @@ export class Brain {
     this.system = buildSystemPrompt({ botName, userName, timeZone });
   }
 
-  async chat({ userId, text, hint }) {
-    const history = this.history.get(userId) || [];
+  async chat({ userId, text, hint, ctx: extra = {} }) {
+    const historyKey = extra.tenantId ? `${extra.tenantId}:${userId}` : userId;
+    const history = this.history.get(historyKey) || [];
     const now = new Date();
     const stamp = localIsoWithOffset(now, this.timeZone);
     const userTurn = `[เวลาตอนนี้ ${stamp} (${weekdayThai(now, this.timeZone)})]${hint ? `\n[บริบท: ${hint}]` : ''}\n${text}`;
 
     const attachments = [];
-    const ctx = { userId, now, attachments };
+    const ctx = { ...extra, userId, now, attachments };
     const runTool = async (name, input) => {
       const handler = this.handlers[name];
       if (!handler) throw new Error(`unknown tool ${name}`);
@@ -44,7 +45,7 @@ export class Brain {
     // Compact text-only history for continuity across turns.
     const next = [...history, { role: 'user', text }];
     if (finalText) next.push({ role: 'assistant', text: finalText });
-    this.history.set(userId, next.slice(-12));
+    this.history.set(historyKey, next.slice(-12));
 
     return { text: finalText, attachments };
   }
