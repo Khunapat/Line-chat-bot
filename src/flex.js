@@ -115,10 +115,27 @@ function fileSubtitle(file) {
   return bits.join(' · ');
 }
 
+/** Emoji by file type, for cards without a picture. */
+export function fileIcon(file) {
+  const m = (file?.mimeType || '').toLowerCase();
+  if (m.startsWith('image/')) return '🖼️';
+  if (m.startsWith('video/')) return '🎬';
+  if (m.startsWith('audio/')) return '🎙️';
+  if (m === 'application/pdf') return '📄';
+  if (/\.md$/i.test(file?.name || '') || m === 'text/markdown') return '📝';
+  return '📎';
+}
+
+function heroImage(url) {
+  return { type: 'image', url, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', margin: 'md' };
+}
+
 export function fileBubble(file, { title } = {}) {
   const contents = [];
   if (title) contents.push(heading(title));
-  contents.push(body(file.name, { extra: { weight: 'bold' } }));
+  if (file.thumbUrl) contents.push({ ...heroImage(file.thumbUrl), action: file.webViewLink ? uriAction('เปิด', file.webViewLink) : undefined });
+  contents.push(body(`${file.thumbUrl ? '' : fileIcon(file) + ' '}${file.caption || file.name}`, { extra: { weight: 'bold', margin: 'md' } }));
+  if (file.caption && file.caption !== file.name) contents.push(muted(file.name));
   const sub = fileSubtitle(file);
   if (sub) contents.push(muted(sub));
   return bubble({
@@ -272,7 +289,8 @@ function deadlineColor(o, timeZone, now) {
 export function opportunityBubble(o, { timeZone, now, title = '🎯 บันทึกไว้แล้ว' } = {}) {
   const contents = [
     heading(title),
-    body(o.title, { extra: { weight: 'bold', margin: 'md' } }),
+    ...(o.thumbUrl ? [{ ...heroImage(o.thumbUrl), action: uriAction('เปิด', o.link || o.source?.webViewLink || o.thumbUrl) }] : []),
+    body(`${o.thumbUrl ? '' : (o.source?.kind === 'link' ? '🔗 ' : '')}${o.title}`, { extra: { weight: 'bold', margin: 'md' } }),
     muted(`${KIND_THAI[o.kind] || 'อื่น ๆ'}${o.organizer ? ' · ' + o.organizer : ''}`),
     {
       type: 'text',

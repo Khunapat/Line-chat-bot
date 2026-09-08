@@ -16,7 +16,7 @@ import {
   extractFromMedia, extractFromText, fetchPageText, deadlineReminderTimes, sortOpportunities,
   renderMarkdown, describeDeadline, captionSlug,
 } from './opportunities.js';
-import { registerGalleryRoutes, galleryUrl, setGalleryTimeZone } from './gallery.js';
+import { registerGalleryRoutes, galleryUrl, thumbUrl, setGalleryTimeZone } from './gallery.js';
 import { registerOAuthRoutes, connectUrl, baseUrlOf } from './oauth.js';
 import { Tenants } from './tenants.js';
 import { Readable } from 'node:stream';
@@ -88,7 +88,7 @@ const handlers = {
   },
 
   async find_file({ query }, ctx) {
-    const files = await searchFiles(query, 5, ctx);
+    const files = withThumbs(await searchFiles(query, 5, ctx), ctx);
     if (files.length === 0) return { found: 0, files: [] };
     ctx.attachments.push(filesCarousel(files, { title: files.length > 1 ? `📁 เจอ ${files.length} ไฟล์` : '📁 เจอแล้ว' }));
     return { found: files.length, files: files.map((f) => ({ name: f.name, day: f.day, caption: f.caption || '' })) };
@@ -103,7 +103,7 @@ const handlers = {
     const q = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
     const hit = (v) => { const h = String(v || '').toLowerCase(); return q.some((t) => h.includes(t)); };
     const oppHits = sortOpportunities(opps.filter((o) => hit(o.title) || hit(o.organizer) || hit(o.summary) || hit(o.eligibility)), tz, ctx.now).slice(0, 5);
-    if (files.length) ctx.attachments.push(filesCarousel(files, { title: `📁 ไฟล์ที่เกี่ยวกับ "${query}"` }));
+    if (files.length) ctx.attachments.push(filesCarousel(withThumbs(files, ctx), { title: `📁 ไฟล์ที่เกี่ยวกับ "${query}"` }));
     if (oppHits.length) ctx.attachments.push(opportunityListCard(oppHits, { timeZone: tz, now: ctx.now }));
     return {
       files: files.map((f) => ({ name: f.name, day: f.day, caption: f.caption || '' })),
@@ -125,7 +125,7 @@ const handlers = {
     if (!target) return { error: 'no file has been sent yet' };
     const renamed = await ctx.svc.drive.renameFile(target.id, label);
     await ctx.svc.store.setUserState(ctx.userId, { lastFile: renamed });
-    ctx.attachments.push(fileCard(renamed, { title: '📁 เก็บไว้แล้ว' }));
+    ctx.attachments.push(fileCard(withThumb(renamed, ctx), { title: '📁 เก็บไว้แล้ว' }));
     return { ok: true, name: renamed.name };
   },
 
@@ -177,6 +177,7 @@ const handlers = {
 
   async list_opportunities(_input, ctx) {
     const list = sortOpportunities(await ctx.svc.store.opportunities(), tz, ctx.now);
+    for (const o of list) if (o.source?.fileId) withThumb(o, ctx, { fileId: o.source.fileId, mimeType: o.source.kind === 'pdf' ? 'application/pdf' : 'image/jpeg' });
     ctx.attachments.push(opportunityListCard(list, { timeZone: tz, now: ctx.now }));
     return { opportunities: list.map((o) => ({ id: o.id, title: o.title, kind: o.kind, deadline: o.deadline, when: describeDeadline(o.deadline, tz, ctx.now), link: o.link || o.source?.webViewLink || '' })) };
   },
@@ -377,7 +378,9 @@ async function handleEvent(event) {
         await ctx.svc.store.setUserState(userId, { lastFile: file });
         const what = read?.fields?.caption ? `${kindThai(message.type)} (${read.fields.caption})` : kindThai(message.type);
         if (chatType === 'user') ctx.attachments.push(textMessage(`เก็บ${what}ไว้ให้แล้ว ถ้าอยากตั้งชื่อเอง พิมพ์ "เก็บไฟล์ <ชื่อ>" ได้เลย`));
-        ctx.attachments.push(fileCard(file, { title: chatType === 'user' ? '📁 เก็บไว้แล้ว' : `📁 เก็บไว้ในโฟลเดอร์กลุ่มแล้ว${read?.fields?.caption ? ' · ' + read.fields.caption : ''}` }));
+        withThumb(file, ctx, { mimeType });
+        if (read?.fields?.caption) file.caption = read.fields.caption;
+        ctx.attachments.push(fileCard(file, { title: chatType === 'user' ? '📁 เก็บไว้แล้ว' : '📁 เก็บไว้ในโฟลเดอร์กลุ่มแล้ว' }));
         if (read?.opp) ctx.attachments.push(textMessage(scanIntro(read.opp)), opportunityCard(read.opp, { timeZone: tz, now: ctx.now }));
         else if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'ask') ctx.attachments.push(scanOfferCard(saved.id));
         break;
@@ -647,7 +650,7 @@ async function handlePostback(event, ctx) {
       await handlers.list_reminders({}, ctx);
       return;
     case 'menu_files': {
-      const files = await drive.recentFiles(5);
+      const files = withThumbs(await drive.recentFiles(5), ctx);
       if (files.length === 0) ctx.attachments.push(textMessage('ยังไม่มีไฟล์เลย ส่งรูปหรือไฟล์มาได้เลย เดี๋ยวเก็บให้'));
       else ctx.attachments.push(textMessage('ไฟล์ล่าสุดที่เก็บไว้ พิมพ์ "หา <คำค้น>" เพื่อค้นหาได้นะ'), filesCarousel(files, { title: '📁 ไฟล์ล่าสุด' }));
       if (publicBase) ctx.attachments.push(galleryCard(ctx));
@@ -781,6 +784,7 @@ async function readMedia(buffer, mimeType, file, ctx) {
     let opp = null;
     if (fields.is_opportunity && fields.confidence >= 0.5) {
       opp = await registerOpportunity(fields, { ctx, source: { kind: base === 'application/pdf' ? 'pdf' : 'image', fileId: file.id, webViewLink: current.webViewLink } });
+      withThumb(opp, ctx, { fileId: file.id, mimeType: base });
     }
     return { fields, file: current, opp };
   } catch (err) {
@@ -801,6 +805,20 @@ async function searchFiles(query, limit, ctx) {
     out.push({ id: f.id, name: f.name, day: f.day, mimeType: f.mimeType, webViewLink: f.webViewLink, size: f.size, caption: f.caption });
   }
   return out.slice(0, limit);
+}
+
+/** Give a file (or anything with a picture behind it) a card thumbnail URL. */
+function withThumb(obj, ctx, { fileId = obj?.id, mimeType = obj?.mimeType } = {}) {
+  if (!obj || !publicBase || !fileId) return obj;
+  const m = (mimeType || '').toLowerCase();
+  if (!(m.startsWith('image/') || m === 'application/pdf')) return obj;
+  obj.thumbUrl = thumbUrl(publicBase, config.gallerySecret, ctx.tenantId, fileId);
+  return obj;
+}
+
+function withThumbs(files, ctx) {
+  for (const f of files) withThumb(f, ctx);
+  return files;
 }
 
 function galleryCard(ctx) {

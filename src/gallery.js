@@ -33,6 +33,19 @@ function hmac(secret, data) {
   return createHmac('sha256', secret).update(data).digest('base64url');
 }
 
+/** A no-expiry thumbnail URL scoped to one file, for images inside chat cards. */
+export function thumbUrl(base, secret, tenantId, fileId, size = 600) {
+  const tid = Buffer.from(String(tenantId)).toString('base64url');
+  return `${base.replace(/\/+$/, '')}/thumb/${tid}/${encodeURIComponent(fileId)}.jpg?s=${hmac(secret, `thumb.${tid}.${fileId}`)}&z=${size}`;
+}
+
+export function verifyThumbSig(secret, tid, fileId, sig) {
+  if (!secret || !tid || !fileId || typeof sig !== 'string') return null;
+  const expected = hmac(secret, `thumb.${tid}.${fileId}`);
+  if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  return Buffer.from(tid, 'base64url').toString();
+}
+
 export function galleryUrl(base, secret, tenantId) {
   return `${base.replace(/\/+$/, '')}/gallery?t=${signGalleryToken(secret, tenantId)}`;
 }
@@ -109,6 +122,25 @@ export function registerGalleryRoutes(app, { resolve, secret, timeZone, botName 
       res.send(t.body);
     } catch (err) {
       console.error('thumb failed', err?.message || err);
+      res.status(404).end();
+    }
+  });
+
+  // Thumbnail for chat cards: LINE fetches this whenever the card is shown.
+  app.get('/thumb/:tid/:file', async (req, res) => {
+    try {
+      const fileId = String(req.params.file || '').replace(/\.jpg$/i, '');
+      const tenantId = verifyThumbSig(secret, req.params.tid, fileId, req.query.s);
+      const svc = tenantId ? await resolve(tenantId) : null;
+      if (!svc) return res.status(404).end();
+      const size = Math.min(Math.max(Number(req.query.z) || 600, 64), 1024);
+      const t = await svc.drive.thumbnail(fileId, size);
+      if (!t) return res.status(404).end();
+      res.set('Content-Type', t.contentType);
+      res.set('Cache-Control', 'public, max-age=604800');
+      res.send(t.body);
+    } catch (err) {
+      console.error('card thumb failed', err?.message || err);
       res.status(404).end();
     }
   });

@@ -243,6 +243,7 @@ export class DriveArchive {
       `mimeType != '${FOLDER_MIME}'`,
       `not '${dataId}' in parents`,
       "name != 'notes.md'",
+      "name != 'Opportunities.md'",
       'trashed = false',
     ];
     const terms = String(query || '').trim().split(/\s+/).filter(Boolean);
@@ -264,6 +265,7 @@ export class DriveArchive {
       `mimeType != '${FOLDER_MIME}'`,
       `not '${dataId}' in parents`,
       "name != 'notes.md'",
+      "name != 'Opportunities.md'",
       'trashed = false',
     ].join(' and ');
     return this.list(q, limit);
