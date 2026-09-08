@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { withRetry } from './errors.js';
 
 /**
  * Claude provider. Same interface as GeminiProvider:
@@ -17,7 +18,7 @@ export class AnthropicProvider {
     const history = messages.map((m) => ({ role: m.role, content: m.text }));
 
     for (let i = 0; i < maxIters; i++) {
-      const response = await this.client.beta.messages.create({
+      const response = await withRetry(() => this.client.beta.messages.create({
         model: this.model,
         max_tokens: 2048,
         betas: ['server-side-fallback-2026-07-01'],
@@ -26,7 +27,7 @@ export class AnthropicProvider {
         system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
         tools,
         messages: history,
-      });
+      }));
 
       if (response.stop_reason === 'refusal') return { text: 'ขอโทษนะ อันนี้ตอบให้ไม่ได้' };
 
@@ -68,7 +69,7 @@ AnthropicProvider.prototype.extract = async function extract({ system, parts, sc
   });
   content.push({ type: 'text', text: 'Record the result by calling the record tool exactly once.' });
 
-  const response = await this.client.beta.messages.create({
+  const response = await withRetry(() => this.client.beta.messages.create({
     model: this.model,
     max_tokens: 2048,
     betas: ['server-side-fallback-2026-07-01'],
@@ -77,7 +78,7 @@ AnthropicProvider.prototype.extract = async function extract({ system, parts, sc
     system,
     tools: [{ name: 'record', description: 'Record the extracted fields.', input_schema: schema, strict: true }],
     messages: [{ role: 'user', content }],
-  });
+  }));
   const call = response.content.find((b) => b.type === 'tool_use' && b.name === 'record');
   if (!call) throw new Error('model did not return structured output');
   return call.input;

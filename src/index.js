@@ -7,6 +7,7 @@ import { isScopeError } from './calendar.js';
 import { Brain } from './brain.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { AnthropicProvider } from './providers/anthropic.js';
+import { isQuotaError, QUOTA_MESSAGE } from './providers/errors.js';
 import { fireDueReminders, pendingReminders, describeWhen, describeRepeat } from './reminders.js';
 import {
   textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, dueReminderCard, eventCard,
@@ -381,6 +382,7 @@ async function handleEvent(event) {
         withThumb(file, ctx, { mimeType });
         if (read?.fields?.caption) file.caption = read.fields.caption;
         ctx.attachments.push(fileCard(file, { title: chatType === 'user' ? '📁 เก็บไว้แล้ว' : '📁 เก็บไว้ในโฟลเดอร์กลุ่มแล้ว' }));
+        if (ctx.aiLimited) ctx.attachments.push(textMessage('AI ติดลิมิตชั่วคราว เลยยังไม่ได้อ่านเนื้อหาไฟล์นี้ ถ้าเป็นประกาศรับสมัคร ส่งมาใหม่ทีหลังได้นะ'));
         if (read?.opp) ctx.attachments.push(textMessage(scanIntro(read.opp)), opportunityCard(read.opp, { timeZone: tz, now: ctx.now }));
         else if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'ask') ctx.attachments.push(scanOfferCard(saved.id));
         break;
@@ -394,7 +396,8 @@ async function handleEvent(event) {
     await reply(replyToken, chatId, ctx.attachments);
   } catch (err) {
     console.error('handling failed', describeError(err));
-    await reply(replyToken, chatId, [textMessage('ขอโทษที มีอะไรพังนิดหน่อย ลองใหม่อีกทีนะ')]).catch(() => {});
+    const text = isQuotaError(err) ? QUOTA_MESSAGE : 'ขอโทษที มีอะไรพังนิดหน่อย ลองใหม่อีกทีนะ';
+    await reply(replyToken, chatId, [textMessage(text)]).catch(() => {});
   }
 }
 
@@ -789,6 +792,7 @@ async function readMedia(buffer, mimeType, file, ctx) {
     return { fields, file: current, opp };
   } catch (err) {
     console.error('read media failed', describeError(err));
+    if (isQuotaError(err)) ctx.aiLimited = true;
     return null;
   }
 }
@@ -843,6 +847,7 @@ async function scanLink(url, ctx) {
     return opp;
   } catch (err) {
     console.error('link scan failed', describeError(err));
+    if (isQuotaError(err)) ctx.attachments.push(textMessage('AI ติดลิมิตชั่วคราว เลยยังไม่ได้อ่านลิงก์นี้ ส่งมาใหม่ทีหลังได้นะ'));
     return null;
   }
 }

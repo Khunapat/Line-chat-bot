@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { withRetry } from './errors.js';
 
 /**
  * Gemini provider (Google AI Studio key, free tier is enough for one user).
@@ -24,7 +25,7 @@ export class GeminiProvider {
     const functionDeclarations = tools.map(toFunctionDeclaration);
 
     for (let i = 0; i < maxIters; i++) {
-      const resp = await this.ai.models.generateContent({
+      const resp = await withRetry(() => this.ai.models.generateContent({
         model: this.model,
         contents,
         config: {
@@ -32,7 +33,7 @@ export class GeminiProvider {
           tools: [{ functionDeclarations }],
           temperature: 0.7,
         },
-      });
+      }));
 
       const calls = resp.functionCalls || [];
       if (calls.length === 0) return { text: (resp.text || '').trim() };
@@ -61,7 +62,7 @@ export class GeminiProvider {
  * `parts` may include { text } and { inlineData: { mimeType, data(base64) } }.
  */
 GeminiProvider.prototype.extract = async function extract({ system, parts, schema }) {
-  const resp = await this.ai.models.generateContent({
+  const resp = await withRetry(() => this.ai.models.generateContent({
     model: this.model,
     contents: [{ role: 'user', parts }],
     config: {
@@ -70,7 +71,7 @@ GeminiProvider.prototype.extract = async function extract({ system, parts, schem
       responseJsonSchema: schema,
       temperature: 0.2,
     },
-  });
+  }));
   const text = resp.text || '';
   try {
     return JSON.parse(text);
