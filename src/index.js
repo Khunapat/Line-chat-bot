@@ -8,6 +8,7 @@ import { Brain } from './brain.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { isQuotaError, QUOTA_MESSAGE } from './providers/errors.js';
+import { Usage, describeReset } from './providers/usage.js';
 import { fireDueReminders, pendingReminders, describeWhen, describeRepeat } from './reminders.js';
 import {
   textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, dueReminderCard, eventCard,
@@ -199,10 +200,13 @@ const handlers = {
   },
 };
 
+const aiUsage = new Usage({ store: ownerStore });
+process.on('SIGTERM', () => { aiUsage.flush().finally(() => process.exit(0)); });
+
 function makeProvider() {
   switch (resolveProvider()) {
-    case 'gemini': return new GeminiProvider({ apiKey: config.geminiApiKey, model: config.geminiModel });
-    case 'anthropic': return new AnthropicProvider({ apiKey: config.anthropicApiKey, model: config.claudeModel, effort: config.claudeEffort });
+    case 'gemini': return new GeminiProvider({ apiKey: config.geminiApiKey, model: config.geminiModel, usage: aiUsage });
+    case 'anthropic': return new AnthropicProvider({ apiKey: config.anthropicApiKey, model: config.claudeModel, effort: config.claudeEffort, usage: aiUsage });
     default: return null;
   }
 }
@@ -689,6 +693,19 @@ async function handlePostback(event, ctx) {
       ctx.attachments.push(textMessage(`ยกเลิกการเชื่อม Google Drive แล้ว ไฟล์ที่เก็บไว้ยังอยู่ใน Drive ของคุณตามเดิม${groups.length ? ` (กลุ่มที่คุณดูแล ${groups.length} กลุ่มต้องเลือกเจ้าของใหม่)` : ''}\nถ้าอยากใช้อีก พิมพ์ "เชื่อม Drive" ได้เลย`));
       return;
     }
+    case 'menu_ai': {
+      if (!provider) { ctx.attachments.push(textMessage('ยังไม่ได้เปิดโหมด AI')); return; }
+      const snap = await aiUsage.snapshot(provider.models, ctx.now);
+      const lines = snap.models.map((m) => {
+        const cap = m.limit ? `/${m.limit}` : '';
+        const state = m.exhausted ? 'หมดแล้ว ❌' : m.limit && m.used >= m.limit ? 'น่าจะหมดแล้ว' : 'ใช้ได้ ✅';
+        return `• ${m.model}: ใช้ไป ${m.used}${cap} ครั้ง ${state}`;
+      });
+      lines.push(`รวมวันนี้ ${snap.total} ครั้ง · รีเซ็ต ${describeReset(snap.resetAt, tz, ctx.now)}`);
+      lines.push('1 ครั้ง = แชท 1 ข้อความ หรืออ่านโปสเตอร์/ลิงก์ 1 ชิ้น ลิมิตของ Gemini แบบฟรีนับแยกตามโมเดล ตัวเลขลิมิตจะรู้เมื่อโมเดลนั้นเคยชนลิมิตแล้ว');
+      ctx.attachments.push(infoCard('🤖 โควตา AI วันนี้', lines));
+      return;
+    }
     case 'menu_settings': {
       let cal = 'ยังไม่เชื่อม';
       try { await calendar.listUpcoming({ days: 1, max: 1 }); cal = 'เชื่อมแล้ว ✅'; } catch { /* keep default */ }
@@ -700,6 +717,7 @@ async function handlePostback(event, ctx) {
           : `Google Drive: ${email || 'บัญชีของคุณ'} → ${config.driveRootFolderName}/`,
         `Google Calendar: ${cal}`,
         `โหมด AI: ${brain ? brain.label : 'ปิด (ยังไม่ได้ใส่ GEMINI_API_KEY)'}`,
+        ...(provider ? [await aiUsageLine()] : []),
         `อ่านโปสเตอร์/ลิงก์อัตโนมัติ: ${{ always: 'เปิด', ask: 'ถามก่อน', off: 'ปิด' }[config.autoScan] || config.autoScan}`,
         `เขตเวลา: ${tz}`,
         `LINE user ID: ${ctx.userId}`,
@@ -710,6 +728,7 @@ async function handlePostback(event, ctx) {
           postbackButton('สิ่งที่จำไว้', 'action=menu_notes', 'ดูสิ่งที่จำไว้'),
         ] },
       ];
+      if (provider) buttons.push(postbackButton('โควตา AI วันนี้', 'action=menu_ai', 'ดูโควตา AI'));
       if (ctx.tenant.type === 'group' && ctx.tenant.hostUserId === ctx.userId) {
         buttons.push(postbackButton('แชร์ลิงก์โฟลเดอร์ให้กลุ่ม', 'action=group_share', 'แชร์ลิงก์โฟลเดอร์ให้กลุ่ม'));
       } else if (ctx.chatType === 'user' && !tenants.isOwner(ctx.userId) && multiUserEnabled()) {
@@ -849,6 +868,17 @@ async function scanLink(url, ctx) {
     console.error('link scan failed', describeError(err));
     if (isQuotaError(err)) ctx.attachments.push(textMessage('AI ติดลิมิตชั่วคราว เลยยังไม่ได้อ่านลิงก์นี้ ส่งมาใหม่ทีหลังได้นะ'));
     return null;
+  }
+}
+
+async function aiUsageLine() {
+  try {
+    const snap = await aiUsage.snapshot(provider.models);
+    const dead = snap.models.filter((m) => m.exhausted).length;
+    const note = dead === 0 ? '' : dead >= snap.models.length ? ' (หมดทุกโมเดลแล้ว)' : ` (หมดแล้ว ${dead}/${snap.models.length} โมเดล)`;
+    return `AI วันนี้: ใช้ไป ${snap.total} ครั้ง${note} รีเซ็ต ${describeReset(snap.resetAt, tz)}`;
+  } catch {
+    return 'AI วันนี้: นับไม่ได้';
   }
 }
 

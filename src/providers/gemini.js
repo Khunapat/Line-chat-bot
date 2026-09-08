@@ -15,9 +15,10 @@ export class GeminiProvider {
    * Free-tier quotas are counted per model, so when the first model's daily
    * quota is spent we fall through to the next one instead of failing.
    */
-  constructor({ apiKey, model = 'gemini-3.6-flash' }) {
+  constructor({ apiKey, model = 'gemini-3.6-flash', usage = null }) {
     if (!apiKey) throw new Error('GEMINI_API_KEY is required');
     this.ai = new GoogleGenAI({ apiKey });
+    this.usage = usage;
     this.models = String(model).split(',').map((m) => m.trim()).filter(Boolean);
     this.model = this.models[0];
     this.label = `Gemini ${this.models.join(' > ')}`;
@@ -28,8 +29,11 @@ export class GeminiProvider {
     let lastErr;
     for (const model of this.models) {
       try {
-        return await withRetry(() => this.ai.models.generateContent({ model, ...request }));
+        const resp = await withRetry(() => this.ai.models.generateContent({ model, ...request }));
+        this.usage?.record(model).catch(() => {});
+        return resp;
       } catch (err) {
+        this.usage?.record(model, err).catch(() => {});
         const missing = Number(err?.status) === 404 || /not found|not supported/i.test(String(err?.message || ''));
         if (!isQuotaError(err) && !missing) throw err;
         console.warn(`gemini ${model} ${missing ? 'unavailable' : 'quota hit'}, ${this.models.at(-1) === model ? 'no fallback left' : 'trying next model'}`);

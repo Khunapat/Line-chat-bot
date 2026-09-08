@@ -6,19 +6,33 @@ import { withRetry } from './errors.js';
  * complete({ system, messages, tools, runTool }) -> { text }
  */
 export class AnthropicProvider {
-  constructor({ apiKey, model = 'claude-opus-5', effort = 'low' }) {
+  constructor({ apiKey, model = 'claude-opus-5', effort = 'low', usage = null }) {
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY is required');
     this.client = new Anthropic({ apiKey });
+    this.usage = usage;
+    this.models = [model];
     this.model = model;
     this.effort = effort;
     this.label = `Claude ${model}`;
+  }
+
+  /** Run one API call and count it. */
+  async tracked(fn) {
+    try {
+      const resp = await fn();
+      this.usage?.record(this.model).catch(() => {});
+      return resp;
+    } catch (err) {
+      this.usage?.record(this.model, err).catch(() => {});
+      throw err;
+    }
   }
 
   async complete({ system, messages, tools, runTool, maxIters = 6 }) {
     const history = messages.map((m) => ({ role: m.role, content: m.text }));
 
     for (let i = 0; i < maxIters; i++) {
-      const response = await withRetry(() => this.client.beta.messages.create({
+      const response = await this.tracked(() => withRetry(() => this.client.beta.messages.create({
         model: this.model,
         max_tokens: 2048,
         betas: ['server-side-fallback-2026-07-01'],
@@ -27,7 +41,7 @@ export class AnthropicProvider {
         system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
         tools,
         messages: history,
-      }));
+      })));
 
       if (response.stop_reason === 'refusal') return { text: 'ขอโทษนะ อันนี้ตอบให้ไม่ได้' };
 
@@ -69,7 +83,7 @@ AnthropicProvider.prototype.extract = async function extract({ system, parts, sc
   });
   content.push({ type: 'text', text: 'Record the result by calling the record tool exactly once.' });
 
-  const response = await withRetry(() => this.client.beta.messages.create({
+  const response = await this.tracked(() => withRetry(() => this.client.beta.messages.create({
     model: this.model,
     max_tokens: 2048,
     betas: ['server-side-fallback-2026-07-01'],
@@ -78,7 +92,7 @@ AnthropicProvider.prototype.extract = async function extract({ system, parts, sc
     system,
     tools: [{ name: 'record', description: 'Record the extracted fields.', input_schema: schema, strict: true }],
     messages: [{ role: 'user', content }],
-  }));
+  })));
   const call = response.content.find((b) => b.type === 'tool_use' && b.name === 'record');
   if (!call) throw new Error('model did not return structured output');
   return call.input;
