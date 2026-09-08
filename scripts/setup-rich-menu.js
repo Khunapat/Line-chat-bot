@@ -10,6 +10,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { messagingApi } from '@line/bot-sdk';
+import { loadDotEnv } from './dotenv.js';
+
+loadDotEnv(); // so `npm run rich-menu` works straight from the project folder
 
 const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 if (!token) {

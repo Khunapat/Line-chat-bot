@@ -7,6 +7,9 @@
  * script reports whether it is on and tells you where to turn it on if not.
  */
 import { messagingApi } from '@line/bot-sdk';
+import { loadDotEnv } from './dotenv.js';
+
+loadDotEnv(); // so `npm run rich-menu` works straight from the project folder
 
 const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 const base = process.argv[2];
