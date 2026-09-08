@@ -41,3 +41,20 @@ test('withRetry gives up on daily caps, non-quota errors, and after the retry bu
   await assert.rejects(withRetry(async () => { calls++; throw Object.assign(new Error('busy'), { status: 503 }); }, { sleep: async () => {} }), /busy/);
   assert.equal(calls, 2);
 });
+
+test('GeminiProvider falls through to the next model on a quota error', async () => {
+  const { GeminiProvider } = await import('../src/providers/gemini.js');
+  const p = new GeminiProvider({ apiKey: 'x', model: 'a, b ,c' });
+  assert.deepEqual(p.models, ['a', 'b', 'c']);
+  const tried = [];
+  p.ai = { models: { generateContent: async ({ model }) => {
+    tried.push(model);
+    if (model !== 'c') throw Object.assign(new Error('GenerateRequestsPerDay exceeded'), { status: 429 });
+    return { text: 'hi', functionCalls: [] };
+  } } };
+  const out = await p.complete({ system: 's', messages: [{ role: 'user', text: 'x' }], tools: [], runTool: async () => {} });
+  assert.equal(out.text, 'hi');
+  assert.deepEqual(tried, ['a', 'b', 'c']);
+  p.ai.models.generateContent = async () => { throw Object.assign(new Error('bad request'), { status: 400 }); };
+  await assert.rejects(p.extract({ system: 's', parts: [{ text: 'x' }], schema: {} }), /bad request/);
+});

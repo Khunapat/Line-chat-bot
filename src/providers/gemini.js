@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { withRetry } from './errors.js';
+import { withRetry, isQuotaError } from './errors.js';
 
 /**
  * Gemini provider (Google AI Studio key, free tier is enough for one user).
@@ -10,11 +10,32 @@ import { withRetry } from './errors.js';
  *   tools:    Anthropic-style { name, description, input_schema } definitions
  */
 export class GeminiProvider {
+  /**
+   * `model` may be a comma-separated list ("gemini-3.6-flash,gemini-3.6-flash-lite").
+   * Free-tier quotas are counted per model, so when the first model's daily
+   * quota is spent we fall through to the next one instead of failing.
+   */
   constructor({ apiKey, model = 'gemini-3.6-flash' }) {
     if (!apiKey) throw new Error('GEMINI_API_KEY is required');
     this.ai = new GoogleGenAI({ apiKey });
-    this.model = model;
-    this.label = `Gemini ${model}`;
+    this.models = String(model).split(',').map((m) => m.trim()).filter(Boolean);
+    this.model = this.models[0];
+    this.label = `Gemini ${this.models.join(' > ')}`;
+  }
+
+  /** Call generateContent, walking down the model list on quota errors. */
+  async generate(request) {
+    let lastErr;
+    for (const model of this.models) {
+      try {
+        return await withRetry(() => this.ai.models.generateContent({ model, ...request }));
+      } catch (err) {
+        if (!isQuotaError(err)) throw err;
+        console.warn(`gemini ${model} quota hit, ${this.models.at(-1) === model ? 'no fallback left' : 'trying next model'}`);
+        lastErr = err;
+      }
+    }
+    throw lastErr;
   }
 
   async complete({ system, messages, tools, runTool, maxIters = 6 }) {
@@ -25,15 +46,14 @@ export class GeminiProvider {
     const functionDeclarations = tools.map(toFunctionDeclaration);
 
     for (let i = 0; i < maxIters; i++) {
-      const resp = await withRetry(() => this.ai.models.generateContent({
-        model: this.model,
+      const resp = await this.generate({
         contents,
         config: {
           systemInstruction: system,
           tools: [{ functionDeclarations }],
           temperature: 0.7,
         },
-      }));
+      });
 
       const calls = resp.functionCalls || [];
       if (calls.length === 0) return { text: (resp.text || '').trim() };
@@ -62,8 +82,7 @@ export class GeminiProvider {
  * `parts` may include { text } and { inlineData: { mimeType, data(base64) } }.
  */
 GeminiProvider.prototype.extract = async function extract({ system, parts, schema }) {
-  const resp = await withRetry(() => this.ai.models.generateContent({
-    model: this.model,
+  const resp = await this.generate({
     contents: [{ role: 'user', parts }],
     config: {
       systemInstruction: system,
@@ -71,7 +90,7 @@ GeminiProvider.prototype.extract = async function extract({ system, parts, schem
       responseJsonSchema: schema,
       temperature: 0.2,
     },
-  }));
+  });
   const text = resp.text || '';
   try {
     return JSON.parse(text);
