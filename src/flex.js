@@ -182,6 +182,40 @@ export function reminderListCard(reminders, { timeZone, now } = {}) {
   return flexMessage(`การเตือนทั้งหมด ${reminders.length} รายการ`, bubble({ contents, size: 'mega' }));
 }
 
+/** The message pushed when a reminder fires: snooze / done buttons. */
+export function dueReminderCard(reminder, { userName, timeZone, now } = {}) {
+  const who = userName ? `${userName} ` : '';
+  const repeat = describeRepeat(reminder.repeat);
+  const contents = [
+    heading('⏰ ถึงเวลาแล้ว'),
+    body(`${who}ถึงเวลา${reminder.text}แล้วนะ`, { extra: { margin: 'md' } }),
+  ];
+  if (repeat) contents.push(muted(`${repeat} · ครั้งต่อไป ${describeWhen(reminder.at, timeZone, now)}`));
+  const data = (min) => `action=snooze&min=${min}&id=${reminder.id}`;
+  const footer = [
+    {
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'sm',
+      contents: [
+        button('เลื่อน 10 นาที', postbackAction('เลื่อน 10 นาที', data(10), 'เลื่อน 10 นาที')),
+        button('เลื่อน 1 ชม.', postbackAction('เลื่อน 1 ชม.', data(60), 'เลื่อน 1 ชั่วโมง')),
+      ],
+    },
+    {
+      type: 'text',
+      text: 'เสร็จแล้ว ✓',
+      size: 'sm',
+      color: C.link,
+      align: 'center',
+      decoration: 'underline',
+      margin: 'md',
+      action: postbackAction('เสร็จแล้ว', `action=done&id=${reminder.id}`, 'เสร็จแล้ว'),
+    },
+  ];
+  return flexMessage(`⏰ ${who}ถึงเวลา${reminder.text}แล้วนะ`, bubble({ contents, footer }));
+}
+
 // ----------------------------------------------------------- calendar
 
 export function eventCard(event, { timeZone } = {}) {

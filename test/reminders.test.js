@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { nextOccurrence, describeWhen, localIsoWithOffset, fireDueReminders, zonedParts } from '../src/reminders.js';
+import { nextOccurrence, describeWhen, localIsoWithOffset, fireDueReminders, pendingReminders, zonedParts } from '../src/reminders.js';
 
 const TZ = 'Asia/Bangkok';
 
@@ -28,12 +28,13 @@ test('localIsoWithOffset renders Bangkok offset', () => {
   assert.equal(zonedParts(d, TZ).weekday, 2); // Tuesday
 });
 
-test('fireDueReminders notifies, removes one-offs, advances repeats', async () => {
+test('fireDueReminders notifies, hides one-offs, advances repeats, purges old', async () => {
   const now = new Date('2026-09-08T12:00:00Z');
   const list = [
     { id: 'a', text: 'one-off', at: '2026-09-08T11:59:00Z', repeat: 'none' },
     { id: 'b', text: 'daily', at: '2026-09-06T08:00:00Z', repeat: 'daily' }, // two days stale
     { id: 'c', text: 'future', at: '2026-09-08T12:01:00Z', repeat: 'none' },
+    { id: 'd', text: 'old fired', at: '2026-09-06T12:00:00Z', repeat: 'none', firedAt: '2026-09-06T12:00:30Z' },
   ];
   const store = {
     reminders: async () => list,
@@ -45,7 +46,9 @@ test('fireDueReminders notifies, removes one-offs, advances repeats', async () =
 
   assert.deepEqual(notified, ['a', 'b']);
   assert.equal(result.fired, 2);
-  assert.equal(list.find((r) => r.id === 'a'), undefined);
+  assert.equal(list.find((r) => r.id === 'a').firedAt, '2026-09-08T12:00:00.000Z'); // kept, hidden
+  assert.equal(list.find((r) => r.id === 'd'), undefined); // purged after a day
+  assert.deepEqual(pendingReminders(list).map((r) => r.id), ['c', 'b']); // soonest first
   assert.equal(list.find((r) => r.id === 'b').at, '2026-09-09T08:00:00.000Z'); // skipped past days
   assert.ok(list.find((r) => r.id === 'c'));
 });

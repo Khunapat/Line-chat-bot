@@ -27,7 +27,7 @@ export function nextOccurrence(atIso, repeat) {
  */
 export async function fireDueReminders(store, notify, now = new Date()) {
   const list = await store.reminders();
-  const due = list.filter((r) => new Date(r.at) <= now);
+  const due = list.filter((r) => !r.firedAt && new Date(r.at) <= now);
   let fired = 0;
   for (const r of due) {
     try {
@@ -38,13 +38,26 @@ export async function fireDueReminders(store, notify, now = new Date()) {
         while (next && new Date(next) <= now) next = nextOccurrence(next, r.repeat);
         await store.updateReminder(r.id, { at: next });
       } else {
-        await store.removeReminder(r.id);
+        // Keep it around (hidden) so the snooze / done buttons still work.
+        await store.updateReminder(r.id, { firedAt: now.toISOString() });
       }
     } catch (err) {
       console.error('reminder notify failed', r.id, err?.message || err);
     }
   }
+  // Purge fired one-offs older than a day.
+  const cutoff = now.getTime() - 24 * 60 * 60 * 1000;
+  for (const r of list) {
+    if (r.firedAt && new Date(r.firedAt).getTime() < cutoff) await store.removeReminder(r.id);
+  }
   return { checked: list.length, fired };
+}
+
+/** Reminders still pending (not yet fired), soonest first. */
+export function pendingReminders(list, userId) {
+  return list
+    .filter((r) => !r.firedAt && (!userId || r.userId === userId))
+    .sort((a, b) => a.at.localeCompare(b.at));
 }
 
 // ------------------------------------------------------------ formatting

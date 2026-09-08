@@ -7,9 +7,9 @@ import { Calendar, isScopeError } from './calendar.js';
 import { Brain } from './brain.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { AnthropicProvider } from './providers/anthropic.js';
-import { fireDueReminders, describeWhen, describeRepeat } from './reminders.js';
+import { fireDueReminders, pendingReminders, describeWhen, describeRepeat } from './reminders.js';
 import {
-  textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, eventCard,
+  textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, dueReminderCard, eventCard,
   infoCard, linkButton, postbackButton,
 } from './flex.js';
 
@@ -92,7 +92,7 @@ const handlers = {
   },
 
   async list_reminders(_input, ctx) {
-    const list = (await store.reminders()).filter((r) => r.userId === ctx.userId).sort((a, b) => a.at.localeCompare(b.at));
+    const list = pendingReminders(await store.reminders(), ctx.userId);
     ctx.attachments.push(reminderListCard(list, { timeZone: tz, now: ctx.now }));
     return { reminders: list.map((r) => ({ id: r.id, text: r.text, when: describeWhen(r.at, tz, ctx.now), repeat: r.repeat })) };
   },
@@ -170,9 +170,10 @@ app.all('/cron/reminders', async (req, res) => {
   }
   try {
     const result = await fireDueReminders(store, async (r) => {
-      const repeat = describeRepeat(r.repeat);
-      const text = `⏰ ${config.userName ? config.userName + ' ' : ''}ถึงเวลา${r.text}แล้วนะ${repeat ? `\n(${repeat})` : ''}`;
-      await lineClient.pushMessage({ to: r.userId, messages: [textMessage(text)] });
+      await lineClient.pushMessage({
+        to: r.userId,
+        messages: [dueReminderCard(r, { userName: config.userName, timeZone: tz, now: new Date() })],
+      });
     });
     res.json(result);
   } catch (err) {
@@ -337,6 +338,27 @@ async function handlePostback(event, ctx) {
   const id = params.get('id');
 
   switch (action) {
+    case 'snooze': {
+      const minutes = Math.min(Math.max(Number(params.get('min')) || 10, 1), 24 * 60);
+      const original = (await store.reminders()).find((x) => x.id === id);
+      if (!original) return void ctx.attachments.push(textMessage('หาการเตือนนี้ไม่เจอแล้ว ตั้งใหม่ได้เลยนะ'));
+      const at = new Date(ctx.now.getTime() + minutes * 60_000).toISOString();
+      const r = original.repeat && original.repeat !== 'none'
+        ? await store.addReminder({ userId: ctx.userId, text: original.text, at, repeat: 'none' })
+        : await store.updateReminder(id, { at, firedAt: null });
+      const label = minutes >= 60 ? `${Math.round(minutes / 60)} ชั่วโมง` : `${minutes} นาที`;
+      ctx.attachments.push(
+        textMessage(`โอเค อีก ${label} เดี๋ยวเตือนอีกที`),
+        reminderCard(r, { timeZone: tz, now: ctx.now, title: '⏰ เลื่อนให้แล้ว' }),
+      );
+      return;
+    }
+    case 'done': {
+      const r = (await store.reminders()).find((x) => x.id === id);
+      if (r && r.firedAt) await store.removeReminder(id);
+      ctx.attachments.push(textMessage('เยี่ยม 👍 เรียบร้อยไปอีกเรื่อง'));
+      return;
+    }
     case 'cancel': {
       const removed = await store.removeReminder(id);
       ctx.attachments.push(textMessage(removed ? `ยกเลิกเตือน "${removed.text}" ให้แล้วนะ` : 'การเตือนนี้ถูกยกเลิกไปแล้ว'));
