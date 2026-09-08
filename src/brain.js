@@ -1,25 +1,21 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { localIsoWithOffset, REPEATS } from './reminders.js';
 
 /**
- * The conversational layer. Claude decides what the user wants and calls the
- * matching tool (remember / recall / find file / reminder / calendar ...) or
- * just chats like a friend. Tool handlers are supplied by the server so this
- * module knows nothing about LINE.
+ * The conversational layer. A provider (Claude or Gemini) decides what the
+ * user wants and calls the matching tool (remember / recall / find file /
+ * reminder / calendar ...) or just chats like a friend. Tool handlers are
+ * supplied by the server so this module knows nothing about LINE.
  *
  * Returns { text, attachments } where attachments are LINE message objects
  * (Flex cards) the handlers want shown alongside the reply.
  */
 export class Brain {
-  constructor({ apiKey, model = 'claude-opus-5', effort = 'low', botName, userName, timeZone, handlers }) {
-    this.client = new Anthropic({ apiKey });
-    this.model = model;
-    this.effort = effort;
-    this.botName = botName;
-    this.userName = userName;
+  constructor({ provider, botName, userName, timeZone, handlers }) {
+    this.provider = provider;
+    this.label = provider.label;
     this.timeZone = timeZone;
     this.handlers = handlers;
-    this.history = new Map(); // userId -> MessageParam[] (text only)
+    this.history = new Map(); // userId -> [{ role, text }]
     this.system = buildSystemPrompt({ botName, userName, timeZone });
   }
 
@@ -29,56 +25,24 @@ export class Brain {
     const stamp = localIsoWithOffset(now, this.timeZone);
     const userTurn = `[เวลาตอนนี้ ${stamp} (${weekdayThai(now, this.timeZone)})]${hint ? `\n[บริบท: ${hint}]` : ''}\n${text}`;
 
-    const messages = [...history, { role: 'user', content: userTurn }];
     const attachments = [];
     const ctx = { userId, now, attachments };
+    const runTool = async (name, input) => {
+      const handler = this.handlers[name];
+      if (!handler) throw new Error(`unknown tool ${name}`);
+      return handler(input, ctx);
+    };
 
-    let finalText = '';
-    for (let i = 0; i < 6; i++) {
-      const response = await this.client.beta.messages.create({
-        model: this.model,
-        max_tokens: 2048,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
-        output_config: { effort: this.effort },
-        system: [{ type: 'text', text: this.system, cache_control: { type: 'ephemeral' } }],
-        tools: TOOLS,
-        messages,
-      });
+    const { text: finalText } = await this.provider.complete({
+      system: this.system,
+      messages: [...history, { role: 'user', text: userTurn }],
+      tools: TOOLS,
+      runTool,
+    });
 
-      if (response.stop_reason === 'refusal') {
-        finalText = 'ขอโทษนะ อันนี้ตอบให้ไม่ได้';
-        break;
-      }
-
-      const textBlocks = response.content.filter((b) => b.type === 'text').map((b) => b.text.trim()).filter(Boolean);
-      const toolUses = response.content.filter((b) => b.type === 'tool_use');
-
-      if (toolUses.length === 0 || response.stop_reason === 'end_turn') {
-        finalText = textBlocks.join('\n');
-        break;
-      }
-
-      messages.push({ role: 'assistant', content: response.content });
-      const results = [];
-      for (const tu of toolUses) {
-        let result;
-        try {
-          const handler = this.handlers[tu.name];
-          if (!handler) throw new Error(`unknown tool ${tu.name}`);
-          result = await handler(tu.input, ctx);
-        } catch (err) {
-          console.error('tool failed', tu.name, err?.message || err);
-          result = { error: String(err?.message || err) };
-        }
-        results.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(result) });
-      }
-      messages.push({ role: 'user', content: results });
-    }
-
-    // Persist a compact text-only history (drop tool blocks) for continuity.
-    const next = [...history, { role: 'user', content: text }];
-    if (finalText) next.push({ role: 'assistant', content: finalText });
+    // Compact text-only history for continuity across turns.
+    const next = [...history, { role: 'user', text }];
+    if (finalText) next.push({ role: 'assistant', text: finalText });
     this.history.set(userId, next.slice(-12));
 
     return { text: finalText, attachments };

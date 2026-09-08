@@ -1,10 +1,12 @@
 import express from 'express';
 import { middleware, messagingApi, HTTPFetchError, SignatureValidationFailed, JSONParseError } from '@line/bot-sdk';
-import { config, requireConfig } from './config.js';
+import { config, requireConfig, resolveProvider } from './config.js';
 import { DriveArchive } from './drive.js';
 import { Store } from './store.js';
 import { Calendar, isScopeError } from './calendar.js';
 import { Brain } from './brain.js';
+import { GeminiProvider } from './providers/gemini.js';
+import { AnthropicProvider } from './providers/anthropic.js';
 import { fireDueReminders, describeWhen, describeRepeat } from './reminders.js';
 import {
   textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, eventCard,
@@ -131,16 +133,16 @@ const handlers = {
   },
 };
 
-const brain = config.anthropicApiKey
-  ? new Brain({
-    apiKey: config.anthropicApiKey,
-    model: config.claudeModel,
-    effort: config.claudeEffort,
-    botName: config.botName,
-    userName: config.userName,
-    timeZone: tz,
-    handlers,
-  })
+function makeProvider() {
+  switch (resolveProvider()) {
+    case 'gemini': return new GeminiProvider({ apiKey: config.geminiApiKey, model: config.geminiModel });
+    case 'anthropic': return new AnthropicProvider({ apiKey: config.anthropicApiKey, model: config.claudeModel, effort: config.claudeEffort });
+    default: return null;
+  }
+}
+const provider = makeProvider();
+const brain = provider
+  ? new Brain({ provider, botName: config.botName, userName: config.userName, timeZone: tz, handlers })
   : null;
 
 // ---------------------------------------------------------------------------
@@ -187,7 +189,7 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(config.port, () => {
-  console.log(`${config.botName} listening on :${config.port} (tz=${tz}, brain=${brain ? config.claudeModel : 'off'}, allowed=${allowedUsers.size})`);
+  console.log(`${config.botName} listening on :${config.port} (tz=${tz}, brain=${brain ? brain.label : 'off'}, allowed=${allowedUsers.size})`);
 });
 
 // ---------------------------------------------------------------------------
@@ -296,7 +298,7 @@ async function handleText(text, ctx) {
   await fallbackText(trimmed, ctx, state);
 }
 
-/** Keyword-only mode when ANTHROPIC_API_KEY is not configured. */
+/** Keyword-only mode when no AI key (GEMINI_API_KEY / ANTHROPIC_API_KEY) is configured. */
 async function fallbackText(text, ctx) {
   let m;
   if ((m = /^(?:ขอ|หา|ค้นหา)\s*(?:ไฟล์|รูป|วิดีโอ|คลิป)\s*(.*?)\s*(?:หน่อย|ที|ให้หน่อย)?$/.exec(text))) {
@@ -323,7 +325,7 @@ async function fallbackText(text, ctx) {
     }
   }
   if (/เตือน|calendar|ปฏิทิน/i.test(text)) {
-    ctx.attachments.push(textMessage('การเตือนและปฏิทินต้องเปิดโหมด AI ก่อน (ตั้งค่า ANTHROPIC_API_KEY) ตอนนี้จดข้อความไว้ให้แทนนะ'));
+    ctx.attachments.push(textMessage('การเตือนและปฏิทินต้องเปิดโหมด AI ก่อน (ใส่ GEMINI_API_KEY) ตอนนี้จดข้อความไว้ให้แทนนะ'));
   }
   const file = await drive.appendNote(text, ctx.now);
   ctx.attachments.push(infoCard('📝 จดไว้แล้ว', [`${drive.todayKey(ctx.now)}/notes.md`], { buttons: [linkButton('เปิดโน้ต', file.webViewLink)] }));
@@ -343,7 +345,7 @@ async function handlePostback(event, ctx) {
     case 'reschedule': {
       const r = (await store.reminders()).find((x) => x.id === id);
       if (!r) return void ctx.attachments.push(textMessage('หาการเตือนนี้ไม่เจอแล้ว'));
-      if (!brain) return void ctx.attachments.push(textMessage('การเปลี่ยนเวลาต้องเปิดโหมด AI ก่อน (ANTHROPIC_API_KEY)'));
+      if (!brain) return void ctx.attachments.push(textMessage('การเปลี่ยนเวลาต้องเปิดโหมด AI ก่อน (GEMINI_API_KEY)'));
       await store.setUserState(ctx.userId, { pending: { type: 'reschedule', id: r.id, text: r.text } });
       ctx.attachments.push(textMessage(`จะเปลี่ยน "${r.text}" เป็นเวลาไหนดี พิมพ์บอกได้เลย เช่น "พรุ่งนี้ 9 โมง"`));
       return;
@@ -377,7 +379,7 @@ async function handlePostback(event, ctx) {
         `ชื่อบอท: ${config.botName}`,
         `โฟลเดอร์ Drive: ${config.driveRootFolderName}/`,
         `Google Calendar: ${cal}`,
-        `โหมด AI: ${brain ? config.claudeModel : 'ปิด (ไม่มี ANTHROPIC_API_KEY)'}`,
+        `โหมด AI: ${brain ? brain.label : 'ปิด (ยังไม่ได้ใส่ GEMINI_API_KEY)'}`,
         `เขตเวลา: ${tz}`,
         `LINE user ID: ${ctx.userId}`,
       ], { buttons: [postbackButton('ดูการเตือนทั้งหมด', 'action=list_reminders', 'ดูการเตือนทั้งหมด')] }));

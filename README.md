@@ -40,12 +40,14 @@ My Drive/LineArchive/
 Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─▶ Google Drive / Calendar
                                     ▲                │
                         Cloud Scheduler (every min) ─┘  fires due reminders (push message)
-                                                     └─▶ Claude (intent + chat persona)
+                                                     └─▶ Gemini or Claude (intent + chat persona)
 ```
 
 * `src/index.js` – Express webhook. Signature check, media download, tool handlers, postbacks, `/cron/reminders`.
-* `src/brain.js` – Claude with a Thai "friend + secretary" persona and tools
+* `src/brain.js` – the Thai "friend + secretary" persona and its tools
   (`remember`, `recall`, `find_file`, `name_last_file`, `set_reminder`, `add_calendar_event`, …).
+* `src/providers/gemini.js`, `src/providers/anthropic.js` – interchangeable
+  model back-ends. Gemini has a free tier; Claude is paid and stronger.
 * `src/drive.js` – Drive folders, uploads, search, rename, JSON documents.
 * `src/store.js` – memory / reminders / per-user state persisted as JSON in Drive.
 * `src/reminders.js` – scheduling, recurrence, Thai date phrases ("พรุ่งนี้ 10:15 น.").
@@ -54,9 +56,12 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `scripts/get-refresh-token.js` – one-time Google OAuth (Drive + Calendar scopes).
 * `scripts/setup-rich-menu.js` + `assets/richmenu.png` – the bottom menu.
 
-Without `ANTHROPIC_API_KEY` the bot still archives everything and understands
-the keyword commands (`ขอไฟล์ …`, `เก็บไฟล์ …`, `ช่วยจำ …`, `ขอ … หน่อย`), but
-reminders, calendar and free chat need the key.
+The chat brain needs one API key. **Gemini** is free for personal use: get a
+key at <https://aistudio.google.com/apikey> and set `GEMINI_API_KEY`. Or set
+`ANTHROPIC_API_KEY` to use Claude (paid). Without either key the bot still
+archives everything and understands the keyword commands (`ขอไฟล์ …`,
+`เก็บไฟล์ …`, `ช่วยจำ …`, `ขอ … หน่อย`), but reminders, calendar and free chat
+are off.
 
 ## Fastest setup: one script in Cloud Shell
 
@@ -76,7 +81,7 @@ menu, and registering the webhook with LINE.
    ```
 
 3. Answer the prompts (LINE secret, token, your user ID, Google client ID and
-   secret, Anthropic key, bot name). For the Google permission step it prints
+   secret, Gemini key, bot name). For the Google permission step it prints
    a URL: open it, approve, then paste the address the browser lands on
    (starting with `http://localhost:53682/?code=`) back into the terminal.
 4. When it finishes, flip **Use webhook** on in the LINE Developers Console
@@ -88,8 +93,8 @@ kept in `.env` inside Cloud Shell (which persists your home directory).
 
 ## Manual setup
 
-You need: a LINE account, a Google account, an Anthropic API key
-(<https://console.anthropic.com/>), the
+You need: a LINE account, a Google account, a Gemini API key
+(<https://aistudio.google.com/apikey>, free), the
 [gcloud CLI](https://cloud.google.com/sdk/docs/install), and Node.js 20+ on
 your computer for the two one-time scripts.
 
@@ -134,7 +139,7 @@ gcloud run deploy line-assistant \
   --allow-unauthenticated \
   --memory 512Mi --timeout 300 \
   --min-instances 0 --max-instances 1 \
-  --set-env-vars "LINE_CHANNEL_SECRET=...,LINE_CHANNEL_ACCESS_TOKEN=...,GOOGLE_CLIENT_ID=...,GOOGLE_CLIENT_SECRET=...,GOOGLE_REFRESH_TOKEN=...,ANTHROPIC_API_KEY=...,CRON_SECRET=<random string>,TIMEZONE=Asia/Bangkok,BOT_NAME=น้องไดรฟ์,USER_NAME=<your nickname>"
+  --set-env-vars "LINE_CHANNEL_SECRET=...,LINE_CHANNEL_ACCESS_TOKEN=...,GOOGLE_CLIENT_ID=...,GOOGLE_CLIENT_SECRET=...,GOOGLE_REFRESH_TOKEN=...,GEMINI_API_KEY=...,CRON_SECRET=<random string>,TIMEZONE=Asia/Bangkok,BOT_NAME=JaiJa,USER_NAME=<your nickname>"
 ```
 
 `--max-instances 1` matters: state is a JSON file in Drive, and two containers
@@ -192,9 +197,11 @@ artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
 | `GOOGLE_CALENDAR_ID` | Calendar to write to (default `primary`) |
 | `DRIVE_ROOT_FOLDER_NAME` | Top-level Drive folder (default `LineArchive`) |
 | `TIMEZONE` | IANA zone for folders, reminders, calendar (default `Asia/Bangkok`) |
-| `ANTHROPIC_API_KEY` | Enables the chat brain. Optional |
-| `CLAUDE_MODEL` | Default `claude-opus-5` |
-| `CLAUDE_EFFORT` | `low` (default, fast and cheap) / `medium` / `high` |
+| `GEMINI_API_KEY` | Enables the chat brain with Gemini (free tier). Optional |
+| `GEMINI_MODEL` | Default `gemini-2.5-flash` |
+| `ANTHROPIC_API_KEY` | Enables the chat brain with Claude (paid). Optional |
+| `CLAUDE_MODEL` / `CLAUDE_EFFORT` | Default `claude-opus-5`, effort `low` |
+| `LLM_PROVIDER` | Force `gemini`, `anthropic` or `none`; auto-detected from keys when unset |
 | `BOT_NAME` / `USER_NAME` | How the bot refers to itself and to you |
 | `CRON_SECRET` | Shared secret for `/cron/reminders` |
 | `PORT` | Set by Cloud Run automatically |
@@ -215,7 +222,7 @@ URL at `https://<tunnel>/webhook`. Fire reminders by hand with
 ## Cost
 
 * Cloud Run and Cloud Scheduler free tiers cover personal use.
-* Claude: each chat turn is a small request at low effort, typically well under a cent.
+* Gemini free tier covers a personal bot. If you use Claude instead, each chat turn is a small request, typically well under a cent.
 * Files use your normal Google Drive storage.
 
 ## Not built yet

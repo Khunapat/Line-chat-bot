@@ -17,8 +17,12 @@ export const config = {
   driveRootFolderName: env.DRIVE_ROOT_FOLDER_NAME || 'LineArchive',
   timeZone: env.TIMEZONE || 'Asia/Bangkok',
 
-  // Persona / chat brain (optional - without a key the bot falls back to
-  // simple keyword commands and cannot do reminders or calendar).
+  // Chat brain. Optional: without any key the bot falls back to keyword
+  // commands and cannot do reminders, calendar or free chat.
+  // LLM_PROVIDER = gemini | anthropic | none (auto-detected from keys when unset)
+  llmProvider: (env.LLM_PROVIDER || '').toLowerCase(),
+  geminiApiKey: env.GEMINI_API_KEY,
+  geminiModel: env.GEMINI_MODEL || 'gemini-2.5-flash',
   anthropicApiKey: env.ANTHROPIC_API_KEY,
   claudeModel: env.CLAUDE_MODEL || 'claude-opus-5',
   claudeEffort: env.CLAUDE_EFFORT || 'low',
@@ -30,6 +34,14 @@ export const config = {
 
   port: Number(env.PORT || 8080),
 };
+
+/** Which chat provider to use, based on LLM_PROVIDER or whichever key is present. */
+export function resolveProvider() {
+  if (config.llmProvider) return config.llmProvider;
+  if (config.geminiApiKey) return 'gemini';
+  if (config.anthropicApiKey) return 'anthropic';
+  return 'none';
+}
 
 export function requireConfig() {
   const missing = [];

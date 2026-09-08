@@ -46,17 +46,30 @@ ask() { # ask KEY "question" [secret]
   setenv "$key" "$val"
 }
 
+askopt() { # like ask, but blank is allowed
+  local key="$1" q="$2" secret="${3:-}" cur val
+  cur="$(getenv "$key")"
+  if [ -n "$cur" ]; then note "$key: already set"; return; fi
+  if [ -n "$secret" ]; then read -r -s -p "   $q: " val; echo; else read -r -p "   $q: " val; fi
+  [ -n "$val" ] && setenv "$key" "$val" || true
+}
+
 bold "1/7  Settings (stored in .env, never committed)"
 ask LINE_CHANNEL_SECRET        "LINE channel secret (Developers Console > Basic settings)" secret
 ask LINE_CHANNEL_ACCESS_TOKEN  "LINE long-lived channel access token (Messaging API tab > Issue)" secret
 ask ALLOWED_USER_IDS           "Your LINE user ID (starts with U, bottom of Basic settings)"
 ask GOOGLE_CLIENT_ID           "Google OAuth client ID (Desktop app)"
 ask GOOGLE_CLIENT_SECRET       "Google OAuth client secret" secret
-ask ANTHROPIC_API_KEY          "Anthropic API key (console.anthropic.com)" secret
+askopt GEMINI_API_KEY          "Gemini API key, free at https://aistudio.google.com/apikey (Enter to skip)" secret
+askopt ANTHROPIC_API_KEY       "Anthropic API key, paid (Enter to skip)" secret
 if [ -z "$(getenv BOT_NAME)" ]; then read -r -p "   Bot name as shown in LINE [JaiJa]: " v; setenv BOT_NAME "${v:-JaiJa}"; fi
 if [ -z "$(getenv USER_NAME)" ]; then read -r -p "   What should the bot call you? (optional): " v; setenv USER_NAME "${v:-}"; fi
 [ -n "$(getenv TIMEZONE)" ]     || setenv TIMEZONE "Asia/Bangkok"
+[ -n "$(getenv GEMINI_MODEL)" ] || setenv GEMINI_MODEL "gemini-2.5-flash"
 [ -n "$(getenv CLAUDE_MODEL)" ] || setenv CLAUDE_MODEL "claude-opus-5"
+if [ -z "$(getenv GEMINI_API_KEY)" ] && [ -z "$(getenv ANTHROPIC_API_KEY)" ]; then
+  note "No AI key given: archiving and keyword commands only. Re-run later with a Gemini key to enable chat, reminders and calendar."
+fi
 [ -n "$(getenv CLAUDE_EFFORT)" ] || setenv CLAUDE_EFFORT "low"
 [ -n "$(getenv CRON_SECRET)" ]  || setenv CRON_SECRET "$(openssl rand -hex 16 2>/dev/null || node -e 'console.log(require("crypto").randomBytes(16).toString("hex"))')"
 
@@ -90,7 +103,7 @@ bold "5/7  Deploying to Cloud Run (first time takes 3-5 minutes)"
 envyaml="$(mktemp --suffix=.yaml 2>/dev/null || mktemp)"
 # Only the variables the app reads; quoted so tokens with + / = are safe.
 for key in LINE_CHANNEL_SECRET LINE_CHANNEL_ACCESS_TOKEN ALLOWED_USER_IDS GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET \
-           GOOGLE_REFRESH_TOKEN GOOGLE_CALENDAR_ID DRIVE_ROOT_FOLDER_NAME TIMEZONE ANTHROPIC_API_KEY CLAUDE_MODEL \
+           GOOGLE_REFRESH_TOKEN GOOGLE_CALENDAR_ID DRIVE_ROOT_FOLDER_NAME TIMEZONE LLM_PROVIDER GEMINI_API_KEY GEMINI_MODEL ANTHROPIC_API_KEY CLAUDE_MODEL \
            CLAUDE_EFFORT BOT_NAME USER_NAME CRON_SECRET; do
   val="$(getenv "$key")"
   [ -n "$val" ] && printf '%s: "%s"\n' "$key" "${val//\"/\\\"}" >> "$envyaml"
