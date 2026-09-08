@@ -7,6 +7,7 @@ import { describeWhen, describeRepeat } from './reminders.js';
 const C = {
   card: '#F4EFE4',
   cardAlt: '#EFE8D8',
+  stroke: '#3B3B3B', // the dark outline around cards and buttons
   button: '#8B9270',
   buttonText: '#FFFFFF',
   title: '#2E2E2E',
@@ -37,13 +38,24 @@ function muted(text) {
   return { type: 'text', text, size: 'sm', color: C.muted, wrap: true };
 }
 
+/** An outlined, rounded button. Boxes support borders; the button component does not. */
 function button(label, action, style = 'primary') {
+  const primary = style === 'primary';
   return {
-    type: 'button',
-    style,
-    height: 'sm',
-    color: style === 'primary' ? C.button : undefined,
+    type: 'box',
+    layout: 'vertical',
+    flex: 1,
+    backgroundColor: primary ? C.button : C.card,
+    borderWidth: '2px',
+    borderColor: C.stroke,
+    cornerRadius: '14px',
+    paddingTop: '10px',
+    paddingBottom: '10px',
+    paddingStart: '8px',
+    paddingEnd: '8px',
+    justifyContent: 'center',
     action,
+    contents: [{ type: 'text', text: label, align: 'center', weight: 'bold', size: 'sm', color: primary ? C.buttonText : C.title, wrap: true }],
   };
 }
 
@@ -55,31 +67,42 @@ export function postbackAction(label, data, displayText) {
   return { type: 'postback', label, data, displayText };
 }
 
+/**
+ * One stroked card. The bubble's own background is the stroke colour and the
+ * inner box is inset by the stroke width, which draws a clean outline that
+ * follows LINE's bubble rounding. The footer lives inside the same frame.
+ */
 function bubble({ contents, footer, size = 'kilo' }) {
-  const b = {
+  const inner = [...contents];
+  if (footer?.length) {
+    inner.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: footer });
+  }
+  return {
     type: 'bubble',
     size,
-    styles: { body: { backgroundColor: C.card }, footer: { backgroundColor: C.card, separator: false } },
+    styles: { body: { backgroundColor: C.stroke } },
     body: {
       type: 'box',
       layout: 'vertical',
-      spacing: 'sm',
-      paddingAll: '18px',
-      contents,
+      paddingAll: '3px',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'sm',
+          paddingAll: '18px',
+          backgroundColor: C.card,
+          cornerRadius: '15px',
+          contents: inner,
+        },
+      ],
     },
   };
-  if (footer?.length) {
-    b.footer = {
-      type: 'box',
-      layout: 'vertical',
-      spacing: 'sm',
-      paddingStart: '18px',
-      paddingEnd: '18px',
-      paddingBottom: '16px',
-      contents: footer,
-    };
-  }
-  return b;
+}
+
+/** The inner card box of a bubble built by bubble(). Used by tests. */
+export function cardOf(bubbleObj) {
+  return bubbleObj.body.contents[0];
 }
 
 // -------------------------------------------------------------- files
