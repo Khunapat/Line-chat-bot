@@ -97,7 +97,14 @@ if [ -z "$PROJECT" ] || [ "$PROJECT" = "(unset)" ]; then
   gcloud config set project "$PROJECT" >/dev/null
 fi
 note "project: $PROJECT, region: $REGION"
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com cloudscheduler.googleapis.com --quiet
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com cloudscheduler.googleapis.com compute.googleapis.com --quiet
+# New projects give the default build service account no permissions, which
+# makes "gcloud run deploy --source" fail with PERMISSION_DENIED. Grant them.
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT" --format 'value(projectNumber)')"
+BUILD_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+for role in roles/cloudbuild.builds.builder roles/storage.objectViewer roles/artifactregistry.writer roles/logging.logWriter; do
+  gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$BUILD_SA" --role="$role" --quiet >/dev/null 2>&1 || note "could not grant $role (continuing)"
+done
 
 bold "5/7  Deploying to Cloud Run (first time takes 3-5 minutes)"
 envyaml="$(mktemp --suffix=.yaml 2>/dev/null || mktemp)"
