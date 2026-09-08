@@ -244,6 +244,7 @@ export class DriveArchive {
       `not '${dataId}' in parents`,
       "name != 'notes.md'",
       "name != 'Opportunities.md'",
+      "not name contains '.json'",
       'trashed = false',
     ];
     const terms = String(query || '').trim().split(/\s+/).filter(Boolean);
@@ -266,6 +267,7 @@ export class DriveArchive {
       `not '${dataId}' in parents`,
       "name != 'notes.md'",
       "name != 'Opportunities.md'",
+      "not name contains '.json'",
       'trashed = false',
     ].join(' and ');
     return this.list(q, limit);

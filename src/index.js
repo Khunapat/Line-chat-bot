@@ -19,6 +19,9 @@ import {
   renderMarkdown, describeDeadline, captionSlug,
 } from './opportunities.js';
 import { registerGalleryRoutes, galleryUrl, thumbUrl, setGalleryTimeZone } from './gallery.js';
+import { setAssetBase } from './flex.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { registerOAuthRoutes, connectUrl, baseUrlOf } from './oauth.js';
 import { Tenants } from './tenants.js';
 import { Readable } from 'node:stream';
@@ -33,6 +36,7 @@ const lineBlob = new messagingApi.MessagingApiBlobClient({ channelAccessToken: c
 const tz = config.timeZone;
 setGalleryTimeZone(tz);
 let publicBase = config.publicUrl; // learned from the first request when unset
+setAssetBase(publicBase);
 
 // The owner's Drive holds the tenant registry (who connected which Drive).
 const ownerDrive = new DriveArchive({
@@ -229,11 +233,14 @@ const brainLabel = provider ? provider.label : 'off';
 const app = express();
 
 app.get('/', (_req, res) => res.status(200).send(`${config.botName} ok`));
+// Hand-drawn icons used inside Flex cards (LINE fetches them by URL).
+app.use('/static', express.static(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'public'), { maxAge: '7d', immutable: true }));
 
 // LINE middleware needs the raw body for signature verification - keep
 // express.json() away from this route.
 app.post('/webhook', middleware({ channelSecret: config.line.channelSecret }), async (req, res) => {
   if (!publicBase && req.get('host')) publicBase = baseUrlOf(req);
+  setAssetBase(publicBase);
   const events = req.body.events ?? [];
   await Promise.all(events.map((event) => handleEvent(event).catch((err) => {
     console.error('event failed', { type: event.type, err: describeError(err) });

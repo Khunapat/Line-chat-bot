@@ -17,6 +17,31 @@ const C = {
   link: '#4A4A4A',
 };
 
+// Where the hand-drawn icon PNGs are served from (`<publicBase>/static/icons`).
+// Until the bot knows its public URL, headings fall back to the emoji.
+let assetBase = '';
+export function setAssetBase(base) {
+  assetBase = String(base || '').replace(/\/$/, '');
+}
+export function iconUrl(name) {
+  return assetBase ? `${assetBase}/static/icons/${name}.png` : null;
+}
+
+/** Leading emoji in a title -> icon file name. */
+const EMOJI_ICON = {
+  '📁': 'folder', '🗂️': 'folder', '🖼️': 'gallery', '⏰': 'bell', '🔔': 'bell', '🎯': 'target', '📝': 'note',
+  '🔗': 'link', '👥': 'group', '⚙️': 'settings', '🤖': 'ai', '📅': 'calendar', '🗓️': 'calendar', '📍': 'pin',
+  '🔍': 'search', '📄': 'doc', '📎': 'clip', '🎬': 'video', '🎙️': 'audio', '✅': 'check', '👋': 'wave', '🕐': 'clock',
+};
+const LEADING_EMOJI = /^(\p{Extended_Pictographic}\uFE0F?)\s*/u;
+
+/** Split "📁 title" into { icon, text } when the emoji has a drawn icon. */
+export function splitIcon(title) {
+  const m = LEADING_EMOJI.exec(title || '');
+  const icon = m && EMOJI_ICON[m[1]];
+  return icon ? { icon, text: title.slice(m[0].length) } : { icon: null, text: title };
+}
+
 export function textMessage(text) {
   return { type: 'text', text: String(text).slice(0, 5000) };
 }
@@ -27,8 +52,21 @@ export function flexMessage(altText, contents) {
 
 // ------------------------------------------------------------- pieces
 
-function heading(text) {
-  return { type: 'text', text, weight: 'bold', size: 'md', color: C.title, wrap: true };
+function heading(title) {
+  const { icon, text } = splitIcon(title);
+  const url = icon && iconUrl(icon);
+  const label = { type: 'text', text: url ? text : title, weight: 'bold', size: 'md', color: C.title, wrap: true };
+  if (!url) return label;
+  return {
+    type: 'box',
+    layout: 'horizontal',
+    spacing: 'sm',
+    alignItems: 'center',
+    contents: [
+      { type: 'image', url, size: '26px', aspectMode: 'fit', flex: 0 },
+      { ...label, flex: 1, gravity: 'center' },
+    ],
+  };
 }
 
 function body(text, opts = {}) {
@@ -76,20 +114,26 @@ export function postbackAction(label, data, displayText) {
 function bubble({ contents, footer, size = 'kilo' }) {
   const inner = [...contents];
   if (footer?.length) {
-    inner.push({ type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: footer });
+    // The filler pushes the buttons to the bottom, so bubbles side by side in
+    // a carousel keep their buttons on one line.
+    inner.push({ type: 'filler' }, { type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: footer });
   }
   return {
     type: 'bubble',
     size,
     styles: { body: { backgroundColor: C.stroke } },
     body: {
+      // Horizontal so the single child is stretched to the full bubble height:
+      // carousel bubbles are all as tall as the tallest one, and the cream card
+      // must follow, or the dark frame shows through underneath.
       type: 'box',
-      layout: 'vertical',
+      layout: 'horizontal',
       paddingAll: '3px',
       contents: [
         {
           type: 'box',
           layout: 'vertical',
+          flex: 1,
           spacing: 'sm',
           paddingAll: '18px',
           backgroundColor: C.card,
@@ -126,16 +170,36 @@ export function fileIcon(file) {
   return '📎';
 }
 
+/** Drawn icon name by file type (see assets/icons-src). */
+export function fileIconName(file) {
+  const m = (file?.mimeType || '').toLowerCase();
+  if (m.startsWith('image/')) return 'gallery';
+  if (m.startsWith('video/')) return 'video';
+  if (m.startsWith('audio/')) return 'audio';
+  if (m === 'application/pdf') return 'pdf';
+  if (/\.md$/i.test(file?.name || '') || m === 'text/markdown') return 'note';
+  return 'clip';
+}
+
 function heroImage(url) {
   return { type: 'image', url, size: 'full', aspectRatio: '4:3', aspectMode: 'cover', margin: 'md' };
 }
 
-export function fileBubble(file, { title } = {}) {
+/** Picture area of a file card: the thumbnail, or a drawn placeholder of the same shape. */
+function fileHero(file) {
+  const url = file.thumbUrl || iconUrl(`ph-${fileIconName(file)}`);
+  if (!url) return null;
+  return { ...heroImage(url), action: file.webViewLink ? uriAction('เปิด', file.webViewLink) : undefined };
+}
+
+export function fileBubble(file, { title, uniform = false } = {}) {
   const contents = [];
   if (title) contents.push(heading(title));
-  if (file.thumbUrl) contents.push({ ...heroImage(file.thumbUrl), action: file.webViewLink ? uriAction('เปิด', file.webViewLink) : undefined });
-  contents.push(body(`${file.thumbUrl ? '' : fileIcon(file) + ' '}${file.caption || file.name}`, { extra: { weight: 'bold', margin: 'md' } }));
-  if (file.caption && file.caption !== file.name) contents.push(muted(file.name));
+  const hero = fileHero(file);
+  if (hero) contents.push(hero);
+  const name = file.caption || file.name;
+  contents.push(body(`${hero ? '' : fileIcon(file) + ' '}${name}`, { extra: { weight: 'bold', margin: 'md', ...(uniform ? { maxLines: 2 } : {}) } }));
+  if (file.caption && file.caption !== file.name) contents.push({ ...muted(file.name), ...(uniform ? { maxLines: 1 } : {}) });
   const sub = fileSubtitle(file);
   if (sub) contents.push(muted(sub));
   return bubble({
@@ -149,7 +213,8 @@ export function fileCard(file, opts) {
 }
 
 export function filesCarousel(files, { title } = {}) {
-  const bubbles = files.slice(0, 10).map((f, i) => fileBubble(f, { title: i === 0 ? title : undefined }));
+  // Same layout in every bubble (no heading, clamped text) so the row lines up.
+  const bubbles = files.slice(0, 10).map((f) => fileBubble(f, { uniform: true }));
   const alt = `${title || 'ไฟล์'}: ${files.map((f) => f.name).join(', ')}`;
   return flexMessage(alt, bubbles.length === 1 ? bubbles[0] : { type: 'carousel', contents: bubbles });
 }

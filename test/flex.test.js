@@ -47,7 +47,7 @@ test('eventCard and infoCard build valid bubbles', () => {
   const ev = eventCard({ title: 'team dinner', start: '2026-09-09T18:09:00+07:00', end: '2026-09-09T19:09:00+07:00', link: 'https://cal' }, { timeZone: TZ });
   assert.match(ev.altText, /18:09 น\. - 19:09 น\./);
   const info = infoCard('⚙️ ตั้งค่า', ['a', 'b'], { buttons: [linkButton('เปิด', 'https://x')] });
-  assert.equal(cardOf(info.contents).contents.length, 4); // heading, a, b, footer box
+  assert.equal(cardOf(info.contents).contents.length, 5); // heading, a, b, filler, footer box
   assert.equal(footerOf(info)[0].action.uri, 'https://x');
 });
 
@@ -58,4 +58,31 @@ test('dueReminderCard snooze/done reference the reminder id', () => {
   assert.equal(row.contents[1].action.data, 'action=snooze&min=60&id=r9');
   assert.equal(done.action.data, 'action=done&id=r9');
   assert.match(msg.altText, /Jai ถึงเวลากินยาแล้วนะ/);
+});
+
+test('headings use drawn icons once the asset base is known, emoji otherwise', async () => {
+  const { setAssetBase, splitIcon, fileIconName } = await import('../src/flex.js');
+  assert.deepEqual(splitIcon('📁 เก็บไว้แล้ว'), { icon: 'folder', text: 'เก็บไว้แล้ว' });
+  assert.deepEqual(splitIcon('ไม่มีไอคอน'), { icon: null, text: 'ไม่มีไอคอน' });
+  setAssetBase('');
+  let msg = infoCard('⚙️ ตั้งค่า', ['a']);
+  assert.equal(cardOf(msg.contents).contents[0].text, '⚙️ ตั้งค่า');
+  setAssetBase('https://bot.example/');
+  msg = infoCard('⚙️ ตั้งค่า', ['a']);
+  const head = cardOf(msg.contents).contents[0];
+  assert.equal(head.contents[0].url, 'https://bot.example/static/icons/settings.png');
+  assert.equal(head.contents[1].text, 'ตั้งค่า');
+  // Files without a thumbnail get a drawn placeholder of the same 4:3 shape.
+  const card = fileCard({ ...file, mimeType: 'application/pdf' });
+  assert.equal(cardOf(card.contents).contents[0].url, 'https://bot.example/static/icons/ph-pdf.png');
+  assert.equal(fileIconName({ mimeType: 'video/mp4' }), 'video');
+  // Carousel bubbles share one layout: no heading, clamped names.
+  const many = filesCarousel([file, { ...file, id: '2', name: 'b.jpg', thumbUrl: 'https://t/1.jpg' }], { title: '📁 ไฟล์ล่าสุด' });
+  for (const b of many.contents.contents) {
+    assert.equal(cardOf(b).contents[0].type, 'image');
+    assert.equal(cardOf(b).contents[1].maxLines, 2);
+  }
+  assert.equal(many.contents.contents[0].body.layout, 'horizontal');
+  assert.equal(cardOf(many.contents.contents[0]).flex, 1);
+  setAssetBase('');
 });

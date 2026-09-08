@@ -6,6 +6,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY src ./src
+COPY assets/public ./assets/public
 
 ENV NODE_ENV=production
 ENV PORT=8080

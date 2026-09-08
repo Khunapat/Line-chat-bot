@@ -53,6 +53,7 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `src/index.js` – Express webhook. Signature check, media download, tool handlers, postbacks, `/cron/reminders`.
 * `src/brain.js` – the Thai "friend + secretary" persona and its tools
   (`remember`, `recall`, `find_file`, `name_last_file`, `set_reminder`, `add_calendar_event`, …).
+* `assets/icons-src/icons.mjs` – hand-drawn card icons (SVG source); `npm run icons` renders them to `assets/public/icons`, which the app serves at `/static/icons`.
 * `src/providers/gemini.js`, `src/providers/anthropic.js` – interchangeable
   model back-ends. Gemini has a free tier; Claude is paid and stronger.
 * `src/drive.js` – Drive folders, uploads, search, rename, JSON documents.

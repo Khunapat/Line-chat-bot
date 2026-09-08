@@ -15,7 +15,8 @@
     "set-webhook": "node scripts/set-webhook.js",
     "setup": "bash scripts/setup.sh",
     "check": "for f in src/*.js scripts/*.js; do node --check $f || exit 1; done",
-    "test": "node --test"
+    "test": "node --test",
+    "icons": "node scripts/render-icons.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
