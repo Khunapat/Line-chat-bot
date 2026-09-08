@@ -30,9 +30,11 @@ export class GeminiProvider {
       try {
         return await withRetry(() => this.ai.models.generateContent({ model, ...request }));
       } catch (err) {
-        if (!isQuotaError(err)) throw err;
-        console.warn(`gemini ${model} quota hit, ${this.models.at(-1) === model ? 'no fallback left' : 'trying next model'}`);
-        lastErr = err;
+        const missing = Number(err?.status) === 404 || /not found|not supported/i.test(String(err?.message || ''));
+        if (!isQuotaError(err) && !missing) throw err;
+        console.warn(`gemini ${model} ${missing ? 'unavailable' : 'quota hit'}, ${this.models.at(-1) === model ? 'no fallback left' : 'trying next model'}`);
+        // Keep the quota error as the reported cause so the user sees "AI busy", not "model missing".
+        if (!lastErr || isQuotaError(err)) lastErr = err;
       }
     }
     throw lastErr;

@@ -58,3 +58,13 @@ test('GeminiProvider falls through to the next model on a quota error', async ()
   p.ai.models.generateContent = async () => { throw Object.assign(new Error('bad request'), { status: 400 }); };
   await assert.rejects(p.extract({ system: 's', parts: [{ text: 'x' }], schema: {} }), /bad request/);
 });
+
+test('GeminiProvider skips models that do not exist but reports the quota error', async () => {
+  const { GeminiProvider } = await import('../src/providers/gemini.js');
+  const p = new GeminiProvider({ apiKey: 'x', model: 'a,b' });
+  p.ai = { models: { generateContent: async ({ model }) => {
+    if (model === 'a') throw Object.assign(new Error('GenerateRequestsPerDay exceeded'), { status: 429 });
+    throw Object.assign(new Error('models/b is not found'), { status: 404 });
+  } } };
+  await assert.rejects(p.extract({ system: 's', parts: [{ text: 'x' }], schema: {} }), /PerDay/);
+});
