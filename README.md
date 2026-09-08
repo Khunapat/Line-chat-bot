@@ -58,7 +58,35 @@ Without `ANTHROPIC_API_KEY` the bot still archives everything and understands
 the keyword commands (`ขอไฟล์ …`, `เก็บไฟล์ …`, `ช่วยจำ …`, `ขอ … หน่อย`), but
 reminders, calendar and free chat need the key.
 
-## Setup
+## Fastest setup: one script in Cloud Shell
+
+You still have to create two things in a browser (a LINE channel and a Google
+OAuth client, steps A and B below). After that, one script does everything
+else: Drive/Calendar permission, Cloud Run deploy, reminder scheduler, rich
+menu, and registering the webhook with LINE.
+
+1. Open <https://shell.cloud.google.com> (a terminal in your browser, already
+   logged in to your Google account, with gcloud and Node.js installed).
+2. Paste:
+
+   ```bash
+   git clone -b claude/line-chatbot-drive-archiver-vbygyl https://github.com/Khunapat/Line-chat-bot.git
+   cd Line-chat-bot
+   ./scripts/setup.sh
+   ```
+
+3. Answer the prompts (LINE secret, token, your user ID, Google client ID and
+   secret, Anthropic key, bot name). For the Google permission step it prints
+   a URL: open it, approve, then paste the address the browser lands on
+   (starting with `http://localhost:53682/?code=`) back into the terminal.
+4. When it finishes, flip **Use webhook** on in the LINE Developers Console
+   (Messaging API tab). That switch is the one thing LINE does not let a
+   script change.
+
+Re-run `./scripts/setup.sh` to redeploy after updating the code. Settings are
+kept in `.env` inside Cloud Shell (which persists your home directory).
+
+## Manual setup
 
 You need: a LINE account, a Google account, an Anthropic API key
 (<https://console.anthropic.com/>), the
