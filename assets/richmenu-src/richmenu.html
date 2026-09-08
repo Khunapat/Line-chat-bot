@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-Regular.ttf'); font-weight: 400; }
+  @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-Medium.ttf'); font-weight: 500; }
+  @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-SemiBold.ttf'); font-weight: 600; }
+  @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-Bold.ttf'); font-weight: 700; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 2500px; height: 1686px; overflow: hidden;
+    background: #F4EFE4;
+    background-image: linear-gradient(#E9E2D2 1px, transparent 1px), linear-gradient(90deg, #E9E2D2 1px, transparent 1px);
+    background-size: 60px 60px;
+    font-family: 'Bai Jamjuree', sans-serif; color: #3B3B3B;
+  }
+  .banner { height: 843px; box-sizing: border-box; padding: 70px 60px 40px; }
+  .card {
+    height: 100%; background: #FBF8F1; border: 8px solid #3B3B3B; border-radius: 48px; box-shadow: 0 16px 0 #3B3B3B;
+    display: flex; align-items: center; gap: 70px; padding: 0 110px 0 90px; box-sizing: border-box;
+  }
+  .mascot { width: 560px; height: 560px; border-radius: 50%; background: #F4EFE4; border: 8px solid #3B3B3B; overflow: hidden; flex: none; box-shadow: 0 10px 0 #8B9270; }
+  .mascot img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); }
+  .text { flex: 1; }
+  .name { font-size: 150px; font-weight: 700; line-height: 1.05; letter-spacing: 2px; }
+  .name span { color: #8B9270; }
+  .tag { font-size: 60px; color: #6F7658; margin-top: 10px; font-weight: 600; }
+  .list { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; font-size: 44px; color: #555; font-weight: 500; }
+  .list div::before { content: '✓'; color: #8B9270; font-weight: 700; margin-right: 22px; }
+  .hint { position: absolute; right: 120px; bottom: 880px; font-size: 38px; color: #A09A88; }
+  .row { display: flex; gap: 40px; padding: 40px 60px 80px; box-sizing: border-box; height: 843px; }
+  .btn {
+    flex: 1; background: #FBF8F1; border: 8px solid #3B3B3B; border-radius: 48px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+    box-shadow: 0 16px 0 #3B3B3B;
+  }
+  .icon { font-size: 190px; line-height: 1; }
+  .label { font-size: 88px; font-weight: 700; color: #3B3B3B; letter-spacing: 1px; }
+  .sub { font-size: 42px; color: #8A8A8A; margin-top: -10px; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <div class="card">
+      <div class="mascot"><img src="../mascot.jpg" alt=""></div>
+      <div class="text">
+        <div class="name">Jai<span>Ja</span></div>
+        <div class="tag">เก็บให้ · จำให้ · เตือนให้ ในแชทเดียว</div>
+        <div class="list">
+          <div>ส่งรูป ไฟล์ ลิงก์มา เก็บลง Google Drive ทันที</div>
+          <div>"ช่วยจำ..." แล้วถามหาเมื่อไหร่ก็ได้</div>
+          <div>"เตือนกินยา 19.00" · "ลง calendar พรุ่งนี้ 10 โมง"</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="hint">แตะการ์ดเพื่อดูวิธีใช้ทั้งหมด</div>
+  <div class="row">
+    <div class="btn"><div class="icon">⏰</div><div class="label">แจ้งเตือน</div><div class="sub">ดู / ยกเลิก</div></div>
+    <div class="btn"><div class="icon">📝</div><div class="label">โน้ต/บันทึก</div><div class="sub">สิ่งที่จำไว้</div></div>
+    <div class="btn"><div class="icon">📁</div><div class="label">ไฟล์/รูป</div><div class="sub">ล่าสุดใน Drive</div></div>
+    <div class="btn"><div class="icon">⚙️</div><div class="label">ตั้งค่า</div><div class="sub">สถานะบอท</div></div>
+  </div>
+</body>
+</html>
