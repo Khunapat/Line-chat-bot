@@ -9,7 +9,7 @@ import { GoogleGenAI } from '@google/genai';
  *   tools:    Anthropic-style { name, description, input_schema } definitions
  */
 export class GeminiProvider {
-  constructor({ apiKey, model = 'gemini-2.5-flash' }) {
+  constructor({ apiKey, model = 'gemini-3.6-flash' }) {
     if (!apiKey) throw new Error('GEMINI_API_KEY is required');
     this.ai = new GoogleGenAI({ apiKey });
     this.model = model;

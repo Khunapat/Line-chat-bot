@@ -65,7 +65,7 @@ askopt ANTHROPIC_API_KEY       "Anthropic API key, paid (Enter to skip)" secret
 if [ -z "$(getenv BOT_NAME)" ]; then read -r -p "   Bot name as shown in LINE [JaiJa]: " v; setenv BOT_NAME "${v:-JaiJa}"; fi
 if [ -z "$(getenv USER_NAME)" ]; then read -r -p "   What should the bot call you? (optional): " v; setenv USER_NAME "${v:-}"; fi
 [ -n "$(getenv TIMEZONE)" ]     || setenv TIMEZONE "Asia/Bangkok"
-[ -n "$(getenv GEMINI_MODEL)" ] || setenv GEMINI_MODEL "gemini-2.5-flash"
+[ -n "$(getenv GEMINI_MODEL)" ] || setenv GEMINI_MODEL "gemini-3.6-flash"
 [ -n "$(getenv CLAUDE_MODEL)" ] || setenv CLAUDE_MODEL "claude-opus-5"
 if [ -z "$(getenv GEMINI_API_KEY)" ] && [ -z "$(getenv ANTHROPIC_API_KEY)" ]; then
   note "No AI key given: archiving and keyword commands only. Re-run later with a Gemini key to enable chat, reminders and calendar."

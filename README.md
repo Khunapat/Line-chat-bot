@@ -198,7 +198,7 @@ artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
 | `DRIVE_ROOT_FOLDER_NAME` | Top-level Drive folder (default `LineArchive`) |
 | `TIMEZONE` | IANA zone for folders, reminders, calendar (default `Asia/Bangkok`) |
 | `GEMINI_API_KEY` | Enables the chat brain with Gemini (free tier). Optional |
-| `GEMINI_MODEL` | Default `gemini-2.5-flash` |
+| `GEMINI_MODEL` | Default `gemini-3.6-flash` |
 | `ANTHROPIC_API_KEY` | Enables the chat brain with Claude (paid). Optional |
 | `CLAUDE_MODEL` / `CLAUDE_EFFORT` | Default `claude-opus-5`, effort `low` |
 | `LLM_PROVIDER` | Force `gemini`, `anthropic` or `none`; auto-detected from keys when unset |

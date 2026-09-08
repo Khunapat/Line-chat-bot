@@ -22,7 +22,7 @@ export const config = {
   // LLM_PROVIDER = gemini | anthropic | none (auto-detected from keys when unset)
   llmProvider: (env.LLM_PROVIDER || '').toLowerCase(),
   geminiApiKey: env.GEMINI_API_KEY,
-  geminiModel: env.GEMINI_MODEL || 'gemini-2.5-flash',
+  geminiModel: env.GEMINI_MODEL || 'gemini-3.6-flash',
   anthropicApiKey: env.ANTHROPIC_API_KEY,
   claudeModel: env.CLAUDE_MODEL || 'claude-opus-5',
   claudeEffort: env.CLAUDE_EFFORT || 'low',
