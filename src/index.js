@@ -350,6 +350,9 @@ async function handlePostback(event, ctx) {
       ctx.attachments.push(textMessage(`จะเปลี่ยน "${r.text}" เป็นเวลาไหนดี พิมพ์บอกได้เลย เช่น "พรุ่งนี้ 9 โมง"`));
       return;
     }
+    case 'menu_help':
+      ctx.attachments.push(textMessage(welcomeText()));
+      return;
     case 'list_reminders':
     case 'menu_reminders':
       await handlers.list_reminders({}, ctx);

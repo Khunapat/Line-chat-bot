@@ -24,9 +24,14 @@ const MENU_NAME = 'line-drive-archiver-menu';
 const client = new messagingApi.MessagingApiClient({ channelAccessToken: token });
 const blob = new messagingApi.MessagingApiBlobClient({ channelAccessToken: token });
 
-// 2500 x 843 image, four equal columns.
-const W = 2500;
-const H = 843;
+// Layout is derived from the image: 2500 x 843 = one row of four buttons;
+// 2500 x 1686 = a mascot / help banner (top half) plus the four buttons.
+const { width: W, height: H } = pngSize(imagePath);
+if (W !== 2500 || ![843, 1686].includes(H)) {
+  console.error(`richmenu.png must be 2500x843 or 2500x1686, got ${W}x${H}`);
+  process.exit(1);
+}
+const TOP = H - 843; // banner height (0 when there is no banner)
 const col = W / 4;
 const buttons = [
   { data: 'action=menu_reminders', text: 'แจ้งเตือน' },
@@ -35,16 +40,24 @@ const buttons = [
   { data: 'action=menu_settings', text: 'ตั้งค่า' },
 ];
 
-const menu = {
-  size: { width: W, height: H },
-  selected: true,
-  name: MENU_NAME,
-  chatBarText: 'เมนู',
-  areas: buttons.map((b, i) => ({
-    bounds: { x: Math.round(i * col), y: 0, width: Math.round(col), height: H },
-    action: { type: 'postback', data: b.data, displayText: b.text },
-  })),
-};
+const areas = buttons.map((b, i) => ({
+  bounds: { x: Math.round(i * col), y: TOP, width: Math.round(col), height: H - TOP },
+  action: { type: 'postback', data: b.data, displayText: b.text },
+}));
+if (TOP > 0) {
+  areas.unshift({
+    bounds: { x: 0, y: 0, width: W, height: TOP },
+    action: { type: 'postback', data: 'action=menu_help', displayText: 'ทำอะไรได้บ้าง' },
+  });
+}
+
+const menu = { size: { width: W, height: H }, selected: true, name: MENU_NAME, chatBarText: 'เมนู', areas };
+
+function pngSize(file) {
+  const head = fs.readFileSync(file).subarray(0, 24);
+  if (head.toString('latin1', 1, 4) !== 'PNG') throw new Error(`${file} is not a PNG`);
+  return { width: head.readUInt32BE(16), height: head.readUInt32BE(20) };
+}
 
 // Remove menus this script created earlier so we never pile them up.
 const { richmenus } = await client.getRichMenuList();
