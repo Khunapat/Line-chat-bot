@@ -89,7 +89,12 @@ function normalize(o) {
  * Fetch a web page and reduce it to readable text. Returns '' when the site
  * blocks us or the response is not HTML.
  */
-export async function fetchPageText(url, { timeoutMs = 10_000, maxBytes = 1_500_000 } = {}) {
+export async function fetchPageText(url, opts) {
+  return (await fetchPageMeta(url, opts)).text;
+}
+
+/** Fetch a page once and return both its <title> and readable text. */
+export async function fetchPageMeta(url, { timeoutMs = 10_000, maxBytes = 1_500_000 } = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -103,11 +108,11 @@ export async function fetchPageText(url, { timeoutMs = 10_000, maxBytes = 1_500_
       },
     });
     const type = resp.headers.get('content-type') || '';
-    if (!resp.ok || !/text\/html|text\/plain|xml/.test(type)) return '';
-    const buf = Buffer.from(await resp.arrayBuffer());
-    return htmlToText(buf.subarray(0, maxBytes).toString('utf8'));
+    if (!resp.ok || !/text\/html|text\/plain|xml/.test(type)) return { title: '', text: '' };
+    const html = Buffer.from(await resp.arrayBuffer()).subarray(0, maxBytes).toString('utf8');
+    return { title: pageTitle(html), text: htmlToText(html) };
   } catch {
-    return '';
+    return { title: '', text: '' };
   } finally {
     clearTimeout(timer);
   }
@@ -134,6 +139,13 @@ export function htmlToText(html) {
   return [title && `Title: ${decodeEntities(title.trim())}`, metaDesc && `Description: ${decodeEntities(metaDesc)}`, body]
     .filter(Boolean)
     .join('\n');
+}
+
+/** <title> or og:title, entity-decoded and trimmed. */
+export function pageTitle(html) {
+  const og = /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i.exec(html)?.[1];
+  const t = og || /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] || '';
+  return decodeEntities(t).replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
 function decodeEntities(s) {

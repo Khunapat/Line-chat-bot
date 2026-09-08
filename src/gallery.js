@@ -79,8 +79,11 @@ export function registerGalleryRoutes(app, { resolve, secret, timeZone, botName 
     if (!m) return res.status(400).json({ error: 'm=YYYY-MM' });
     try {
       const { drive, store } = req.svc;
-      const [files, index, opps] = await Promise.all([drive.allFiles(), store.fileIndex(), store.opportunities()]);
-      const inMonth = files.filter((f) => (f.day || '').startsWith(m) && !isMeta(f)).map((f) => publicFile(f, index[f.id]));
+      const [files, index, opps, links] = await Promise.all([drive.allFiles(), store.fileIndex(), store.opportunities(), store.links()]);
+      const inMonth = [
+        ...files.filter((f) => (f.day || '').startsWith(m) && !isMeta(f)).map((f) => publicFile(f, index[f.id])),
+        ...links.filter((l) => (l.day || '').startsWith(m)).map(publicLink),
+      ];
       const deadlines = opps.filter((o) => (o.deadline || '').startsWith(m)).map(publicOpp);
       const counts = {};
       for (const f of inMonth) counts[f.day] = (counts[f.day] || 0) + 1;
@@ -96,14 +99,15 @@ export function registerGalleryRoutes(app, { resolve, secret, timeZone, botName 
     if (!q) return res.json({ files: [], opportunities: [], memories: [] });
     try {
       const { drive, store } = req.svc;
-      const [files, index, opps, memories] = await Promise.all([drive.allFiles(), store.fileIndex(), store.opportunities(), store.searchMemory(q, 10)]);
+      const [files, index, opps, memories, links] = await Promise.all([drive.allFiles(), store.fileIndex(), store.opportunities(), store.searchMemory(q, 10), store.searchLinks(q, 30)]);
       const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
       const hit = (s) => { const h = String(s || '').toLowerCase(); return terms.some((t) => h.includes(t)); };
       const matched = files
         .filter((f) => !isMeta(f) && (hit(f.name) || hit(index[f.id]?.caption) || (index[f.id]?.tags || []).some(hit)))
         .sort((a, b) => (a.day < b.day ? 1 : -1))
         .slice(0, 60)
-        .map((f) => publicFile(f, index[f.id]));
+        .map((f) => publicFile(f, index[f.id]))
+        .concat(links.map(publicLink));
       const oppHits = sortOpportunities(opps.filter((o) => hit(o.title) || hit(o.organizer) || hit(o.summary)), timeZone).map(publicOpp);
       res.json({ files: matched, opportunities: oppHits, memories: memories.map((x) => ({ text: x.text, createdAt: x.createdAt })) });
     } catch (err) {
@@ -155,6 +159,9 @@ export function registerGalleryRoutes(app, { resolve, secret, timeZone, botName 
       webViewLink: f.webViewLink, hasThumb: Boolean(f.hasThumb),
       caption: idx?.caption || '', tags: idx?.tags || [],
     };
+  }
+  function publicLink(l) {
+    return { id: 'link:' + l.id, name: l.title || l.url, day: l.day, mimeType: 'text/uri-list', host: l.host, webViewLink: l.url, hasThumb: false, caption: l.caption || '', tags: l.tags || [], isLink: true };
   }
   function publicOpp(o) {
     return { id: o.id, title: o.title, kind: KIND_THAI[o.kind] || o.kind, deadline: o.deadline, when: describeDeadline(o.deadline, timeZone), link: o.link || o.source?.webViewLink || '' };
@@ -208,6 +215,7 @@ export function galleryPage({ botName }) {
   @media (min-width: 560px) { .files { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   .file { display:block; min-width: 0; text-decoration:none; color: inherit; background: var(--card); border: 2px solid var(--stroke); border-radius: 14px; overflow:hidden; }
   .file .th { aspect-ratio: 1; background: #E9E2D2; display:grid; place-items:center; font-size: 34px; overflow:hidden; }
+  .file .th .ic { width: 44%; height: auto; }
   .file .th img { width:100%; height:100%; object-fit: cover; display:block; }
   .file .cap { padding: 6px 8px 8px; font-size: 12px; line-height: 1.3; }
   .file .cap b { display:block; font-weight: 600; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
@@ -238,7 +246,8 @@ export function galleryPage({ botName }) {
   let selected = TZ_TODAY;
   const $ = (id) => document.getElementById(id);
   const api = (path, params) => fetch(path + '?' + new URLSearchParams({ t: T, ...params })).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
-  const icon = (f) => f.mimeType?.startsWith('image/') ? '🖼️' : f.mimeType?.startsWith('video/') ? '🎬' : f.mimeType?.startsWith('audio/') ? '🎙️' : f.mimeType === 'application/pdf' ? '📄' : f.name === 'notes.md' ? '📝' : '📎';
+  const iconName = (f) => f.isLink ? 'link' : f.mimeType?.startsWith('image/') ? 'gallery' : f.mimeType?.startsWith('video/') ? 'video' : f.mimeType?.startsWith('audio/') ? 'audio' : f.mimeType === 'application/pdf' ? 'pdf' : /\.md$/.test(f.name || '') ? 'note' : 'clip';
+  const icon = (f) => { const i = document.createElement('img'); i.className = 'ic'; i.alt = ''; i.src = '/static/icons/' + iconName(f) + '.png'; return i; };
   const size = (b) => !b ? '' : b < 1048576 ? Math.round(b / 1024) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
 
   async function loadMonth() {
@@ -274,11 +283,11 @@ export function galleryPage({ botName }) {
     const a = document.createElement('a');
     a.className = 'file'; a.href = f.webViewLink; a.target = '_blank'; a.rel = 'noopener';
     const th = document.createElement('div'); th.className = 'th';
-    if (f.hasThumb) { const img = document.createElement('img'); img.loading = 'lazy'; img.alt = ''; img.src = '/api/gallery/thumb/' + encodeURIComponent(f.id) + '?t=' + encodeURIComponent(T) + '&s=400'; img.onerror = () => { th.textContent = icon(f); }; th.appendChild(img); }
-    else th.textContent = icon(f);
+    if (f.hasThumb) { const img = document.createElement('img'); img.loading = 'lazy'; img.alt = ''; img.src = '/api/gallery/thumb/' + encodeURIComponent(f.id) + '?t=' + encodeURIComponent(T) + '&s=400'; img.onerror = () => { th.replaceChildren(icon(f)); }; th.appendChild(img); }
+    else th.appendChild(icon(f));
     const cap = document.createElement('div'); cap.className = 'cap';
     const b = document.createElement('b'); b.textContent = f.caption || f.name; cap.appendChild(b);
-    const s = document.createElement('span'); s.textContent = [f.day, size(f.size)].filter(Boolean).join(' · '); cap.appendChild(s);
+    const s = document.createElement('span'); s.textContent = [f.day, f.host || size(f.size)].filter(Boolean).join(' · '); cap.appendChild(s);
     a.appendChild(th); a.appendChild(cap);
     return a;
   }

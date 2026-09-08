@@ -62,3 +62,17 @@ test('cache serves repeated reads without hitting Drive', async () => {
   await store.memories();
   assert.equal(reads, 1);
 });
+
+test('links are stored, searched by title/host/caption and listed newest first', async () => {
+  const store = new Store(fakeDrive(), { cacheMs: 0 });
+  const a = await store.addLink({ url: 'https://www.kumwell.com/apply', title: 'Kumwell Internship 2027', day: '2026-09-08', at: '2026-09-08T10:00:00Z', userId: 'U1' });
+  const b = await store.addLink({ url: 'https://forms.gle/abc', title: '', day: '2026-09-09', at: '2026-09-09T10:00:00Z', userId: 'U1' });
+  assert.equal(a.host, 'kumwell.com');
+  await store.updateLink(b.id, { caption: 'ฟอร์มสมัครค่าย', tags: ['ค่าย'] });
+  assert.deepEqual((await store.recentLinks(5)).map((l) => l.id), [b.id, a.id]);
+  assert.equal((await store.searchLinks('kumwell'))[0].id, a.id);
+  assert.equal((await store.searchLinks('ค่าย'))[0].id, b.id);
+  assert.equal((await store.searchLinks('nothing')).length, 0);
+  assert.ok(await store.removeLink(a.id));
+  assert.equal((await store.links()).length, 1);
+});

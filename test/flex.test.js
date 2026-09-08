@@ -86,3 +86,18 @@ test('headings use drawn icons once the asset base is known, emoji otherwise', a
   assert.equal(cardOf(many.contents.contents[0]).flex, 1);
   setAssetBase('');
 });
+
+test('a saved link renders as a file card with the link icon and an open-link button', async () => {
+  const { linkAsFile, setAssetBase } = await import('../src/flex.js');
+  setAssetBase('https://bot.example');
+  const f = linkAsFile({ id: 'L1', url: 'https://forms.gle/abc', title: 'ฟอร์มสมัคร', host: 'forms.gle', day: '2026-09-08', at: '2026-09-08T10:00:00Z' });
+  const msg = fileCard(f, { title: '🔗 เก็บลิงก์แล้ว' });
+  const card = cardOf(msg.contents);
+  assert.equal(card.contents[0].contents[0].url, 'https://bot.example/static/icons/link.png');
+  assert.equal(card.contents[1].url, 'https://bot.example/static/icons/ph-link.png');
+  assert.equal(card.contents[1].action.uri, 'https://forms.gle/abc');
+  assert.match(card.contents[3].text, /2026-09-08 · forms.gle/);
+  assert.equal(footerOf(msg)[0].contents[0].text, 'เปิดลิงก์');
+  assert.equal(msg.contents.size, 'mega');
+  setAssetBase('');
+});

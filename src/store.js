@@ -144,6 +144,55 @@ export class Store {
     return scored.slice(0, limit).map((x) => ({ id: x.id, ...x.f }));
   }
 
+  // --------------------------------------------------------------- links
+  // _data/links.json: [{ id, url, title, host, day, at, caption, tags, userId }]
+
+  async links() {
+    return this.read('links.json', []);
+  }
+
+  async addLink({ url, title = '', day, at, caption = '', tags = [], userId }) {
+    let host = '';
+    try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { /* keep empty */ }
+    const link = { id: 'L' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), url, title, host, day, at, caption, tags, userId };
+    await this.update('links.json', [], (list) => { list.push(link); });
+    return link;
+  }
+
+  async updateLink(id, patch) {
+    return this.update('links.json', [], (list) => {
+      const l = list.find((x) => x.id === id);
+      if (l) Object.assign(l, patch);
+      return l || null;
+    });
+  }
+
+  async removeLink(id) {
+    return this.update('links.json', [], (list) => {
+      const i = list.findIndex((x) => x.id === id);
+      if (i < 0) return false;
+      list.splice(i, 1);
+      return true;
+    });
+  }
+
+  /** Newest first. */
+  async recentLinks(limit = 5) {
+    const list = await this.links();
+    return [...list].sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, limit);
+  }
+
+  /** Keyword match over title, url, caption and tags. */
+  async searchLinks(query, limit = 10) {
+    const terms = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return [];
+    const list = await this.links();
+    return list.map((l) => {
+      const hay = [l.title, l.url, l.host, l.caption, ...(l.tags || [])].join(' ').toLowerCase();
+      return { l, score: terms.reduce((n, t) => n + (hay.includes(t) ? 1 : 0), 0) };
+    }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score || (a.l.at < b.l.at ? 1 : -1)).slice(0, limit).map((x) => x.l);
+  }
+
   // -------------------------------------------------------------- state
 
   async getUserState(userId) {

@@ -111,7 +111,7 @@ export function postbackAction(label, data, displayText) {
  * inner box is inset by the stroke width, which draws a clean outline that
  * follows LINE's bubble rounding. The footer lives inside the same frame.
  */
-function bubble({ contents, footer, size = 'kilo' }) {
+function bubble({ contents, footer, size = 'mega' }) {
   const inner = [...contents];
   if (footer?.length) {
     // The filler pushes the buttons to the bottom, so bubbles side by side in
@@ -152,16 +152,20 @@ export function cardOf(bubbleObj) {
 
 // -------------------------------------------------------------- files
 
+export const LINK_MIME = 'text/uri-list';
+
 function fileSubtitle(file) {
   const bits = [];
   if (file.day) bits.push(file.day);
-  if (file.size) bits.push(humanSize(file.size));
+  if (file.isLink && file.host) bits.push(file.host);
+  else if (file.size) bits.push(humanSize(file.size));
   return bits.join(' · ');
 }
 
 /** Emoji by file type, for cards without a picture. */
 export function fileIcon(file) {
   const m = (file?.mimeType || '').toLowerCase();
+  if (file?.isLink || m === LINK_MIME) return '🔗';
   if (m.startsWith('image/')) return '🖼️';
   if (m.startsWith('video/')) return '🎬';
   if (m.startsWith('audio/')) return '🎙️';
@@ -173,6 +177,7 @@ export function fileIcon(file) {
 /** Drawn icon name by file type (see assets/icons-src). */
 export function fileIconName(file) {
   const m = (file?.mimeType || '').toLowerCase();
+  if (file?.isLink || m === LINK_MIME) return 'link';
   if (m.startsWith('image/')) return 'gallery';
   if (m.startsWith('video/')) return 'video';
   if (m.startsWith('audio/')) return 'audio';
@@ -202,10 +207,27 @@ export function fileBubble(file, { title, uniform = false } = {}) {
   if (file.caption && file.caption !== file.name) contents.push({ ...muted(file.name), ...(uniform ? { maxLines: 1 } : {}) });
   const sub = fileSubtitle(file);
   if (sub) contents.push(muted(sub));
+  const open = file.isLink ? 'เปิดลิงก์' : 'เปิดไฟล์';
   return bubble({
     contents,
-    footer: [button('เปิดไฟล์', uriAction('เปิดไฟล์', file.webViewLink))],
+    footer: [button(open, uriAction(open, file.webViewLink))],
   });
+}
+
+/** A saved link, shaped like a file so it can share cards, lists and search. */
+export function linkAsFile(link) {
+  return {
+    id: `link:${link.id}`,
+    linkId: link.id,
+    isLink: true,
+    name: link.title || link.url,
+    mimeType: LINK_MIME,
+    webViewLink: link.url,
+    day: link.day,
+    at: link.at,
+    host: link.host,
+    caption: link.caption || '',
+  };
 }
 
 export function fileCard(file, opts) {

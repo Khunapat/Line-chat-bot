@@ -17,9 +17,10 @@ import {
 import {
   extractFromMedia, extractFromText, fetchPageText, deadlineReminderTimes, sortOpportunities,
   renderMarkdown, describeDeadline, captionSlug,
+  fetchPageMeta,
 } from './opportunities.js';
 import { registerGalleryRoutes, galleryUrl, thumbUrl, setGalleryTimeZone } from './gallery.js';
-import { setAssetBase } from './flex.js';
+import { setAssetBase, linkAsFile } from './flex.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registerOAuthRoutes, connectUrl, baseUrlOf } from './oauth.js';
@@ -523,12 +524,17 @@ async function handleText(text, ctx) {
   const urls = trimmed.match(/https?:\/\/\S+/g) || [];
   const remainder = trimmed.replace(/https?:\/\/\S+/g, '').trim();
   if (urls.length > 0 && remainder.length < 15) {
-    const file = await ctx.svc.drive.appendNote(trimmed, ctx.now);
+    const url = urls[0];
+    const [, page] = await Promise.all([ctx.svc.drive.appendNote(trimmed, ctx.now), fetchPageMeta(url)]);
+    const link = await ctx.svc.store.addLink({
+      url, title: page.title || remainder, day: ctx.svc.drive.todayKey(ctx.now), at: ctx.now.toISOString(), userId: ctx.userId,
+    });
+    await ctx.svc.store.setUserState(ctx.userId, { lastFile: linkAsFile(link) });
     ctx.attachments.push(
-      textMessage('จดลิงก์ไว้ให้แล้ว 🔗'),
-      infoCard('📝 โน้ตวันนี้', [`${ctx.svc.drive.todayKey(ctx.now)}/notes.md`], { buttons: [linkButton('เปิดโน้ต', file.webViewLink)] }),
+      textMessage('เก็บลิงก์ไว้ให้แล้ว หาเจอได้จากเมนู ไฟล์/รูป หรือพิมพ์ "หา <คำค้น>"'),
+      fileCard(linkAsFile(link), { title: '🔗 เก็บลิงก์แล้ว' }),
     );
-    if (brain && config.autoScan !== 'off') await scanLink(urls[0], ctx);
+    if (brain && config.autoScan !== 'off') await scanLink(url, ctx, { text: page.text, linkId: link.id });
     return;
   }
 
@@ -664,7 +670,7 @@ async function handlePostback(event, ctx) {
       await handlers.list_reminders({}, ctx);
       return;
     case 'menu_files': {
-      const files = withThumbs(await drive.recentFiles(5), ctx);
+      const files = withThumbs(await recentItems(5, ctx), ctx);
       if (files.length === 0) ctx.attachments.push(textMessage('ยังไม่มีไฟล์เลย ส่งรูปหรือไฟล์มาได้เลย เดี๋ยวเก็บให้'));
       else ctx.attachments.push(textMessage('ไฟล์ล่าสุดที่เก็บไว้ พิมพ์ "หา <คำค้น>" เพื่อค้นหาได้นะ'), filesCarousel(files, { title: '📁 ไฟล์ล่าสุด' }));
       if (publicBase) ctx.attachments.push(galleryCard(ctx));
@@ -823,10 +829,18 @@ async function readMedia(buffer, mimeType, file, ctx) {
   }
 }
 
-/** Files by keyword: Drive name search plus the caption / tag index, deduplicated. */
+/** Newest files and saved links together, newest first. */
+async function recentItems(limit, ctx) {
+  const { drive, store } = ctx.svc;
+  const [files, links] = await Promise.all([drive.recentFiles(limit), store.recentLinks(limit)]);
+  const stamp = (x) => x.at || x.createdTime || x.modifiedTime || '';
+  return [...files, ...links.map(linkAsFile)].sort((a, b) => (stamp(a) < stamp(b) ? 1 : -1)).slice(0, limit);
+}
+
+/** Files and links by keyword: Drive name search, the caption / tag index and saved links, deduplicated. */
 async function searchFiles(query, limit, ctx) {
   const { drive, store } = ctx.svc;
-  const [byName, byIndex] = await Promise.all([drive.findFiles(query, limit), store.searchFileIndex(query, limit)]);
+  const [byName, byIndex, links] = await Promise.all([drive.findFiles(query, limit), store.searchFileIndex(query, limit), store.searchLinks(query, limit)]);
   const seen = new Set();
   const out = [];
   for (const f of [...byIndex, ...byName]) {
@@ -834,7 +848,8 @@ async function searchFiles(query, limit, ctx) {
     seen.add(f.id);
     out.push({ id: f.id, name: f.name, day: f.day, mimeType: f.mimeType, webViewLink: f.webViewLink, size: f.size, caption: f.caption });
   }
-  return out.slice(0, limit);
+  const stamp = (x) => x.at || x.day || '';
+  return [...out, ...links.map(linkAsFile)].sort((a, b) => (stamp(a) < stamp(b) ? 1 : -1)).slice(0, limit);
 }
 
 /** Give a file (or anything with a picture behind it) a card thumbnail URL. */
@@ -858,14 +873,18 @@ function galleryCard(ctx) {
 }
 
 /** Fetch a link and read it like a poster. */
-async function scanLink(url, ctx) {
+async function scanLink(url, ctx, { text: given, linkId } = {}) {
   try {
-    const text = await fetchPageText(url);
+    const text = given ?? await fetchPageText(url);
     if (text.length < 80) {
       if (config.autoScan === 'always') ctx.attachments.push(textMessage('เปิดหน้าเว็บนี้อ่านไม่ได้ ถ้าเป็นประกาศรับสมัคร ส่งรูปโปสเตอร์มาด้วยได้นะ เดี๋ยวจด deadline ให้'));
       return null;
     }
     const fields = await extractFromText(provider, text, { url, now: ctx.now, timeZone: tz });
+    // Caption and tags make the link findable by keyword even when it is not an opportunity.
+    if (linkId && (fields?.caption || fields?.tags?.length)) {
+      await ctx.svc.store.updateLink(linkId, { caption: fields.caption || '', tags: fields.tags || [] });
+    }
     if (!fields?.is_opportunity || fields.confidence < 0.5) return null;
     if (!fields.link) fields.link = url;
     const opp = await registerOpportunity(fields, { ctx, source: { kind: 'link', url } });

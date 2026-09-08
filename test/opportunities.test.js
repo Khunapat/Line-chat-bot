@@ -56,3 +56,10 @@ test('schema lists every field as required with no extras', () => {
   assert.deepEqual(SCHEMA.required.sort(), Object.keys(SCHEMA.properties).sort());
   assert.equal(SCHEMA.additionalProperties, false);
 });
+
+test('pageTitle prefers og:title and decodes entities', async () => {
+  const { pageTitle } = await import('../src/opportunities.js');
+  assert.equal(pageTitle('<title>  Kumwell &amp; Friends \n 2027 </title>'), 'Kumwell & Friends 2027');
+  assert.equal(pageTitle('<meta property="og:title" content="OG name"><title>x</title>'), 'OG name');
+  assert.equal(pageTitle('<p>none</p>'), '');
+});
