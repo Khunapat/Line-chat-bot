@@ -36,6 +36,7 @@ My Drive/LineArchive/
 │   ├── memory.json                   ← things you asked it to remember
 │   ├── reminders.json
 │   ├── opportunities.json            ← posters / links with deadlines
+│   ├── files.json                    ← captions and tags for search
 │   └── state.json
 └── Opportunities.md                  ← readable deadline table
 ```
