@@ -14,8 +14,9 @@ import {
 } from './flex.js';
 import {
   extractFromMedia, extractFromText, fetchPageText, deadlineReminderTimes, sortOpportunities,
-  renderMarkdown, describeDeadline,
+  renderMarkdown, describeDeadline, captionSlug,
 } from './opportunities.js';
+import { registerGalleryRoutes, galleryUrl, setGalleryTimeZone } from './gallery.js';
 import { Readable } from 'node:stream';
 
 requireConfig();
@@ -34,6 +35,8 @@ const drive = new DriveArchive({
 const store = new Store(drive);
 const calendar = new Calendar(drive.auth, { calendarId: config.google.calendarId, timeZone: config.timeZone });
 const tz = config.timeZone;
+setGalleryTimeZone(tz);
+let publicBase = config.publicUrl; // learned from the first webhook request when unset
 
 // ---------------------------------------------------------------------------
 // Tool handlers shared by the Claude brain and the keyword fallback.
@@ -70,10 +73,34 @@ const handlers = {
   },
 
   async find_file({ query }, ctx) {
-    const files = await drive.findFiles(query, 5);
+    const files = await searchFiles(query, 5);
     if (files.length === 0) return { found: 0, files: [] };
     ctx.attachments.push(filesCarousel(files, { title: files.length > 1 ? `📁 เจอ ${files.length} ไฟล์` : '📁 เจอแล้ว' }));
-    return { found: files.length, files: files.map((f) => ({ name: f.name, day: f.day })) };
+    return { found: files.length, files: files.map((f) => ({ name: f.name, day: f.day, caption: f.caption || '' })) };
+  },
+
+  async search({ query }, ctx) {
+    const [files, memories, opps] = await Promise.all([
+      searchFiles(query, 5),
+      store.searchMemory(query, 5),
+      store.opportunities(),
+    ]);
+    const q = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
+    const hit = (v) => { const h = String(v || '').toLowerCase(); return q.some((t) => h.includes(t)); };
+    const oppHits = sortOpportunities(opps.filter((o) => hit(o.title) || hit(o.organizer) || hit(o.summary) || hit(o.eligibility)), tz, ctx.now).slice(0, 5);
+    if (files.length) ctx.attachments.push(filesCarousel(files, { title: `📁 ไฟล์ที่เกี่ยวกับ "${query}"` }));
+    if (oppHits.length) ctx.attachments.push(opportunityListCard(oppHits, { timeZone: tz, now: ctx.now }));
+    return {
+      files: files.map((f) => ({ name: f.name, day: f.day, caption: f.caption || '' })),
+      memories: memories.map((m) => ({ text: m.text, savedAt: thaiDate(m.createdAt) })),
+      opportunities: oppHits.map((o) => ({ title: o.title, deadline: describeDeadline(o.deadline, tz, ctx.now) })),
+    };
+  },
+
+  async gallery_link(_input, ctx) {
+    if (!publicBase) return { error: 'gallery URL unknown yet' };
+    ctx.attachments.push(galleryCard());
+    return { ok: true };
   },
 
   async name_last_file({ label }, ctx) {
@@ -178,6 +205,7 @@ app.get('/', (_req, res) => res.status(200).send(`${config.botName} ok`));
 // LINE middleware needs the raw body for signature verification - keep
 // express.json() away from this route.
 app.post('/webhook', middleware({ channelSecret: config.line.channelSecret }), async (req, res) => {
+  if (!publicBase && req.get('host')) publicBase = `${req.get('x-forwarded-proto') || req.protocol}://${req.get('host')}`;
   const events = req.body.events ?? [];
   await Promise.all(events.map((event) => handleEvent(event).catch((err) => {
     console.error('event failed', { type: event.type, err: describeError(err) });
@@ -203,6 +231,8 @@ app.all('/cron/reminders', async (req, res) => {
     res.status(500).json({ error: 'cron failed' });
   }
 });
+
+registerGalleryRoutes(app, { drive, store, secret: config.gallerySecret, timeZone: tz, botName: config.botName });
 
 app.use((err, _req, res, _next) => {
   if (err instanceof SignatureValidationFailed) return res.status(401).send('invalid signature');
@@ -268,15 +298,20 @@ async function handleEvent(event) {
       case 'file': {
         const keepBytes = message.type === 'image' || message.type === 'file';
         const { saved, buffer, mimeType } = await archiveBinary(message, now, { keepBytes });
-        await store.setUserState(userId, { lastFile: saved });
-        const hint = message.type === 'file'
-          ? 'เก็บไว้ให้แล้ว ถ้าอยากตั้งชื่อให้หาง่าย พิมพ์ "เก็บไฟล์ <ชื่อ>" ได้เลย'
-          : `เก็บ${kindThai(message.type)}ไว้ให้แล้ว ถ้าอยากตั้งชื่อ พิมพ์ "เก็บไฟล์ <ชื่อ>" ได้เลย`;
-        ctx.attachments.push(textMessage(hint), fileCard(saved, { title: '📁 เก็บไว้แล้ว' }));
-        if (buffer && isScannable(mimeType, buffer.length)) {
-          if (config.autoScan === 'always' && brain) await scanMedia(buffer, mimeType, saved, ctx);
-          else if (config.autoScan === 'ask' && brain) ctx.attachments.push(scanOfferCard(saved.id));
+        let file = saved;
+        let read = null;
+        if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'always') {
+          read = await readMedia(buffer, mimeType, saved, ctx);
+          if (read?.file) file = read.file;
         }
+        await store.setUserState(userId, { lastFile: file });
+        const what = read?.fields?.caption ? `${kindThai(message.type)} (${read.fields.caption})` : kindThai(message.type);
+        ctx.attachments.push(
+          textMessage(`เก็บ${what}ไว้ให้แล้ว ถ้าอยากตั้งชื่อเอง พิมพ์ "เก็บไฟล์ <ชื่อ>" ได้เลย`),
+          fileCard(file, { title: '📁 เก็บไว้แล้ว' }),
+        );
+        if (read?.opp) ctx.attachments.push(textMessage(scanIntro(read.opp)), opportunityCard(read.opp, { timeZone: tz, now: ctx.now }));
+        else if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'ask') ctx.attachments.push(scanOfferCard(saved.id));
         break;
       }
       case 'sticker':
@@ -330,6 +365,15 @@ async function handleText(text, ctx) {
 /** Keyword-only mode when no AI key (GEMINI_API_KEY / ANTHROPIC_API_KEY) is configured. */
 async function fallbackText(text, ctx) {
   let m;
+  if ((m = /^(?:หา|ค้นหา|ค้น)\s+(.+?)\s*(?:หน่อย|ที|ให้หน่อย)?$/.exec(text)) && !/^(?:ไฟล์|รูป|วิดีโอ|คลิป)/.test(m[1])) {
+    const r = await handlers.search({ query: m[1] }, ctx);
+    const lines = [];
+    if (r.files.length) lines.push(`ไฟล์ ${r.files.length} รายการ (ดูการ์ดด้านล่าง)`);
+    if (r.opportunities.length) lines.push(`deadline ${r.opportunities.length} รายการ`);
+    for (const x of r.memories) lines.push(`🧠 ${x.text} (บันทึก ${x.savedAt})`);
+    ctx.attachments.unshift(textMessage(lines.length ? `เจอเกี่ยวกับ "${m[1]}":\n` + lines.join('\n') : `ไม่เจออะไรเกี่ยวกับ "${m[1]}" เลย ลองคำอื่นดูนะ`));
+    return;
+  }
   if ((m = /^(?:ขอ|หา|ค้นหา)\s*(?:ไฟล์|รูป|วิดีโอ|คลิป)\s*(.*?)\s*(?:หน่อย|ที|ให้หน่อย)?$/.exec(text))) {
     const r = await handlers.find_file({ query: m[1] }, ctx);
     if (r.found === 0) ctx.attachments.push(textMessage('หาไม่เจอเลย ลองพิมพ์ชื่อไฟล์ให้ชัดขึ้นอีกนิดได้ไหม'));
@@ -417,9 +461,9 @@ async function handlePostback(event, ctx) {
       if (!brain || !fileId) return void ctx.attachments.push(textMessage('ตอนนี้อ่านให้ไม่ได้ ลองใหม่อีกทีนะ'));
       const info = await drive.fileInfo(fileId);
       const buffer = await drive.download(fileId);
-      const before = ctx.attachments.length;
-      await scanMedia(buffer, info.mimeType, info, ctx);
-      if (ctx.attachments.length === before) ctx.attachments.push(textMessage('อ่านแล้ว แต่ไม่เจอว่าเป็นประกาศรับสมัครนะ'));
+      const read = await readMedia(buffer, info.mimeType, info, ctx);
+      if (read?.opp) ctx.attachments.push(textMessage(scanIntro(read.opp)), opportunityCard(read.opp, { timeZone: tz, now: ctx.now }));
+      else ctx.attachments.push(textMessage(read?.fields?.caption ? `อ่านแล้ว เป็น${read.fields.caption} ไม่ใช่ประกาศรับสมัคร แต่จดคำค้นไว้ให้แล้ว` : 'อ่านแล้ว แต่ไม่เจอว่าเป็นประกาศรับสมัครนะ'));
       return;
     }
     case 'list_reminders':
@@ -429,7 +473,8 @@ async function handlePostback(event, ctx) {
     case 'menu_files': {
       const files = await drive.recentFiles(5);
       if (files.length === 0) ctx.attachments.push(textMessage('ยังไม่มีไฟล์เลย ส่งรูปหรือไฟล์มาได้เลย เดี๋ยวเก็บให้'));
-      else ctx.attachments.push(textMessage('ไฟล์ล่าสุดที่เก็บไว้ พิมพ์ "ขอไฟล์ <ชื่อ>" เพื่อค้นหาได้นะ'), filesCarousel(files, { title: '📁 ไฟล์ล่าสุด' }));
+      else ctx.attachments.push(textMessage('ไฟล์ล่าสุดที่เก็บไว้ พิมพ์ "หา <คำค้น>" เพื่อค้นหาได้นะ'), filesCarousel(files, { title: '📁 ไฟล์ล่าสุด' }));
+      if (publicBase) ctx.attachments.push(galleryCard());
       return;
     }
     case 'menu_notes': {
@@ -503,19 +548,56 @@ function isScannable(mimeType, size) {
   return size <= SCAN_MAX_BYTES && (base.startsWith('image/') || base === 'application/pdf');
 }
 
-/** Read a poster / PDF; when it announces something, record it and attach the card. */
-async function scanMedia(buffer, mimeType, file, ctx) {
+/**
+ * Read an image / PDF once: caption + tags go into the search index (and the
+ * file is renamed after the caption when it still has a generic name); if it
+ * announces something with a deadline, record that too.
+ * Returns { fields, file, opp } or null on failure.
+ */
+async function readMedia(buffer, mimeType, file, ctx) {
   try {
     const base = (mimeType || '').split(';')[0].trim().toLowerCase();
     const fields = await extractFromMedia(brain.provider, { mimeType: base, base64: buffer.toString('base64') }, { now: ctx.now, timeZone: tz });
-    if (!fields?.is_opportunity || fields.confidence < 0.5) return null;
-    const opp = await registerOpportunity(fields, { ctx, source: { kind: base === 'application/pdf' ? 'pdf' : 'image', fileId: file.id, webViewLink: file.webViewLink } });
-    ctx.attachments.push(textMessage(scanIntro(opp)), opportunityCard(opp, { timeZone: tz, now: ctx.now }));
-    return opp;
+    if (!fields) return null;
+    let current = file;
+    if (fields.caption && /^\d{2}-\d{2}-\d{2}_(image|file|video|audio)_/.test(file.name)) {
+      const slug = captionSlug(fields.caption);
+      if (slug) {
+        try { current = await drive.renameFile(file.id, `${file.name.slice(0, 8)}_${slug}`); } catch (err) { console.warn('rename failed', err?.message || err); }
+      }
+    }
+    await store.indexFile(file.id, {
+      name: current.name, day: current.day || file.day, mimeType: base, webViewLink: current.webViewLink,
+      caption: fields.caption || '', tags: fields.tags || [],
+    });
+    let opp = null;
+    if (fields.is_opportunity && fields.confidence >= 0.5) {
+      opp = await registerOpportunity(fields, { ctx, source: { kind: base === 'application/pdf' ? 'pdf' : 'image', fileId: file.id, webViewLink: current.webViewLink } });
+    }
+    return { fields, file: current, opp };
   } catch (err) {
-    console.error('scan failed', describeError(err));
+    console.error('read media failed', describeError(err));
     return null;
   }
+}
+
+/** Files by keyword: Drive name search plus the caption / tag index, deduplicated. */
+async function searchFiles(query, limit = 5) {
+  const [byName, byIndex] = await Promise.all([drive.findFiles(query, limit), store.searchFileIndex(query, limit)]);
+  const seen = new Set();
+  const out = [];
+  for (const f of [...byIndex, ...byName]) {
+    if (!f.id || seen.has(f.id)) continue;
+    seen.add(f.id);
+    out.push({ id: f.id, name: f.name, day: f.day, mimeType: f.mimeType, webViewLink: f.webViewLink, size: f.size, caption: f.caption });
+  }
+  return out.slice(0, limit);
+}
+
+function galleryCard() {
+  return infoCard('🖼️ แกลเลอรี', ['ดูรูปและไฟล์ทั้งหมดเป็นปฏิทิน เลือกวัน ค้นหาได้ ลิงก์ใช้ได้ 24 ชั่วโมง'], {
+    buttons: [linkButton('เปิดแกลเลอรี', galleryUrl(publicBase, config.gallerySecret))],
+  });
 }
 
 /** Fetch a link and do the same. */

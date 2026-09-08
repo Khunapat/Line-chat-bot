@@ -100,6 +100,7 @@ export class DriveArchive {
       media: { mimeType: mimeType || 'application/octet-stream', body },
       fields: FILE_FIELDS,
     });
+    this._allFiles = null;
     return decorate(data, this.todayKey(date));
   }
 
@@ -253,6 +254,51 @@ export class DriveArchive {
     return (data.files || []).map((f) => decorate(f));
   }
 
+  /**
+   * Every archived file (non-folder, outside _data), with the day folder name
+   * it lives in. Cached briefly; the gallery calls this per page view.
+   */
+  async allFiles({ cacheMs = 60_000 } = {}) {
+    if (this._allFiles && Date.now() - this._allFiles.at < cacheMs) return this._allFiles.value;
+    const rootId = await this.rootFolder();
+    const dataId = await this.dataFolder();
+    const { data: folderData } = await this.drive.files.list({
+      q: `'${rootId}' in parents and mimeType = '${FOLDER_MIME}' and trashed = false`,
+      fields: 'files(id, name)', pageSize: 1000,
+    });
+    const dayOf = new Map((folderData.files || []).map((f) => [f.id, f.name]));
+    const files = [];
+    let pageToken;
+    do {
+      const { data } = await this.drive.files.list({
+        q: `mimeType != '${FOLDER_MIME}' and not '${dataId}' in parents and trashed = false`,
+        fields: `nextPageToken, files(${FILE_FIELDS}, parents, thumbnailLink)`,
+        pageSize: 1000,
+        pageToken,
+      });
+      for (const f of data.files || []) {
+        const parent = (f.parents || [])[0];
+        const day = dayOf.get(parent);
+        if (!day && parent !== rootId) continue; // stray file outside our tree
+        files.push({ ...decorate(f, day || f.createdTime?.slice(0, 10)), hasThumb: Boolean(f.thumbnailLink), thumbnailLink: f.thumbnailLink });
+      }
+      pageToken = data.nextPageToken;
+    } while (pageToken);
+    this._allFiles = { value: files, at: Date.now() };
+    return files;
+  }
+
+  /** Fetch a Drive thumbnail with our credentials. Returns { body, contentType } or null. */
+  async thumbnail(fileId, size = 400) {
+    const { data } = await this.drive.files.get({ fileId, fields: 'thumbnailLink' });
+    if (!data.thumbnailLink) return null;
+    const url = data.thumbnailLink.replace(/=s\d+$/, `=s${size}`);
+    const { token } = await this.auth.getAccessToken();
+    const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) return null;
+    return { body: Buffer.from(await resp.arrayBuffer()), contentType: resp.headers.get('content-type') || 'image/jpeg' };
+  }
+
   /** Rename a file, keeping its extension when the new label has none. */
   async renameFile(fileId, label) {
     const { data: current } = await this.drive.files.get({ fileId, fields: 'name' });
@@ -264,6 +310,7 @@ export class DriveArchive {
       requestBody: { name: newName },
       fields: FILE_FIELDS,
     });
+    this._allFiles = null;
     return decorate(data);
   }
 }

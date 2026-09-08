@@ -16,6 +16,8 @@ A LINE Official Account that works like a friend-plus-secretary in one chat:
 | `เตือนและลง calendar 15.00 โทรหาลูกค้า` | does both |
 | a poster, PDF, or link for a competition, application, scholarship, course, or event | reads it, records title, deadline, dates, eligibility, cost, contact; replies with a card; sets reminders 3 days before and on the deadline; adds an all-day calendar entry; keeps `Opportunities.md` in Drive |
 | `มีอะไรใกล้หมดเขตบ้าง` | lists everything you sent, soonest deadline first |
+| `หา ใบเสร็จ` / `หา receipt` | searches files (names, captions, tags), memories and deadlines at once. Every photo and PDF gets a caption and tags when it arrives, and is renamed after the caption, so keyword search works even for photos |
+| menu **ไฟล์/รูป** | recent files plus a link to the **gallery**: a private calendar page served by the bot, one tap per day to see that day's photos and files as thumbnails, with search. Links expire after 24 hours |
 | anything else | chats back in casual Thai (or English if you write English) |
 
 A rich menu at the bottom of the chat gives one-tap access to
@@ -56,7 +58,8 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `src/store.js` – memory / reminders / per-user state persisted as JSON in Drive.
 * `src/reminders.js` – scheduling, recurrence, Thai date phrases ("พรุ่งนี้ 10:15 น.").
 * `src/calendar.js` – Google Calendar events.
-* `src/opportunities.js` – reads posters / pages with the model, deadline maths, `Opportunities.md`.
+* `src/opportunities.js` – reads posters / pages with the model (deadlines, captions, tags), deadline maths, `Opportunities.md`.
+* `src/gallery.js` – the calendar gallery page and its API, signed expiring links, thumbnail proxy.
 * `src/flex.js` – the beige cards with olive buttons.
 * `scripts/get-refresh-token.js` – one-time Google OAuth (Drive + Calendar scopes).
 * `scripts/setup-rich-menu.js` + `assets/richmenu.png` – the bottom menu.
@@ -207,6 +210,8 @@ artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
 | `ANTHROPIC_API_KEY` | Enables the chat brain with Claude (paid). Optional |
 | `CLAUDE_MODEL` / `CLAUDE_EFFORT` | Default `claude-opus-5`, effort `low` |
 | `LLM_PROVIDER` | Force `gemini`, `anthropic` or `none`; auto-detected from keys when unset |
+| `GALLERY_SECRET` | Signs gallery links. Optional; falls back to `CRON_SECRET` |
+| `PUBLIC_URL` | Base URL of the service for gallery links. Optional; learned from the first webhook |
 | `AUTO_SCAN` | `always` (default): read every poster and link and record deadlines; `ask`: offer a button first; `off` |
 | `BOT_NAME` / `USER_NAME` | How the bot refers to itself and to you |
 | `CRON_SECRET` | Shared secret for `/cron/reminders` |

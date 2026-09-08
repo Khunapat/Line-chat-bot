@@ -34,6 +34,10 @@ export const config = {
 
   // Shared secret Cloud Scheduler sends in X-Cron-Secret to /cron/reminders.
   cronSecret: env.CRON_SECRET,
+  // Signs the expiring gallery links. Falls back to other secrets so it needs no setup.
+  gallerySecret: env.GALLERY_SECRET || env.CRON_SECRET || env.LINE_CHANNEL_SECRET,
+  // Public base URL of this service (derived from the webhook request when unset).
+  publicUrl: env.PUBLIC_URL || '',
 
   port: Number(env.PORT || 8080),
 };

@@ -120,6 +120,30 @@ export class Store {
     });
   }
 
+  // ---------------------------------------------------------- file index
+  // _data/files.json: { [fileId]: { name, day, caption, tags, mimeType, webViewLink } }
+
+  async fileIndex() {
+    return this.read('files.json', {});
+  }
+
+  async indexFile(fileId, info) {
+    return this.update('files.json', {}, (idx) => { idx[fileId] = { ...(idx[fileId] || {}), ...info }; return idx[fileId]; });
+  }
+
+  /** Keyword match over captions, tags and names in the index. */
+  async searchFileIndex(query, limit = 10) {
+    const idx = await this.fileIndex();
+    const terms = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return [];
+    const scored = Object.entries(idx).map(([id, f]) => {
+      const hay = [f.caption, f.name, ...(f.tags || [])].join(' ').toLowerCase();
+      const score = terms.reduce((n, t) => n + (hay.includes(t) ? 1 : 0), 0);
+      return { id, f, score };
+    }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score || (a.f.day < b.f.day ? 1 : -1));
+    return scored.slice(0, limit).map((x) => ({ id: x.id, ...x.f }));
+  }
+
   // -------------------------------------------------------------- state
 
   async getUserState(userId) {

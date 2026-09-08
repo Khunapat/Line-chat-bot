@@ -34,15 +34,18 @@ export const SCHEMA = {
     link: { type: 'string', description: 'registration URL if visible, or empty' },
     contact: { type: 'string', description: 'phone / email / LINE id, or empty' },
     confidence: { type: 'number', description: '0 to 1' },
+    caption: { type: 'string', description: 'ALWAYS filled for images/PDFs: what this file is, in Thai, max 8 words, e.g. "ใบเสร็จร้านกาแฟ Starbucks" or "สลิปโอนเงิน KBank"' },
+    tags: { type: 'array', items: { type: 'string' }, description: '3 to 8 short search keywords in Thai and English, e.g. ["ใบเสร็จ","receipt","กาแฟ","Starbucks"]' },
   },
-  required: ['is_opportunity', 'kind', 'title', 'organizer', 'summary', 'deadline', 'deadline_note', 'event_dates', 'eligibility', 'cost', 'link', 'contact', 'confidence'],
+  required: ['is_opportunity', 'kind', 'title', 'organizer', 'summary', 'deadline', 'deadline_note', 'event_dates', 'eligibility', 'cost', 'link', 'contact', 'confidence', 'caption', 'tags'],
   additionalProperties: false,
 };
 
 export function systemPrompt(todayIso) {
   return `You read posters, web pages and messages and decide whether they announce something a person can apply to, register for, compete in, attend, or get funding from (competition, job/program application, scholarship, course/training, event/seminar).
 Today is ${todayIso}. Dates in Thai may use the Buddhist year (พ.ศ.): subtract 543 to get the Gregorian year (2569 -> 2026). If only day and month are given, assume the next occurrence on or after today.
-Output every field. Use empty strings when unknown. Summary in Thai, casual but clear. If the content is not such an announcement (a receipt, a selfie, a chat screenshot, a news article), set is_opportunity=false and leave the other fields empty.`;
+Output every field. Use empty strings when unknown. Summary in Thai, casual but clear. If the content is not such an announcement (a receipt, a selfie, a chat screenshot, a news article), set is_opportunity=false and leave the announcement fields empty.
+Always fill caption and tags for an image or PDF (what it shows: receipt, slip, ID card, screenshot, document, poster, photo of a place or people, etc.) so the file can be found later by keyword. For plain text or a web page, caption and tags may be empty.`;
 }
 
 /** Ask the provider to read an image / PDF. */
@@ -75,6 +78,8 @@ function normalize(o) {
   for (const k of Object.keys(SCHEMA.properties)) out[k] = o[k] ?? '';
   out.is_opportunity = Boolean(o.is_opportunity);
   out.confidence = Number(o.confidence) || 0;
+  out.caption = String(o.caption || '').trim();
+  out.tags = Array.isArray(o.tags) ? o.tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 12) : [];
   if (!KINDS.includes(out.kind)) out.kind = 'other';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(out.deadline)) out.deadline = '';
   return out;
@@ -218,4 +223,15 @@ export function renderMarkdown(list, timeZone, now = new Date()) {
 
 function escapeCell(s) {
   return String(s || '').replace(/\|/g, '\\|').replace(/\n+/g, ' ').trim();
+}
+
+/** File-name slug from a caption: keep Thai/Latin letters and digits, max 40 chars. */
+export function captionSlug(caption) {
+  return String(caption || '')
+    .replace(/[\\/:*?"<>|#%&{}$!'`@+=~^\[\]]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 40)
+    .trim()
+    .replace(/ /g, '_');
 }
