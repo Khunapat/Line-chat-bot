@@ -1,4 +1,5 @@
 import { localIsoWithOffset, REPEATS } from './reminders.js';
+import { KINDS } from './opportunities.js';
 
 /**
  * The conversational layer. A provider (Claude or Gemini) decides what the
@@ -165,6 +166,45 @@ export const TOOLS = [
     strict: true,
   },
   {
+    name: 'save_opportunity',
+    description: 'บันทึกประกาศรับสมัคร/การแข่งขัน/ทุน/คอร์ส/กิจกรรม ที่ผู้ใช้พิมพ์หรือวางข้อความมา พร้อม deadline ระบบจะตั้งเตือนก่อนหมดเขตและลงปฏิทินให้เอง ใช้เมื่อข้อความมีลักษณะเป็นประกาศ (มีวันปิดรับสมัคร วันจัด ผู้จัด)',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        kind: { type: 'string', enum: KINDS },
+        organizer: { type: 'string', description: 'ผู้จัด หรือค่าว่าง' },
+        summary: { type: 'string', description: 'สรุป 1-2 ประโยค' },
+        deadline: { type: 'string', description: 'YYYY-MM-DD (ค.ศ.) หรือค่าว่างถ้าไม่มี' },
+        event_dates: { type: 'string', description: 'วันจัด ตามที่เขียน หรือค่าว่าง' },
+        eligibility: { type: 'string', description: 'ใครสมัครได้ หรือค่าว่าง' },
+        cost: { type: 'string', description: 'ค่าใช้จ่าย/รางวัล หรือค่าว่าง' },
+        link: { type: 'string', description: 'URL หรือค่าว่าง' },
+        contact: { type: 'string', description: 'ช่องทางติดต่อ หรือค่าว่าง' },
+      },
+      required: ['title', 'kind', 'organizer', 'summary', 'deadline', 'event_dates', 'eligibility', 'cost', 'link', 'contact'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: 'list_opportunities',
+    description: 'ดูรายการประกาศ/การแข่งขัน/ทุน/คอร์ส ที่จดไว้ พร้อม deadline ใช้เมื่อผู้ใช้ถามว่ามีอะไรใกล้หมดเขต สมัครอะไรไว้บ้าง มีแข่งอะไร ฯลฯ',
+    input_schema: { type: 'object', properties: {}, additionalProperties: false },
+    strict: true,
+  },
+  {
+    name: 'delete_opportunity',
+    description: 'ลบรายการประกาศที่จดไว้ ระบุ id จาก list_opportunities',
+    input_schema: {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
     name: 'add_calendar_event',
     description: 'ลงนัดใน Google Calendar ใช้เมื่อผู้ใช้บอกว่า "ลง calendar" "ลงปฏิทิน" "ลงนัด" ถ้าไม่บอกเวลาสิ้นสุดให้เว้นว่าง (ระบบใส่ 1 ชั่วโมงให้)',
     input_schema: {
@@ -207,6 +247,7 @@ ${who}
 - จดโน้ต/ลิงก์ลง Drive (save_note)
 - ตั้งเตือน ดูเตือน ยกเลิก เปลี่ยนเวลา (set_reminder / list_reminders / cancel_reminder / reschedule_reminder) - ระบบแนบการ์ดยืนยันให้เอง คุณตอบยืนยันสั้น ๆ พร้อมเวลา เช่น "ได้เลย พรุ่งนี้ 10:15 น. เดี๋ยวเด้งเตือนให้"
 - ลงนัด / ดูนัดใน Google Calendar (add_calendar_event / list_calendar)
+- จดประกาศรับสมัคร / แข่งขัน / ทุน / คอร์ส พร้อม deadline (save_opportunity / list_opportunities / delete_opportunity) - โปสเตอร์และลิงก์ที่ผู้ใช้ส่งมา ระบบอ่านและจดให้เองอยู่แล้ว คุณใช้ save_opportunity เฉพาะข้อความที่พิมพ์/วางมา
 - ถามอะไรก็ตอบได้ ให้ความเห็นตรง ๆ แบบเพื่อน ถ้าไม่มั่นใจก็บอกว่าไม่ชัวร์
 
 กติกา:

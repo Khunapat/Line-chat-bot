@@ -26,6 +26,9 @@ export const config = {
   anthropicApiKey: env.ANTHROPIC_API_KEY,
   claudeModel: env.CLAUDE_MODEL || 'claude-opus-5',
   claudeEffort: env.CLAUDE_EFFORT || 'low',
+  // What to do with posters / links: always (scan automatically), ask (offer a
+  // button), off. Each scan is one model request.
+  autoScan: (env.AUTO_SCAN || 'always').toLowerCase(),
   botName: env.BOT_NAME || 'น้องไดรฟ์',
   userName: env.USER_NAME || '',
 

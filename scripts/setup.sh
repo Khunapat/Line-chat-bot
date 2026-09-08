@@ -71,6 +71,7 @@ if [ -z "$(getenv GEMINI_API_KEY)" ] && [ -z "$(getenv ANTHROPIC_API_KEY)" ]; th
   note "No AI key given: archiving and keyword commands only. Re-run later with a Gemini key to enable chat, reminders and calendar."
 fi
 [ -n "$(getenv CLAUDE_EFFORT)" ] || setenv CLAUDE_EFFORT "low"
+[ -n "$(getenv AUTO_SCAN)" ]     || setenv AUTO_SCAN "always"
 [ -n "$(getenv CRON_SECRET)" ]  || setenv CRON_SECRET "$(openssl rand -hex 16 2>/dev/null || node -e 'console.log(require("crypto").randomBytes(16).toString("hex"))')"
 
 bold "2/7  Installing dependencies"
@@ -115,7 +116,7 @@ envyaml="$(mktemp --suffix=.yaml 2>/dev/null || mktemp)"
 # Only the variables the app reads; quoted so tokens with + / = are safe.
 for key in LINE_CHANNEL_SECRET LINE_CHANNEL_ACCESS_TOKEN ALLOWED_USER_IDS GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET \
            GOOGLE_REFRESH_TOKEN GOOGLE_CALENDAR_ID DRIVE_ROOT_FOLDER_NAME TIMEZONE LLM_PROVIDER GEMINI_API_KEY GEMINI_MODEL ANTHROPIC_API_KEY CLAUDE_MODEL \
-           CLAUDE_EFFORT BOT_NAME USER_NAME CRON_SECRET; do
+           CLAUDE_EFFORT AUTO_SCAN BOT_NAME USER_NAME CRON_SECRET; do
   val="$(getenv "$key")"
   [ -n "$val" ] && printf '%s: "%s"\n' "$key" "${val//\"/\\\"}" >> "$envyaml"
 done

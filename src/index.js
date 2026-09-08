@@ -10,8 +10,13 @@ import { AnthropicProvider } from './providers/anthropic.js';
 import { fireDueReminders, pendingReminders, describeWhen, describeRepeat } from './reminders.js';
 import {
   textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, dueReminderCard, eventCard,
-  infoCard, linkButton, postbackButton,
+  infoCard, linkButton, postbackButton, opportunityCard, opportunityListCard, scanOfferCard,
 } from './flex.js';
+import {
+  extractFromMedia, extractFromText, fetchPageText, deadlineReminderTimes, sortOpportunities,
+  renderMarkdown, describeDeadline,
+} from './opportunities.js';
+import { Readable } from 'node:stream';
 
 requireConfig();
 
@@ -120,6 +125,23 @@ const handlers = {
       if (isScopeError(err)) return { error: 'Google Calendar is not connected: the refresh token lacks the calendar scope. Tell the user to re-run "npm run get-token" and redeploy.' };
       throw err;
     }
+  },
+
+  async save_opportunity(fields, ctx) {
+    const opp = await registerOpportunity({ ...fields, is_opportunity: true, confidence: 1 }, { ctx, source: { kind: 'text' } });
+    ctx.attachments.push(opportunityCard(opp, { timeZone: tz, now: ctx.now }));
+    return { ok: true, id: opp.id, deadline: describeDeadline(opp.deadline, tz, ctx.now), reminders: opp.reminderIds?.length || 0 };
+  },
+
+  async list_opportunities(_input, ctx) {
+    const list = sortOpportunities(await store.opportunities(), tz, ctx.now);
+    ctx.attachments.push(opportunityListCard(list, { timeZone: tz, now: ctx.now }));
+    return { opportunities: list.map((o) => ({ id: o.id, title: o.title, kind: o.kind, deadline: o.deadline, when: describeDeadline(o.deadline, tz, ctx.now), link: o.link || o.source?.webViewLink || '' })) };
+  },
+
+  async delete_opportunity({ id }) {
+    const removed = await deleteOpportunity(id);
+    return removed ? { ok: true, title: removed.title } : { error: 'not found' };
   },
 
   async list_calendar({ days }) {
@@ -244,12 +266,17 @@ async function handleEvent(event) {
       case 'video':
       case 'audio':
       case 'file': {
-        const saved = await archiveBinary(message, now);
+        const keepBytes = message.type === 'image' || message.type === 'file';
+        const { saved, buffer, mimeType } = await archiveBinary(message, now, { keepBytes });
         await store.setUserState(userId, { lastFile: saved });
         const hint = message.type === 'file'
           ? 'เก็บไว้ให้แล้ว ถ้าอยากตั้งชื่อให้หาง่าย พิมพ์ "เก็บไฟล์ <ชื่อ>" ได้เลย'
           : `เก็บ${kindThai(message.type)}ไว้ให้แล้ว ถ้าอยากตั้งชื่อ พิมพ์ "เก็บไฟล์ <ชื่อ>" ได้เลย`;
         ctx.attachments.push(textMessage(hint), fileCard(saved, { title: '📁 เก็บไว้แล้ว' }));
+        if (buffer && isScannable(mimeType, buffer.length)) {
+          if (config.autoScan === 'always' && brain) await scanMedia(buffer, mimeType, saved, ctx);
+          else if (config.autoScan === 'ask' && brain) ctx.attachments.push(scanOfferCard(saved.id));
+        }
         break;
       }
       case 'sticker':
@@ -277,6 +304,7 @@ async function handleText(text, ctx) {
       textMessage('จดลิงก์ไว้ให้แล้ว 🔗'),
       infoCard('📝 โน้ตวันนี้', [`${drive.todayKey(ctx.now)}/notes.md`], { buttons: [linkButton('เปิดโน้ต', file.webViewLink)] }),
     );
+    if (brain && config.autoScan !== 'off') await scanLink(urls[0], ctx);
     return;
   }
 
@@ -375,6 +403,25 @@ async function handlePostback(event, ctx) {
     case 'menu_help':
       ctx.attachments.push(textMessage(welcomeText()));
       return;
+    case 'opp_list':
+    case 'menu_deadlines':
+      await handlers.list_opportunities({}, ctx);
+      return;
+    case 'opp_delete': {
+      const removed = await deleteOpportunity(id);
+      ctx.attachments.push(textMessage(removed ? `ลบ "${removed.title}" ออกแล้ว (เตือนที่เกี่ยวข้องก็ยกเลิกให้)` : 'รายการนี้ถูกลบไปแล้ว'));
+      return;
+    }
+    case 'scan': {
+      const fileId = params.get('file');
+      if (!brain || !fileId) return void ctx.attachments.push(textMessage('ตอนนี้อ่านให้ไม่ได้ ลองใหม่อีกทีนะ'));
+      const info = await drive.fileInfo(fileId);
+      const buffer = await drive.download(fileId);
+      const before = ctx.attachments.length;
+      await scanMedia(buffer, info.mimeType, info, ctx);
+      if (ctx.attachments.length === before) ctx.attachments.push(textMessage('อ่านแล้ว แต่ไม่เจอว่าเป็นประกาศรับสมัครนะ'));
+      return;
+    }
     case 'list_reminders':
     case 'menu_reminders':
       await handlers.list_reminders({}, ctx);
@@ -405,9 +452,15 @@ async function handlePostback(event, ctx) {
         `โฟลเดอร์ Drive: ${config.driveRootFolderName}/`,
         `Google Calendar: ${cal}`,
         `โหมด AI: ${brain ? brain.label : 'ปิด (ยังไม่ได้ใส่ GEMINI_API_KEY)'}`,
+        `อ่านโปสเตอร์/ลิงก์อัตโนมัติ: ${{ always: 'เปิด', ask: 'ถามก่อน', off: 'ปิด' }[config.autoScan] || config.autoScan}`,
         `เขตเวลา: ${tz}`,
         `LINE user ID: ${ctx.userId}`,
-      ], { buttons: [postbackButton('ดูการเตือนทั้งหมด', 'action=list_reminders', 'ดูการเตือนทั้งหมด')] }));
+      ], { buttons: [
+        { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
+          postbackButton('การเตือน', 'action=list_reminders', 'ดูการเตือนทั้งหมด'),
+          postbackButton('สิ่งที่จำไว้', 'action=menu_notes', 'ดูสิ่งที่จำไว้'),
+        ] },
+      ] }));
       return;
     }
     default:
@@ -419,16 +472,130 @@ async function handlePostback(event, ctx) {
 // Media
 // ---------------------------------------------------------------------------
 
-async function archiveBinary(message, when) {
+async function archiveBinary(message, when, { keepBytes = false } = {}) {
+  let body;
+  let mimeType;
   if (message.contentProvider?.type === 'external' && message.contentProvider.originalContentUrl) {
     const resp = await fetch(message.contentProvider.originalContentUrl);
     if (!resp.ok) throw new Error(`external media fetch failed: ${resp.status}`);
-    const mimeType = resp.headers.get('content-type') || 'application/octet-stream';
-    return drive.uploadStream({ name: buildFileName(message, mimeType, when), mimeType, body: resp.body, date: when });
+    mimeType = resp.headers.get('content-type') || 'application/octet-stream';
+    body = resp.body;
+  } else {
+    const r = await lineBlob.getMessageContentWithHttpInfo(message.id);
+    mimeType = r.httpResponse.headers.get('content-type') || 'application/octet-stream';
+    body = r.body;
   }
-  const { httpResponse, body } = await lineBlob.getMessageContentWithHttpInfo(message.id);
-  const mimeType = httpResponse.headers.get('content-type') || 'application/octet-stream';
-  return drive.uploadStream({ name: buildFileName(message, mimeType, when), mimeType, body, date: when });
+  const name = buildFileName(message, mimeType, when);
+  if (!keepBytes) {
+    const saved = await drive.uploadStream({ name, mimeType, body, date: when });
+    return { saved, buffer: null, mimeType };
+  }
+  const chunks = [];
+  for await (const c of body) chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+  const buffer = Buffer.concat(chunks);
+  const saved = await drive.uploadStream({ name, mimeType, body: Readable.from(buffer), date: when });
+  return { saved, buffer, mimeType };
+}
+
+const SCAN_MAX_BYTES = 8 * 1024 * 1024;
+function isScannable(mimeType, size) {
+  const base = (mimeType || '').split(';')[0].trim().toLowerCase();
+  return size <= SCAN_MAX_BYTES && (base.startsWith('image/') || base === 'application/pdf');
+}
+
+/** Read a poster / PDF; when it announces something, record it and attach the card. */
+async function scanMedia(buffer, mimeType, file, ctx) {
+  try {
+    const base = (mimeType || '').split(';')[0].trim().toLowerCase();
+    const fields = await extractFromMedia(brain.provider, { mimeType: base, base64: buffer.toString('base64') }, { now: ctx.now, timeZone: tz });
+    if (!fields?.is_opportunity || fields.confidence < 0.5) return null;
+    const opp = await registerOpportunity(fields, { ctx, source: { kind: base === 'application/pdf' ? 'pdf' : 'image', fileId: file.id, webViewLink: file.webViewLink } });
+    ctx.attachments.push(textMessage(scanIntro(opp)), opportunityCard(opp, { timeZone: tz, now: ctx.now }));
+    return opp;
+  } catch (err) {
+    console.error('scan failed', describeError(err));
+    return null;
+  }
+}
+
+/** Fetch a link and do the same. */
+async function scanLink(url, ctx) {
+  try {
+    const text = await fetchPageText(url);
+    if (text.length < 80) {
+      if (config.autoScan === 'always') ctx.attachments.push(textMessage('เปิดหน้าเว็บนี้อ่านไม่ได้ ถ้าเป็นประกาศรับสมัคร ส่งรูปโปสเตอร์มาด้วยได้นะ เดี๋ยวจด deadline ให้'));
+      return null;
+    }
+    const fields = await extractFromText(brain.provider, text, { url, now: ctx.now, timeZone: tz });
+    if (!fields?.is_opportunity || fields.confidence < 0.5) return null;
+    if (!fields.link) fields.link = url;
+    const opp = await registerOpportunity(fields, { ctx, source: { kind: 'link', url } });
+    ctx.attachments.push(textMessage(scanIntro(opp)), opportunityCard(opp, { timeZone: tz, now: ctx.now }));
+    return opp;
+  } catch (err) {
+    console.error('link scan failed', describeError(err));
+    return null;
+  }
+}
+
+function scanIntro(opp) {
+  const n = opp.reminderIds?.length || 0;
+  const dl = opp.deadline ? `หมดเขต ${describeDeadline(opp.deadline, tz)}` : 'ไม่เห็นวันหมดเขตในนี้';
+  return `อ่านแล้ว เป็น${({ competition: 'การแข่งขัน', application: 'ประกาศรับสมัคร', scholarship: 'ทุน', course: 'คอร์สอบรม', event: 'กิจกรรม' })[opp.kind] || 'ประกาศ'} จดไว้ให้แล้ว 🎯 ${dl}${n ? ` ตั้งเตือนให้ ${n} ครั้งก่อนหมดเขต` : ''}`;
+}
+
+/** Save an opportunity, its deadline reminders, a calendar entry, and refresh Opportunities.md. */
+async function registerOpportunity(fields, { ctx, source }) {
+  const opp = await store.addOpportunity({
+    title: fields.title || 'ไม่มีชื่อ',
+    kind: fields.kind || 'other',
+    organizer: fields.organizer || '',
+    summary: fields.summary || '',
+    deadline: fields.deadline || '',
+    deadline_note: fields.deadline_note || '',
+    event_dates: fields.event_dates || '',
+    eligibility: fields.eligibility || '',
+    cost: fields.cost || '',
+    link: fields.link || '',
+    contact: fields.contact || '',
+    confidence: fields.confidence ?? 1,
+    source,
+    userId: ctx.userId,
+    reminderIds: [],
+  });
+
+  if (opp.deadline) {
+    const ids = [];
+    for (const t of deadlineReminderTimes(opp.deadline, tz, ctx.now)) {
+      const r = await store.addReminder({ userId: ctx.userId, text: `${t.label}: ${opp.title}`, at: t.at, repeat: 'none', oppId: opp.id });
+      ids.push(r.id);
+    }
+    opp.reminderIds = ids;
+    await store.update('opportunities.json', [], (list) => { const o = list.find((x) => x.id === opp.id); if (o) o.reminderIds = ids; });
+    try {
+      await calendar.createEvent({ title: `⏳ Deadline: ${opp.title}`, start: opp.deadline, allDay: true, description: [opp.summary, opp.link || opp.source?.webViewLink].filter(Boolean).join('\n') });
+    } catch (err) {
+      console.warn('calendar entry for deadline failed', err?.message || err);
+    }
+  }
+  await refreshOpportunitiesDoc(ctx.now);
+  return opp;
+}
+
+async function deleteOpportunity(id) {
+  const removed = await store.removeOpportunity(id);
+  if (!removed) return null;
+  for (const r of await store.reminders()) if (r.oppId === id) await store.removeReminder(r.id);
+  await refreshOpportunitiesDoc(new Date());
+  return removed;
+}
+
+async function refreshOpportunitiesDoc(now) {
+  try {
+    await drive.writeRootText('Opportunities.md', renderMarkdown(await store.opportunities(), tz, now));
+  } catch (err) {
+    console.warn('Opportunities.md refresh failed', err?.message || err);
+  }
 }
 
 function buildFileName(message, mimeType, when) {
@@ -487,6 +654,7 @@ function welcomeText() {
 • "ช่วยจำ ที่จอดรถชั้น 3 B12" → จำไว้ให้
 • "เตือนกินยา 19.00" → ตั้งเตือน
 • "ลง calendar พรุ่งนี้ 10 โมง ประชุม" → ลงปฏิทิน
+• ส่งโปสเตอร์/ลิงก์รับสมัคร → จด deadline + เตือนก่อนหมดเขต
 • ถามอะไรก็ได้ คุยเล่นก็ได้`;
 }
 

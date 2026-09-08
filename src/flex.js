@@ -3,6 +3,7 @@
  * buttons, dark rounded text - a friendly "notebook" look.
  */
 import { describeWhen, describeRepeat } from './reminders.js';
+import { describeDeadline, daysUntil, KIND_THAI } from './opportunities.js';
 
 const C = {
   card: '#F4EFE4',
@@ -237,6 +238,87 @@ export function dueReminderCard(reminder, { userName, timeZone, now } = {}) {
     },
   ];
   return flexMessage(`⏰ ${who}ถึงเวลา${reminder.text}แล้วนะ`, bubble({ contents, footer }));
+}
+
+// ------------------------------------------------------ opportunities
+
+function deadlineColor(o, timeZone, now) {
+  if (!o.deadline) return C.muted;
+  const d = daysUntil(o.deadline, timeZone, now);
+  if (d < 0) return C.muted;
+  if (d <= 3) return '#B5482F';
+  return '#6F7658';
+}
+
+export function opportunityBubble(o, { timeZone, now, title = '🎯 บันทึกไว้แล้ว' } = {}) {
+  const contents = [
+    heading(title),
+    body(o.title, { extra: { weight: 'bold', margin: 'md' } }),
+    muted(`${KIND_THAI[o.kind] || 'อื่น ๆ'}${o.organizer ? ' · ' + o.organizer : ''}`),
+    {
+      type: 'text',
+      text: `⏳ หมดเขต ${describeDeadline(o.deadline, timeZone, now)}${o.deadline_note ? ' ' + o.deadline_note : ''}`,
+      size: 'sm',
+      weight: 'bold',
+      color: deadlineColor(o, timeZone, now),
+      wrap: true,
+      margin: 'md',
+    },
+  ];
+  const facts = [
+    o.event_dates && `📅 ${o.event_dates}`,
+    o.eligibility && `👤 ${o.eligibility}`,
+    o.cost && `💸 ${o.cost}`,
+    o.contact && `📞 ${o.contact}`,
+  ].filter(Boolean);
+  for (const f of facts) contents.push(body(f, { size: 'sm' }));
+  if (o.summary) contents.push(muted(o.summary));
+
+  const openUri = o.link || o.source?.webViewLink;
+  const row = [];
+  if (openUri) row.push(button(o.link ? 'เปิดลิงก์' : 'เปิดโปสเตอร์', uriAction('เปิด', openUri)));
+  if (o.link && o.source?.webViewLink) row.push(button('โปสเตอร์', uriAction('โปสเตอร์', o.source.webViewLink), 'secondary'));
+  const footer = [];
+  if (row.length) footer.push({ type: 'box', layout: 'horizontal', spacing: 'sm', contents: row });
+  footer.push({
+    type: 'box',
+    layout: 'horizontal',
+    margin: 'md',
+    contents: [
+      { type: 'text', text: 'ดู deadline ทั้งหมด', size: 'sm', color: C.link, decoration: 'underline', flex: 3, action: postbackAction('ดูทั้งหมด', 'action=opp_list', 'ดู deadline ทั้งหมด') },
+      { type: 'text', text: 'ไม่ใช่ ลบ', size: 'sm', color: C.link, align: 'end', decoration: 'underline', flex: 2, action: postbackAction('ลบ', `action=opp_delete&id=${o.id}`, `ลบ: ${o.title}`.slice(0, 300)) },
+    ],
+  });
+  return bubble({ contents, footer });
+}
+
+export function opportunityCard(o, opts) {
+  return flexMessage(`${opts?.title || '🎯'} ${o.title} · หมดเขต ${describeDeadline(o.deadline, opts?.timeZone, opts?.now)}`, opportunityBubble(o, opts));
+}
+
+export function opportunityListCard(list, { timeZone, now } = {}) {
+  const rows = list.length === 0
+    ? [muted('ยังไม่มีรายการเลย ส่งโปสเตอร์หรือลิงก์รับสมัครมาได้เลย เดี๋ยวจดให้')]
+    : list.slice(0, 10).map((o) => ({
+      type: 'box',
+      layout: 'vertical',
+      margin: 'md',
+      action: (o.link || o.source?.webViewLink) ? uriAction('เปิด', o.link || o.source.webViewLink) : undefined,
+      contents: [
+        body(o.title, { size: 'sm', extra: { weight: 'bold' } }),
+        { type: 'text', text: `${describeDeadline(o.deadline, timeZone, now)} · ${KIND_THAI[o.kind] || ''}`, size: 'xs', color: deadlineColor(o, timeZone, now), wrap: true },
+      ],
+    }));
+  const contents = [heading('🎯 Deadline ทั้งหมด'), ...rows];
+  if (list.length > 10) contents.push(muted(`และอีก ${list.length - 10} รายการใน Opportunities.md`));
+  return flexMessage(`Deadline ทั้งหมด ${list.length} รายการ`, bubble({ contents, size: 'mega' }));
+}
+
+export function scanOfferCard(fileId) {
+  return flexMessage('อยากให้เช็ค deadline ในนี้ไหม', bubble({
+    contents: [heading('🎯 ดูเหมือนโปสเตอร์รับสมัคร'), muted('ให้อ่านแล้วจด deadline กับรายละเอียดไว้ไหม (ใช้ AI 1 ครั้ง)')],
+    footer: [button('อ่านและจดให้', postbackAction('อ่านและจดให้', `action=scan&file=${fileId}`, 'อ่านและจด deadline ให้หน่อย'))],
+  }));
 }
 
 // ----------------------------------------------------------- calendar

@@ -100,6 +100,26 @@ export class Store {
     });
   }
 
+  // ------------------------------------------------------ opportunities
+
+  async opportunities() {
+    return this.read('opportunities.json', []);
+  }
+
+  async addOpportunity(opp) {
+    const entry = { id: shortId(), createdAt: new Date().toISOString(), ...opp };
+    await this.update('opportunities.json', [], (list) => list.push(entry));
+    return entry;
+  }
+
+  async removeOpportunity(id) {
+    return this.update('opportunities.json', [], (list) => {
+      const idx = list.findIndex((x) => x.id === id);
+      if (idx === -1) return null;
+      return list.splice(idx, 1)[0];
+    });
+  }
+
   // -------------------------------------------------------------- state
 
   async getUserState(userId) {

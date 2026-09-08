@@ -16,17 +16,29 @@ export class Calendar {
    * Create an event. `start`/`end` are ISO strings with offset. When `end`
    * is missing the event lasts one hour.
    */
-  async createEvent({ title, start, end, description, location }) {
-    const startDate = new Date(start);
-    const endDate = end ? new Date(end) : new Date(startDate.getTime() + 60 * 60 * 1000);
+  async createEvent({ title, start, end, description, location, allDay = false }) {
+    let startField;
+    let endField;
+    if (allDay) {
+      // `start` is YYYY-MM-DD; Google's all-day end date is exclusive.
+      const next = new Date(start + 'T00:00:00Z');
+      next.setUTCDate(next.getUTCDate() + 1);
+      startField = { date: start };
+      endField = { date: next.toISOString().slice(0, 10) };
+    } else {
+      const startDate = new Date(start);
+      const endDate = end ? new Date(end) : new Date(startDate.getTime() + 60 * 60 * 1000);
+      startField = { dateTime: startDate.toISOString(), timeZone: this.timeZone };
+      endField = { dateTime: endDate.toISOString(), timeZone: this.timeZone };
+    }
     const { data } = await this.api.events.insert({
       calendarId: this.calendarId,
       requestBody: {
         summary: title,
         description,
         location,
-        start: { dateTime: startDate.toISOString(), timeZone: this.timeZone },
-        end: { dateTime: endDate.toISOString(), timeZone: this.timeZone },
+        start: startField,
+        end: endField,
         reminders: { useDefault: true },
       },
     });

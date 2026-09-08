@@ -141,6 +141,36 @@ export class DriveArchive {
     return data;
   }
 
+  /** Metadata for one file. */
+  async fileInfo(fileId) {
+    const { data } = await this.drive.files.get({ fileId, fields: FILE_FIELDS });
+    return decorate(data);
+  }
+
+  /** Download a file's bytes (for re-scanning a poster). */
+  async download(fileId) {
+    const { data } = await this.drive.files.get({ fileId, alt: 'media' }, { responseType: 'arraybuffer' });
+    return Buffer.from(data);
+  }
+
+  /** Create or replace `<root>/<name>` with the given text. */
+  async writeRootText(name, text, mimeType = 'text/markdown') {
+    const parentId = await this.rootFolder();
+    const body = Readable.from([text]);
+    const existingId = await this.findFileInFolder(name, parentId);
+    if (existingId) {
+      const { data } = await this.drive.files.update({ fileId: existingId, media: { mimeType, body }, fields: FILE_FIELDS });
+      return decorate(data);
+    }
+    const { data } = await this.drive.files.create({
+      requestBody: { name, parents: [parentId] },
+      media: { mimeType, body },
+      fields: FILE_FIELDS,
+    });
+    this.fileIdCache.set(`${parentId}/${name}`, data.id);
+    return decorate(data);
+  }
+
   // ------------------------------------------------------------ json docs
 
   /** Read `<root>/_data/<name>` as JSON, or `fallback` when missing. */

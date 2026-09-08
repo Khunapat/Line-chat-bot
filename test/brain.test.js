@@ -62,5 +62,5 @@ test('Gemini function declarations keep the JSON schema and drop strict', () => 
   assert.equal(decl.parametersJsonSchema.type, 'object');
   assert.deepEqual(decl.parametersJsonSchema.required, ['text', 'at', 'repeat']);
   assert.equal('strict' in decl, false);
-  assert.equal(TOOLS.length, 12);
+  assert.equal(TOOLS.length, 15);
 });

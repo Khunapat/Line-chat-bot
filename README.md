@@ -14,10 +14,12 @@ A LINE Official Account that works like a friend-plus-secretary in one chat:
 | `พรุ่งนี้มีเตือนอะไรบ้าง` | lists reminders |
 | `ลง calendar พรุ่งนี้ team dinner 18.09` | creates a Google Calendar event |
 | `เตือนและลง calendar 15.00 โทรหาลูกค้า` | does both |
+| a poster, PDF, or link for a competition, application, scholarship, course, or event | reads it, records title, deadline, dates, eligibility, cost, contact; replies with a card; sets reminders 3 days before and on the deadline; adds an all-day calendar entry; keeps `Opportunities.md` in Drive |
+| `มีอะไรใกล้หมดเขตบ้าง` | lists everything you sent, soonest deadline first |
 | anything else | chats back in casual Thai (or English if you write English) |
 
 A rich menu at the bottom of the chat gives one-tap access to
-**แจ้งเตือน · โน้ต/บันทึก · ไฟล์/รูป · ตั้งค่า**.
+**แจ้งเตือน · Deadline · ไฟล์/รูป · ตั้งค่า**, plus a mascot banner that shows the help text.
 
 Everything lives in **your own Google Drive**, nothing expires, and only your
 LINE user ID is allowed to talk to the bot.
@@ -28,10 +30,12 @@ My Drive/LineArchive/
 │   ├── notes.md                      ← links & text of the day
 │   ├── 21-32-10_image_5501234.jpg
 │   └── bookbank.pdf                  ← renamed via "เก็บไฟล์ bookbank"
-└── _data/
-    ├── memory.json                   ← things you asked it to remember
-    ├── reminders.json
-    └── state.json
+├── _data/
+│   ├── memory.json                   ← things you asked it to remember
+│   ├── reminders.json
+│   ├── opportunities.json            ← posters / links with deadlines
+│   └── state.json
+└── Opportunities.md                  ← readable deadline table
 ```
 
 ## How it works
@@ -52,6 +56,7 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `src/store.js` – memory / reminders / per-user state persisted as JSON in Drive.
 * `src/reminders.js` – scheduling, recurrence, Thai date phrases ("พรุ่งนี้ 10:15 น.").
 * `src/calendar.js` – Google Calendar events.
+* `src/opportunities.js` – reads posters / pages with the model, deadline maths, `Opportunities.md`.
 * `src/flex.js` – the beige cards with olive buttons.
 * `scripts/get-refresh-token.js` – one-time Google OAuth (Drive + Calendar scopes).
 * `scripts/setup-rich-menu.js` + `assets/richmenu.png` – the bottom menu.
@@ -202,6 +207,7 @@ artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
 | `ANTHROPIC_API_KEY` | Enables the chat brain with Claude (paid). Optional |
 | `CLAUDE_MODEL` / `CLAUDE_EFFORT` | Default `claude-opus-5`, effort `low` |
 | `LLM_PROVIDER` | Force `gemini`, `anthropic` or `none`; auto-detected from keys when unset |
+| `AUTO_SCAN` | `always` (default): read every poster and link and record deadlines; `ask`: offer a button first; `off` |
 | `BOT_NAME` / `USER_NAME` | How the bot refers to itself and to you |
 | `CRON_SECRET` | Shared secret for `/cron/reminders` |
 | `PORT` | Set by Cloud Run automatically |

@@ -1,5 +1,5 @@
 /**
- * One-time helper: create the bottom rich menu (แจ้งเตือน / โน้ต / ไฟล์ / ตั้งค่า),
+ * One-time helper: create the bottom rich menu (แจ้งเตือน / Deadline / ไฟล์ / ตั้งค่า),
  * upload assets/richmenu.png, and make it the default menu for everyone.
  *
  *   LINE_CHANNEL_ACCESS_TOKEN=... npm run rich-menu
@@ -38,7 +38,7 @@ const TOP = H - 843; // banner height (0 when there is no banner)
 const col = W / 4;
 const buttons = [
   { data: 'action=menu_reminders', text: 'แจ้งเตือน' },
-  { data: 'action=menu_notes', text: 'โน้ต/บันทึก' },
+  { data: 'action=menu_deadlines', text: 'Deadline' },
   { data: 'action=menu_files', text: 'ไฟล์/รูป' },
   { data: 'action=menu_settings', text: 'ตั้งค่า' },
 ];

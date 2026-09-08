@@ -50,3 +50,35 @@ export class AnthropicProvider {
     return { text: '' };
   }
 }
+
+/**
+ * Structured extraction: returns an object matching `schema`.
+ * Images / PDFs arrive as base64 inlineData parts (same shape as Gemini).
+ */
+AnthropicProvider.prototype.extract = async function extract({ system, parts, schema }) {
+  const content = parts.map((p) => {
+    if (p.inlineData) {
+      const isPdf = p.inlineData.mimeType === 'application/pdf';
+      return {
+        type: isPdf ? 'document' : 'image',
+        source: { type: 'base64', media_type: p.inlineData.mimeType, data: p.inlineData.data },
+      };
+    }
+    return { type: 'text', text: p.text };
+  });
+  content.push({ type: 'text', text: 'Record the result by calling the record tool exactly once.' });
+
+  const response = await this.client.beta.messages.create({
+    model: this.model,
+    max_tokens: 2048,
+    betas: ['server-side-fallback-2026-07-01'],
+    fallbacks: 'default',
+    output_config: { effort: 'low' },
+    system,
+    tools: [{ name: 'record', description: 'Record the extracted fields.', input_schema: schema, strict: true }],
+    messages: [{ role: 'user', content }],
+  });
+  const call = response.content.find((b) => b.type === 'tool_use' && b.name === 'record');
+  if (!call) throw new Error('model did not return structured output');
+  return call.input;
+};

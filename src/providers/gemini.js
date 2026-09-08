@@ -56,6 +56,29 @@ export class GeminiProvider {
   }
 }
 
+/**
+ * Structured extraction: returns an object matching `schema` (JSON Schema).
+ * `parts` may include { text } and { inlineData: { mimeType, data(base64) } }.
+ */
+GeminiProvider.prototype.extract = async function extract({ system, parts, schema }) {
+  const resp = await this.ai.models.generateContent({
+    model: this.model,
+    contents: [{ role: 'user', parts }],
+    config: {
+      systemInstruction: system,
+      responseMimeType: 'application/json',
+      responseJsonSchema: schema,
+      temperature: 0.2,
+    },
+  });
+  const text = resp.text || '';
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('model returned non-JSON: ' + text.slice(0, 200));
+  }
+};
+
 /** Convert an Anthropic-style tool definition to a Gemini function declaration. */
 export function toFunctionDeclaration(tool) {
   return {
