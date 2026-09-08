@@ -1,79 +1,88 @@
-# LINE → Google Drive archiver
+# LINE personal assistant → Google Drive
 
-A tiny LINE Official Account bot. Anything you send it (links, text, photos,
-videos, voice notes, files, locations) is saved immediately into your own
-Google Drive, organised by day, and the bot replies with the Drive link.
+A LINE Official Account that works like a friend-plus-secretary in one chat:
+
+| Say / send | What happens |
+| --- | --- |
+| a photo, video, voice note, PDF, any file | saved to `My Drive/LineArchive/YYYY-MM-DD/`, reply is a card with an **เปิดไฟล์** button |
+| a link | appended to that day's `notes.md` |
+| `เก็บไฟล์ bookbank ให้หน่อย` | renames the file you just sent so it is easy to find |
+| `ขอไฟล์ bookbank หน่อย` | finds it in Drive and sends the card back |
+| `ช่วยจำ ที่จอดรถชั้น 3 B12` | remembers it |
+| `จอดรถไว้ไหน` / `ขอเลขบัญชี X` | recalls it and tells you when it was saved |
+| `เตือนกินยา 19.00` / `เตือนทุกเย็น 18.00 กินยา` | one-off or recurring reminder, card with **เปลี่ยนเวลา / ยกเลิก** |
+| `พรุ่งนี้มีเตือนอะไรบ้าง` | lists reminders |
+| `ลง calendar พรุ่งนี้ team dinner 18.09` | creates a Google Calendar event |
+| `เตือนและลง calendar 15.00 โทรหาลูกค้า` | does both |
+| anything else | chats back in casual Thai (or English if you write English) |
+
+A rich menu at the bottom of the chat gives one-tap access to
+**แจ้งเตือน · โน้ต/บันทึก · ไฟล์/รูป · ตั้งค่า**.
+
+Everything lives in **your own Google Drive**, nothing expires, and only your
+LINE user ID is allowed to talk to the bot.
 
 ```
-My Drive/
-└── LineArchive/
-    ├── 2026-09-08/
-    │   ├── notes.md                       ← every text message / link of the day
-    │   ├── 21-32-10_image_5501234.jpg
-    │   └── 22-33-05_Akibul_CV.pdf
-    └── 2026-09-09/
-        └── ...
+My Drive/LineArchive/
+├── 2026-09-08/
+│   ├── notes.md                      ← links & text of the day
+│   ├── 21-32-10_image_5501234.jpg
+│   └── bookbank.pdf                  ← renamed via "เก็บไฟล์ bookbank"
+└── _data/
+    ├── memory.json                   ← things you asked it to remember
+    ├── reminders.json
+    └── state.json
 ```
-
-Why: LINE's "send to myself" chat is convenient across devices, but it gets
-crowded, is hard to scroll back through, and media expires after a while.
-Drive keeps everything, is searchable, and never expires.
 
 ## How it works
 
 ```
-Phone/PC ──LINE──▶ LINE Platform ──webhook──▶ Cloud Run (this app) ──▶ Google Drive
-                                        ◀── reply with Drive link ──┘
+Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─▶ Google Drive / Calendar
+                                    ▲                │
+                        Cloud Scheduler (every min) ─┘  fires due reminders (push message)
+                                                     └─▶ Claude (intent + chat persona)
 ```
 
-* `src/index.js` – Express server. Verifies the LINE signature, downloads the
-  message content, uploads to Drive, replies with the link. Only user IDs in
-  `ALLOWED_USER_IDS` are served.
-* `src/drive.js` – Drive helper. Creates `LineArchive/YYYY-MM-DD/` on demand
-  and appends text messages to that day's `notes.md`.
-* `scripts/get-refresh-token.js` – one-time OAuth flow for your Google account.
+* `src/index.js` – Express webhook. Signature check, media download, tool handlers, postbacks, `/cron/reminders`.
+* `src/brain.js` – Claude with a Thai "friend + secretary" persona and tools
+  (`remember`, `recall`, `find_file`, `name_last_file`, `set_reminder`, `add_calendar_event`, …).
+* `src/drive.js` – Drive folders, uploads, search, rename, JSON documents.
+* `src/store.js` – memory / reminders / per-user state persisted as JSON in Drive.
+* `src/reminders.js` – scheduling, recurrence, Thai date phrases ("พรุ่งนี้ 10:15 น.").
+* `src/calendar.js` – Google Calendar events.
+* `src/flex.js` – the beige cards with olive buttons.
+* `scripts/get-refresh-token.js` – one-time Google OAuth (Drive + Calendar scopes).
+* `scripts/setup-rich-menu.js` + `assets/richmenu.png` – the bottom menu.
 
-Drive access uses **your own Google account via OAuth** rather than a service
-account, because service accounts have no storage quota on personal Gmail
-accounts. The scope is `drive.file`, so the app can only see files it created.
+Without `ANTHROPIC_API_KEY` the bot still archives everything and understands
+the keyword commands (`ขอไฟล์ …`, `เก็บไฟล์ …`, `ช่วยจำ …`, `ขอ … หน่อย`), but
+reminders, calendar and free chat need the key.
 
 ## Setup
 
-You will need: a LINE account, a Google account, and the
-[gcloud CLI](https://cloud.google.com/sdk/docs/install) if deploying to Cloud Run.
-Node.js 20+ is needed only to run the token script locally.
+You need: a LINE account, a Google account, an Anthropic API key
+(<https://console.anthropic.com/>), the
+[gcloud CLI](https://cloud.google.com/sdk/docs/install), and Node.js 20+ on
+your computer for the two one-time scripts.
 
-### A. Create the LINE channel
+### A. LINE channel
 
-1. Go to <https://developers.line.biz/console/> and log in with LINE.
-2. Create a **Provider** (any name), then **Create a Messaging API channel**.
-   Fill in the required fields; the icon/description are only shown to you.
-3. On the channel's **Basic settings** tab copy the **Channel secret** →
-   `LINE_CHANNEL_SECRET`.
-4. On the **Messaging API** tab click **Issue** under *Channel access token
-   (long-lived)* → `LINE_CHANNEL_ACCESS_TOKEN`.
-5. Still on the Messaging API tab, scan the QR code with your phone to add the
-   bot as a friend. Leave **Use webhook** for later (step D).
-6. Optional: in the [LINE Official Account Manager](https://manager.line.biz/)
-   → Settings → Response settings, turn **off** *Auto-response messages* so
-   the bot doesn't send canned replies.
+1. <https://developers.line.biz/console/> → create a **Provider** → **Create a Messaging API channel**.
+2. **Basic settings** tab → copy **Channel secret** → `LINE_CHANNEL_SECRET`.
+3. **Messaging API** tab → **Issue** a long-lived channel access token → `LINE_CHANNEL_ACCESS_TOKEN`.
+4. Scan the QR code on that tab to add the bot as a friend.
+5. In [LINE Official Account Manager](https://manager.line.biz/) → Settings → Response settings: turn **off** *Auto-response messages* and *Greeting message* (the bot sends its own).
 
-### B. Create the Google OAuth client
+### B. Google OAuth client
 
-1. Go to <https://console.cloud.google.com/> and create a project
-   (e.g. `line-archiver`).
-2. **APIs & Services → Library** → enable **Google Drive API**.
-3. **APIs & Services → OAuth consent screen** → External → fill app name and
-   your email → Save. Under *Test users* add your own Gmail address.
-   (Staying in "Testing" mode is fine for personal use, but Google expires
-   refresh tokens after 7 days in that mode. To avoid re-authorising weekly,
-   click **Publish app** – no verification is needed for the `drive.file`
-   scope when only you use it.)
-4. **APIs & Services → Credentials → Create credentials → OAuth client ID**,
-   application type **Desktop app**. Copy the client ID and secret →
+1. <https://console.cloud.google.com/> → new project (e.g. `line-assistant`).
+2. **APIs & Services → Library** → enable **Google Drive API** and **Google Calendar API**.
+3. **OAuth consent screen** → External → app name + your email → add yourself under *Test users*.
+   Then click **Publish app**. (In "Testing" mode Google expires refresh tokens after 7 days.)
+4. **Credentials → Create credentials → OAuth client ID** → type **Desktop app** →
    `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 
-### C. Get a refresh token (one time, on your computer)
+### C. Refresh token (once, on your computer)
 
 ```bash
 git clone <this repo> && cd line-chat-bot
@@ -81,82 +90,108 @@ npm install
 GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... npm run get-token
 ```
 
-Open the printed URL, sign in with the Google account whose Drive you want to
-use, accept the permission. The script prints `GOOGLE_REFRESH_TOKEN=...`.
+Open the printed URL, sign in, accept Drive + Calendar access. Copy the printed
+`GOOGLE_REFRESH_TOKEN=...`.
 
 ### D. Deploy to Cloud Run
 
 ```bash
 gcloud auth login
 gcloud config set project <your-project-id>
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com cloudscheduler.googleapis.com
 
-gcloud run deploy line-archiver \
+gcloud run deploy line-assistant \
   --source . \
   --region asia-southeast1 \
   --allow-unauthenticated \
-  --memory 512Mi \
-  --timeout 300 \
-  --set-env-vars "LINE_CHANNEL_SECRET=...,LINE_CHANNEL_ACCESS_TOKEN=...,GOOGLE_CLIENT_ID=...,GOOGLE_CLIENT_SECRET=...,GOOGLE_REFRESH_TOKEN=...,TIMEZONE=Asia/Bangkok"
+  --memory 512Mi --timeout 300 \
+  --min-instances 0 --max-instances 1 \
+  --set-env-vars "LINE_CHANNEL_SECRET=...,LINE_CHANNEL_ACCESS_TOKEN=...,GOOGLE_CLIENT_ID=...,GOOGLE_CLIENT_SECRET=...,GOOGLE_REFRESH_TOKEN=...,ANTHROPIC_API_KEY=...,CRON_SECRET=<random string>,TIMEZONE=Asia/Bangkok,BOT_NAME=น้องไดรฟ์,USER_NAME=<your nickname>"
 ```
 
-(`--allow-unauthenticated` is required so LINE's servers can reach the
-webhook; the app itself rejects anything without a valid LINE signature.)
+`--max-instances 1` matters: state is a JSON file in Drive, and two containers
+must not write it at the same time. `--allow-unauthenticated` is required so
+LINE can reach the webhook; the app rejects anything without a valid LINE
+signature.
 
-The command prints a **Service URL** like `https://line-archiver-xxxx.a.run.app`.
+The command prints a **Service URL** like `https://line-assistant-xxxx.a.run.app`.
 
 Back in the LINE Developers Console → Messaging API tab:
 
-1. **Webhook URL** = `https://line-archiver-xxxx.a.run.app/webhook` → Update → **Verify** (should say *Success*).
+1. **Webhook URL** = `https://line-assistant-xxxx.a.run.app/webhook` → Update → **Verify**.
 2. Turn **Use webhook** on.
 
-### E. Lock the bot to your own account
+### E. Lock the bot to you
 
-Send any message to the bot. Because `ALLOWED_USER_IDS` is still empty it
-replies with your LINE user ID (starts with `U`). Redeploy with it:
+Send any message. The bot replies with your LINE user ID (starts with `U`):
 
 ```bash
-gcloud run services update line-archiver --region asia-southeast1 \
+gcloud run services update line-assistant --region asia-southeast1 \
   --update-env-vars ALLOWED_USER_IDS=Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-Now send a link, a photo, or a file. Within a couple of seconds the bot replies
-with the Drive link, and the file is in `My Drive/LineArchive/<today>/`.
+### F. Reminders (Cloud Scheduler, every minute)
+
+```bash
+gcloud scheduler jobs create http line-assistant-reminders \
+  --location asia-southeast1 \
+  --schedule "* * * * *" \
+  --uri "https://line-assistant-xxxx.a.run.app/cron/reminders" \
+  --http-method GET \
+  --headers "X-Cron-Secret=<the CRON_SECRET you set above>"
+```
+
+Reminders are delivered as push messages. The free LINE plan includes a
+monthly push quota (a few hundred), which is plenty for personal reminders;
+every other reply the bot sends uses free reply tokens.
+
+### G. Rich menu (bottom buttons)
+
+```bash
+LINE_CHANNEL_ACCESS_TOKEN=... npm run rich-menu
+```
+
+Uploads `assets/richmenu.png` and sets it as the default menu. To change the
+artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
 
 ## Configuration
 
 | Variable | Description |
 | --- | --- |
-| `LINE_CHANNEL_SECRET` | From LINE Developers Console, Basic settings |
-| `LINE_CHANNEL_ACCESS_TOKEN` | Long-lived token, Messaging API tab |
-| `ALLOWED_USER_IDS` | Comma-separated LINE user IDs allowed to use the bot. Empty = "tell me my ID" mode, nothing saved |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth Desktop client |
-| `GOOGLE_REFRESH_TOKEN` | Output of `npm run get-token` |
-| `DRIVE_ROOT_FOLDER_NAME` | Top-level folder in My Drive (default `LineArchive`) |
-| `TIMEZONE` | IANA zone for the day folders (default `Asia/Bangkok`) |
-| `PORT` | Listen port (Cloud Run sets this automatically) |
+| `LINE_CHANNEL_SECRET` / `LINE_CHANNEL_ACCESS_TOKEN` | From the LINE Developers Console |
+| `ALLOWED_USER_IDS` | Comma-separated LINE user IDs. Empty = "tell me my ID" mode |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REFRESH_TOKEN` | OAuth for your Google account |
+| `GOOGLE_CALENDAR_ID` | Calendar to write to (default `primary`) |
+| `DRIVE_ROOT_FOLDER_NAME` | Top-level Drive folder (default `LineArchive`) |
+| `TIMEZONE` | IANA zone for folders, reminders, calendar (default `Asia/Bangkok`) |
+| `ANTHROPIC_API_KEY` | Enables the chat brain. Optional |
+| `CLAUDE_MODEL` | Default `claude-opus-5` |
+| `CLAUDE_EFFORT` | `low` (default, fast and cheap) / `medium` / `high` |
+| `BOT_NAME` / `USER_NAME` | How the bot refers to itself and to you |
+| `CRON_SECRET` | Shared secret for `/cron/reminders` |
+| `PORT` | Set by Cloud Run automatically |
 
 ## Running locally
 
 ```bash
 cp .env.example .env   # fill in values
 npm install
+npm test
 node --env-file=.env src/index.js
 ```
 
-To receive real LINE webhooks locally, expose the port with a tunnel
-(e.g. `ngrok http 8080`) and point the webhook URL at `https://<tunnel>/webhook`.
+Expose the port with a tunnel (`ngrok http 8080`) and point the LINE webhook
+URL at `https://<tunnel>/webhook`. Fire reminders by hand with
+`curl -H "X-Cron-Secret: ..." localhost:8080/cron/reminders`.
 
 ## Cost
 
-* Cloud Run free tier comfortably covers personal use (a few hundred requests a month).
-* LINE reply messages are free and unlimited. The bot only falls back to a
-  push message (limited on the free plan) if an upload took longer than the
-  reply token's lifetime.
+* Cloud Run and Cloud Scheduler free tiers cover personal use.
+* Claude: each chat turn is a small request at low effort, typically well under a cent.
 * Files use your normal Google Drive storage.
 
-## Ideas for later
+## Not built yet
 
-* Fetch the page `<title>` for links and store it next to the URL in `notes.md`.
-* Add a `/find <keyword>` command that searches Drive and replies with matches.
-* Sort by type instead of (or in addition to) date, e.g. `LineArchive/PDF/…`.
+* Group chats (reminders that tag friends, fetching files sent in a group).
+* Reminders from a photo of a schedule.
+* To-do list view.

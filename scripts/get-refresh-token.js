@@ -18,8 +18,12 @@ if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
 
 const PORT = 53682;
 const REDIRECT = `http://localhost:${PORT}/`;
-// drive.file = only files/folders this app creates. Safer than full Drive access.
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+// drive.file    = only files/folders this app creates (safer than full Drive access)
+// calendar.events = create/list events so "ลง calendar ..." works
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/calendar.events',
+];
 
 const oauth2 = new google.auth.OAuth2(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT);
 
