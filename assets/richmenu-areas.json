@@ -6,30 +6,30 @@
       "data": "action=menu_notes",
       "text": "สิ่งที่จำไว้",
       "bounds": {
-        "x": 1802,
-        "y": 183,
-        "width": 560,
-        "height": 150
+        "x": 1782,
+        "y": 112,
+        "width": 580,
+        "height": 195
       }
     },
     {
       "data": "action=menu_gallery",
       "text": "แกลเลอรี",
       "bounds": {
-        "x": 1802,
-        "y": 359,
-        "width": 560,
-        "height": 150
+        "x": 1782,
+        "y": 333,
+        "width": 580,
+        "height": 195
       }
     },
     {
       "data": "action=menu_ai",
       "text": "โควตา AI",
       "bounds": {
-        "x": 1802,
-        "y": 535,
-        "width": 560,
-        "height": 150
+        "x": 1782,
+        "y": 554,
+        "width": 580,
+        "height": 195
       }
     },
     {
