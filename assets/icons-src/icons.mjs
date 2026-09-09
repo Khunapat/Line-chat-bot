@@ -49,10 +49,11 @@ export const ICONS = {
     <path d="M42 62 l-8 8 q-10 10 -20 0 q-10 -10 0 -20 l14 -14 q10 -10 20 0" fill="${C.cream}" ${S}/>
     <path d="M58 38 l8 -8 q10 -10 20 0 q10 10 0 20 l-14 14 q-10 10 -20 0" fill="${C.olive}" ${S}/>
     <path d="M40 60 l20 -20" ${S}/>`,
-  // gear
+  // gear: eight rounded teeth, a body on top hides their inner ends
   settings: `
-    <path d="M50 12 l7 8 l10 -3 l4 10 l10 3 l-2 10 l8 7 l-6 9 l3 10 l-10 4 l-2 10 l-11 -1 l-7 8 l-8 -7 l-10 3 l-4 -10 l-10 -3 l2 -10 l-8 -7 l6 -9 l-3 -10 l10 -4 l2 -10 l11 1 z" fill="${C.cream}" ${S}/>
-    <circle cx="50" cy="52" r="13" fill="${C.olive}" ${S}/>`,
+    <rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(0 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(45 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(90 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(135 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(180 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(225 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(270 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(315 50 52)"/>
+    <circle cx="50" cy="52" r="28" fill="${C.cream}" ${S}/>
+    <circle cx="50" cy="52" r="11" fill="${C.olive}" ${S}/>`,
   // little robot head (AI)
   ai: `
     <rect x="18" y="30" width="64" height="50" rx="14" fill="${C.cream}" ${S}/>
