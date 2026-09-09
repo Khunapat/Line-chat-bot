@@ -1,0 +1,86 @@
+{
+  "width": 2500,
+  "height": 1686,
+  "areas": [
+    {
+      "data": "action=menu_notes",
+      "text": "สิ่งที่จำไว้",
+      "bounds": {
+        "x": 1802,
+        "y": 183,
+        "width": 560,
+        "height": 150
+      }
+    },
+    {
+      "data": "action=menu_gallery",
+      "text": "แกลเลอรี",
+      "bounds": {
+        "x": 1802,
+        "y": 359,
+        "width": 560,
+        "height": 150
+      }
+    },
+    {
+      "data": "action=menu_ai",
+      "text": "โควตา AI",
+      "bounds": {
+        "x": 1802,
+        "y": 535,
+        "width": 560,
+        "height": 150
+      }
+    },
+    {
+      "data": "action=menu_reminders",
+      "text": "แจ้งเตือน",
+      "bounds": {
+        "x": 60,
+        "y": 883,
+        "width": 565,
+        "height": 723
+      }
+    },
+    {
+      "data": "action=menu_deadlines",
+      "text": "Deadline",
+      "bounds": {
+        "x": 665,
+        "y": 883,
+        "width": 565,
+        "height": 723
+      }
+    },
+    {
+      "data": "action=menu_files",
+      "text": "ไฟล์/รูป",
+      "bounds": {
+        "x": 1270,
+        "y": 883,
+        "width": 565,
+        "height": 723
+      }
+    },
+    {
+      "data": "action=menu_settings",
+      "text": "ตั้งค่า",
+      "bounds": {
+        "x": 1875,
+        "y": 883,
+        "width": 565,
+        "height": 723
+      }
+    },
+    {
+      "data": "action=menu_help",
+      "text": "ทำอะไรได้บ้าง",
+      "bounds": {
+        "x": 60,
+        "y": 64,
+        "width": 2380,
+        "height": 739
+      }
+    }
+  ]
+}

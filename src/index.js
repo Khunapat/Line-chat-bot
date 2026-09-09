@@ -706,6 +706,11 @@ async function handlePostback(event, ctx) {
       ctx.attachments.push(textMessage(`ยกเลิกการเชื่อม Google Drive แล้ว ไฟล์ที่เก็บไว้ยังอยู่ใน Drive ของคุณตามเดิม${groups.length ? ` (กลุ่มที่คุณดูแล ${groups.length} กลุ่มต้องเลือกเจ้าของใหม่)` : ''}\nถ้าอยากใช้อีก พิมพ์ "เชื่อม Drive" ได้เลย`));
       return;
     }
+    case 'menu_gallery': {
+      if (publicBase) ctx.attachments.push(galleryCard(ctx));
+      else ctx.attachments.push(textMessage('ยังสร้างลิงก์แกลเลอรีไม่ได้ ลองอีกครั้งในอีกสักครู่นะ'));
+      return;
+    }
     case 'menu_ai': {
       if (!provider) { ctx.attachments.push(textMessage('ยังไม่ได้เปิดโหมด AI')); return; }
       const snap = await aiUsage.snapshot(provider.models, ctx.now);

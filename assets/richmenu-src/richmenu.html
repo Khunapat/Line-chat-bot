@@ -18,15 +18,25 @@
   .banner { height: 843px; box-sizing: border-box; padding: 64px 60px 40px; }
   .card {
     height: 100%; background: #FBF8F1; border: 8px solid #3B3B3B; border-radius: 48px; box-shadow: 0 16px 0 #3B3B3B;
-    display: flex; align-items: center; gap: 70px; padding: 0 110px 0 90px; box-sizing: border-box;
+    display: flex; align-items: center; gap: 60px; padding: 0 70px 0 80px; box-sizing: border-box;
   }
-  .mascot { width: 560px; height: 560px; border-radius: 50%; background: #F4EFE4; border: 8px solid #3B3B3B; overflow: hidden; flex: none; box-shadow: 0 10px 0 #8B9270; }
+  /* Quick buttons in the banner's right-hand space. */
+  .quick { width: 560px; flex: none; display: flex; flex-direction: column; gap: 26px; }
+  .q {
+    height: 150px; background: #F4EFE4; border: 6px solid #3B3B3B; border-radius: 38px; box-shadow: 0 8px 0 #3B3B3B;
+    display: flex; align-items: center; gap: 26px; padding: 0 34px; box-sizing: border-box;
+  }
+  .q .qi { width: 96px; height: 96px; flex: none; display: flex; }
+  .q .qi svg { width: 100%; height: 100%; }
+  .q .qt { font-size: 54px; font-weight: 700; line-height: 1; }
+  .q .qs { font-size: 32px; color: #8A8A8A; font-weight: 500; margin-top: 6px; }
+  .mascot { width: 540px; height: 540px; border-radius: 50%; background: #F4EFE4; border: 8px solid #3B3B3B; overflow: hidden; flex: none; box-shadow: 0 10px 0 #8B9270; }
   .mascot img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); }
   .text { flex: 1; }
-  .name { font-size: 150px; font-weight: 700; line-height: 1.05; letter-spacing: 2px; }
+  .name { font-size: 140px; font-weight: 700; line-height: 1.05; letter-spacing: 2px; }
   .name span { color: #8B9270; }
-  .tag { font-size: 60px; color: #6F7658; margin-top: 10px; font-weight: 600; }
-  .list { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; font-size: 44px; color: #555; font-weight: 500; }
+  .tag { font-size: 56px; color: #6F7658; margin-top: 10px; font-weight: 600; }
+  .list { margin-top: 26px; display: flex; flex-direction: column; gap: 10px; font-size: 40px; color: #555; font-weight: 500; }
   .list div::before { content: '✓'; color: #8B9270; font-weight: 700; margin-right: 22px; }
   .hint { position: absolute; right: 130px; bottom: 912px; font-size: 38px; color: #A09A88; }
   .row { display: flex; gap: 40px; padding: 40px 60px 80px; box-sizing: border-box; height: 843px; }
@@ -44,7 +54,7 @@
 </head>
 <body>
   <div class="banner">
-    <div class="card">
+    <div class="card" data-action="menu_help" data-text="ทำอะไรได้บ้าง">
       <div class="mascot"><img src="../mascot.jpg" alt=""></div>
       <div class="text">
         <div class="name">Jai<span>Ja</span></div>
@@ -52,17 +62,22 @@
         <div class="list">
           <div>ส่งรูป ไฟล์ ลิงก์มา เก็บลง Google Drive ทันที</div>
           <div>"ช่วยจำ..." แล้วถามหาเมื่อไหร่ก็ได้</div>
-          <div>ส่งโปสเตอร์รับสมัครมา จด deadline + เตือนก่อนหมดเขต</div>
+          <div>ส่งโปสเตอร์รับสมัครมา จด deadline + เตือนให้</div>
         </div>
+      </div>
+      <div class="quick">
+        <div class="q" data-action="menu_notes" data-text="สิ่งที่จำไว้"><div class="qi" data-icon="note"></div><div><div class="qt">สิ่งที่จำไว้</div><div class="qs">"ช่วยจำ..." ทั้งหมด</div></div></div>
+        <div class="q" data-action="menu_gallery" data-text="แกลเลอรี"><div class="qi" data-icon="gallery"></div><div><div class="qt">แกลเลอรี</div><div class="qs">รูปและไฟล์เป็นปฏิทิน</div></div></div>
+        <div class="q" data-action="menu_ai" data-text="โควตา AI"><div class="qi" data-icon="ai"></div><div><div class="qt">โควตา AI</div><div class="qs">ใช้ไปเท่าไหร่วันนี้</div></div></div>
       </div>
     </div>
   </div>
   <div class="hint">แตะการ์ดเพื่อดูวิธีใช้ทั้งหมด</div>
   <div class="row">
-    <div class="btn"><div class="icon" data-icon="bell"></div><div class="label">แจ้งเตือน</div><div class="sub">ดู / ยกเลิก</div></div>
-    <div class="btn"><div class="icon" data-icon="target"></div><div class="label">Deadline</div><div class="sub">สมัคร · แข่ง · ทุน · คอร์ส</div></div>
-    <div class="btn"><div class="icon" data-icon="folder"></div><div class="label">ไฟล์/รูป</div><div class="sub">แกลเลอรี · ปฏิทิน · ค้นหา</div></div>
-    <div class="btn"><div class="icon" data-icon="settings"></div><div class="label">ตั้งค่า</div><div class="sub">สถานะบอท</div></div>
+    <div class="btn" data-action="menu_reminders" data-text="แจ้งเตือน"><div class="icon" data-icon="bell"></div><div class="label">แจ้งเตือน</div><div class="sub">ดู / ยกเลิก</div></div>
+    <div class="btn" data-action="menu_deadlines" data-text="Deadline"><div class="icon" data-icon="target"></div><div class="label">Deadline</div><div class="sub">สมัคร · แข่ง · ทุน · คอร์ส</div></div>
+    <div class="btn" data-action="menu_files" data-text="ไฟล์/รูป"><div class="icon" data-icon="folder"></div><div class="label">ไฟล์/รูป</div><div class="sub">แกลเลอรี · ปฏิทิน · ค้นหา</div></div>
+    <div class="btn" data-action="menu_settings" data-text="ตั้งค่า"><div class="icon" data-icon="settings"></div><div class="label">ตั้งค่า</div><div class="sub">สถานะบอท</div></div>
   </div>
 </body>
 </html>

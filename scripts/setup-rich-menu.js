@@ -54,6 +54,20 @@ if (TOP > 0) {
   });
 }
 
+// assets/richmenu-areas.json is written by `npm run richmenu-image` from the
+// same HTML the image comes from; prefer it when it matches this image.
+const areasFile = path.join(path.dirname(imagePath), 'richmenu-areas.json');
+if (fs.existsSync(areasFile)) {
+  const measured = JSON.parse(fs.readFileSync(areasFile, 'utf8'));
+  if (measured.width === W && measured.height === H && Array.isArray(measured.areas)) {
+    areas.length = 0;
+    for (const a of measured.areas) {
+      areas.push({ bounds: a.bounds, action: { type: 'postback', data: a.data, displayText: a.text } });
+    }
+    console.log('using', areas.length, 'tap areas from', path.basename(areasFile));
+  }
+}
+
 const menu = { size: { width: W, height: H }, selected: true, name: MENU_NAME, chatBarText: 'เมนู', areas };
 
 function pngSize(file) {
