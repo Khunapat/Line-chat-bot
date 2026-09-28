@@ -5,8 +5,8 @@ open the page, tap **Start speaking**, and talk. The partner speaks, then
 listens, then speaks again, with no tapping between turns, so you can practice
 while climbing stairs, walking or cooking.
 
-Each session follows one day of a 30-day plan (days 1-15 follow HSK Standard
-Course 1, days 16-30 everyday situations at about HSK 2). Say **总结** at the
+Each session follows one day of a 36-day plan built on the 30 lessons of
+*HSK Standard Course* 1 and 2 (HSK标准教程). Say **总结** at the
 end and you get the words you practiced (with pinyin), your most repeated
 mistakes and one sentence to practice tomorrow. Every summary is saved to a
 history log.
@@ -58,15 +58,28 @@ code or settings with it.
 
    On the phone, use *Add to Home Screen* so it opens like an app.
 
-## How the 30-day plan works
+## How the 36-day plan works
+
+* Lesson days follow *HSK Standard Course* 1 and 2 (HSK标准教程, Beijing
+  Language and Culture University Press), lessons 1-15 of each book, in the
+  books' order and with their lesson titles and grammar points: book 1 on days
+  1-17, book 2 on days 19-35.
+* Every target word is on an official HSK level 1-2 word list (HSK 2.0, which
+  the books are built on, or the HSK 3.0 standard of 2021). The words for each
+  lesson were picked from those lists to fit the lesson topic; they are not a
+  copy of the books' vocabulary tables. `test/plan.test.js` checks every word
+  and its pinyin against the lists in `lib/hsk-words.js`, which
+  `node scripts/build-hsk-words.mjs` regenerates from
+  [complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary)
+  (MIT). The role-play scenes are this app's own.
 
 * Pick a day on the home screen (it suggests the day after the last one you
   finished) and tap **Start speaking**. Finished days are marked.
 * Each session goes: warm-up (questions reusing the last days' words), teach
   (today's words one at a time: listen, repeat, use), role-play (the day's
   scene, the partner plays the other person), then free talk.
-* Days 5, 10, 15, 20, 25 and 30 are review days: no new words, a mix of the
-  previous days' scenes and a quiz.
+* Days 6, 12, 18, 24, 30 and 36 are review days: no new words, a mix of the
+  week's scenes and a quiz. Day 36 reviews everything.
 * Replies are short (1-2 sentences), mostly Chinese, and always end with a
   question or "repeat after me" so you keep talking.
 
@@ -124,7 +137,7 @@ npm run dev     # restart on file changes
 ```
 
 Layout: `server.js` starts the app; `lib/` has the Express app (`app.js`), the
-30-day plan (`plan.js`), the AI prompts (`prompt.js`), the AI providers
+36-day plan (`plan.js`) and the HSK word lists (`hsk-words.js`), the AI prompts (`prompt.js`), the AI providers
 (`providers.js`) and the history log (`store.js`); `public/` is the page;
 `test/` and `e2e/` are the checks.
 

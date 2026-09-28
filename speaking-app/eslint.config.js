@@ -11,7 +11,7 @@ export default [
     },
   },
   {
-    files: ['*.js', 'lib/**/*.js', 'test/**/*.js'],
+    files: ['*.js', 'lib/**/*.js', 'test/**/*.js', 'scripts/**/*.mjs'],
     languageOptions: { globals: { ...globals.node } },
   },
   {

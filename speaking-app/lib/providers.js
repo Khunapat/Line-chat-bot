@@ -147,7 +147,7 @@ export class MockProvider {
 
   async chat({ messages, day }) {
     const entry = typeof day === 'number' ? getDay(day) : day;
-    if (!messages.length) return `你好！今天是第${entry.day}天：${entry.topic}。我们开始吧！你今天怎么样？`;
+    if (!messages.length) return `你好！今天是第${entry.day}天：${entry.title || entry.topic}。我们开始吧！你今天怎么样？`;
     const userTurns = messages.filter((m) => m.role === 'user');
     const last = userTurns.at(-1)?.text ?? '';
     const said = [...last].slice(0, 40).join('');
@@ -157,12 +157,12 @@ export class MockProvider {
   async summarize({ day }) {
     const entry = typeof day === 'number' ? getDay(day) : day;
     const words = entry.review
-      ? entry.reviewOf.flatMap((d) => getDay(d).words.slice(0, 3)).slice(0, 12)
-      : entry.words;
+      ? entry.reviewOf.flatMap((d) => getDay(d).glossary.slice(0, 3)).slice(0, 12)
+      : entry.glossary;
     return {
-      words: words.map((w) => ({ hanzi: w, pinyin: '-', meaning: '-' })),
+      words: words.map(({ hanzi, pinyin, meaning }) => ({ hanzi, pinyin, meaning })),
       mistakes: ['(mock) no real analysis'],
-      practice: `我今天练习了${entry.topic}。`,
+      practice: `我今天练习了「${entry.title || entry.topic}」。`,
     };
   }
 }

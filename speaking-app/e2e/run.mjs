@@ -14,6 +14,7 @@ import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { TOTAL_DAYS } from '../lib/plan.js';
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SHOTS = path.join(APP_DIR, 'e2e', 'screenshots');
@@ -22,7 +23,7 @@ const DEFAULT_VIEWPORT = { width: 1280, height: 900 };
 const TIMEOUT = 10000;
 const PASSWORD = 'e2e-ม้า-马-horse'; // non-Latin-1 on purpose: header values must be encoded
 const WRONG_PASSWORD = 'ผิด-wrong';
-const DAY_IDS = Array.from({ length: 30 }, (_, i) => `day-${i + 1}`);
+const DAY_IDS = Array.from({ length: TOTAL_DAYS }, (_, i) => `day-${i + 1}`);
 const SESSION_CONTROLS = ['leave', 'pause', 'repeat', 'slower', 'end', 'text-input', 'send'];
 
 // ---------------------------------------------------------------- reporting
@@ -641,8 +642,8 @@ async function mainScenario(browser, server, plan) {
 
     // Home
     await screenIs(page, 'screen-home');
-    await waitUntil(page, 'home shows 30 day buttons day-1..day-30',
-      () => { const ids = window.__e2e.dayButtons().map((b) => b.getAttribute('data-testid')); return ids.length === 30 && Array.from({ length: 30 }, (_, i) => `day-${i + 1}`).every((id) => ids.includes(id)); });
+    await waitUntil(page, `home shows ${TOTAL_DAYS} day buttons day-1..day-${TOTAL_DAYS}`,
+      (n) => { const ids = window.__e2e.dayButtons().map((b) => b.getAttribute('data-testid')); return ids.length === n && Array.from({ length: n }, (_, i) => `day-${i + 1}`).every((id) => ids.includes(id)); }, TOTAL_DAYS);
     await waitUntil(page, 'fresh log: Day 1 is the only selected day',
       () => { const p = window.__e2e.dayButtons().filter((b) => b.getAttribute('aria-pressed') === 'true'); return p.length === 1 && p[0].getAttribute('data-testid') === 'day-1'; });
     await waitUntil(page, 'title shows Day 1 and its topic',
@@ -667,36 +668,44 @@ async function mainScenario(browser, server, plan) {
     await waitUntil(page, 'day details list Day 3 words and scene',
       ({ words, scene }) => { const t = window.__e2e.text('day-details'); return words.every((w) => t.includes(w)) && t.includes(scene); },
       { words: d3.words, scene: d3.scene }, { hard: false });
+    await waitUntil(page, 'day details show the book lesson, pinyin under each word and the grammar point',
+      ({ title, source, pinyin, pattern }) => {
+        const t = window.__e2e.text('day-details');
+        return t.includes(title) && t.includes(source) && pinyin.every((p) => t.includes(p)) && t.includes(pattern);
+      },
+      { title: d3.title, source: d3.source, pinyin: d3.glossary.map((g) => g.pinyin), pattern: d3.pattern });
 
     // Start: opening
     await page.click('[data-testid=start]');
     await screenIs(page, 'screen-session');
-    const opening = `你好！今天是第3天：${d3.topic}。我们开始吧！你今天怎么样？`;
+    const opening = `你好！今天是第3天：${d3.title}。我们开始吧！你今天怎么样？`;
     await waitUntil(page, 'bot opening appears in the transcript',
       (want) => { const m = window.__e2e.msgs(); return m.length >= 1 && m[0].role === 'bot' && m[0].text === want; }, opening);
     must(track.chat.length === 1 && track.chat[0]?.day === 3 && Array.isArray(track.chat[0]?.messages) && track.chat[0].messages.length === 0,
       'opening is one POST /api/chat with day 3 and messages []', JSON.stringify(track.chat));
     await waitUntil(page, 'opening is spoken completely', (want) => window.__e2e.norm(window.__e2e.spokenSince(0)) === want, norm(opening));
     await waitUntil(page, 'status goes speaking -> listening', () => window.__e2e.hasSeq(['speaking', 'listening']) && window.__e2e.state() === 'listening');
-    checkChunks('opening split by script: zh-CN voice for Chinese, en-US for English, rate 0.9', await spokenFrom(page, 0), { rate: 0.9, needLatin: true });
+    checkChunks('opening spoken with the zh-CN voice at rate 0.9', await spokenFrom(page, 0), { rate: 0.9 });
     record(await page.evaluate(() => window.__e2e.text('status').length > 0), 'status has a human-readable label');
     const cfg = await page.evaluate(() => window.__fakeSpeech.config);
     record(cfg?.lang === 'zh-CN' && cfg.interimResults === true && cfg.continuous === false,
       'recognition configured zh-CN, interimResults, not continuous', JSON.stringify(cfg));
     record(await page.evaluate(() => !window.__e2e.visible('voice-warning')), 'voice warning hidden when speech is supported');
 
-    // Voice turn
+    // Voice turn (an English name in it checks the per-script voices)
     let mark = await stateMark(page);
-    await say(page, '我叫小明');
-    await waitUntil(page, 'spoken "我叫小明" appears as a user message',
-      () => window.__e2e.msgs().some((m) => m.role === 'user' && m.text === '我叫小明'));
-    await waitUntil(page, 'bot answers the voice turn', () => window.__e2e.msgs().some((m) => m.role === 'bot' && m.text.startsWith('好的！你说：「我叫小明」。')));
+    const spokeBeforeName = await spokenCount(page);
+    await say(page, '我叫Tom');
+    await waitUntil(page, 'spoken "我叫Tom" appears as a user message',
+      () => window.__e2e.msgs().some((m) => m.role === 'user' && m.text === '我叫Tom'));
+    await waitUntil(page, 'bot answers the voice turn', () => window.__e2e.msgs().some((m) => m.role === 'bot' && m.text.startsWith('好的！你说：「我叫Tom」。')));
     await waitUntil(page, 'status goes thinking -> speaking -> listening after a voice turn',
       (from) => window.__e2e.hasSeq(['thinking', 'speaking', 'listening'], from) && window.__e2e.state() === 'listening', mark);
+    checkChunks('reply with an English name split by script: zh-CN voice for Chinese, en-US for English, rate 0.9', await spokenFrom(page, spokeBeforeName), { rate: 0.9, needLatin: true });
     const interim = await page.evaluate(() => window.__fakeSpeech.interimSeen);
     record(interim.some((t) => t && t.includes('我叫')), 'interim text shows the partial transcript', JSON.stringify(interim));
     const t2 = track.chat.at(-1);
-    record(track.chat.length === 2 && t2?.day === 3 && t2.messages.at(-1)?.role === 'user' && t2.messages.at(-1)?.text === '我叫小明' && t2.messages[0]?.text === opening,
+    record(track.chat.length === 2 && t2?.day === 3 && t2.messages.at(-1)?.role === 'user' && t2.messages.at(-1)?.text === '我叫Tom' && t2.messages[0]?.text === opening,
       'voice turn sends the history with the user text last', JSON.stringify(t2));
 
     // Typed turn
@@ -788,11 +797,11 @@ async function mainScenario(browser, server, plan) {
       return items.length >= 1 && words.every((w) => t.includes(w));
     }, d3.words);
     await waitUntil(page, 'summary lists mistakes', () => (window.__e2e.q('summary-mistakes')?.querySelectorAll('li').length ?? 0) >= 1 && window.__e2e.text('summary-mistakes').includes('(mock)'));
-    await waitUntil(page, 'summary shows the practice sentence', (want) => window.__e2e.text('summary-practice').includes(want), `我今天练习了${d3.topic}。`);
+    await waitUntil(page, 'summary shows the practice sentence', (want) => window.__e2e.text('summary-practice').includes(want), `我今天练习了「${d3.title}」。`);
     record(track.chat.length === chatBefore, '"总结" is a command, not a chat turn', `${chatBefore} -> ${track.chat.length}`);
     const sum = track.summary;
     const userTexts = (sum[0]?.messages ?? []).filter((m) => m.role === 'user').map((m) => m.text);
-    record(sum.length === 1 && sum[0].day === 3 && ['我叫小明', '我是泰国人', '我喜欢爬楼梯'].every((t) => userTexts.includes(t)),
+    record(sum.length === 1 && sum[0].day === 3 && ['我叫Tom', '我是泰国人', '我喜欢爬楼梯'].every((t) => userTexts.includes(t)),
       'one POST /api/summary with day 3 and the whole conversation', JSON.stringify(sum));
     await waitUntil(page, 'finish stops listening and speaking', () => window.__fakeSpeech.active === 0 && !window.speechSynthesis.speaking);
     await shootAll(page, 'summary', { required: ['summary-words', 'summary-mistakes', 'summary-practice', 'home'], overlap: ['summary-words', 'summary-mistakes', 'summary-practice', 'home'] });
@@ -841,7 +850,7 @@ async function unsupportedScenario(browser, server) {
   try {
     await page.goto(`${server.base}/`);
     must(await page.evaluate(() => !(window.SpeechRecognition || window.webkitSpeechRecognition)), 'SpeechRecognition removed for this run');
-    await waitUntil(page, 'home loads', () => window.__e2e.dayButtons().length === 30);
+    await waitUntil(page, 'home loads', (n) => window.__e2e.dayButtons().length === n, TOTAL_DAYS);
     await waitUntil(page, 'day 4 is selected from the log', () => window.__e2e.q('day-4')?.getAttribute('aria-pressed') === 'true', null, { hard: false });
     await page.click('[data-testid=start]');
     await screenIs(page, 'screen-session');
@@ -866,7 +875,7 @@ async function resilienceScenario(browser, server, plan) {
   const botCount = () => page.evaluate(() => window.__e2e.msgs().filter((m) => m.role === 'bot').length);
   try {
     await page.goto(`${server.base}/`);
-    await waitUntil(page, 'home loads', () => window.__e2e.dayButtons().length === 30);
+    await waitUntil(page, 'home loads', (n) => window.__e2e.dayButtons().length === n, TOTAL_DAYS);
     await page.click('[data-testid=day-6]');
     await page.click('[data-testid=start]');
     await screenIs(page, 'screen-session');
@@ -962,7 +971,7 @@ async function longSessionScenario(browser, server) {
   const noticeCount = () => page.evaluate(() => document.querySelectorAll('[data-testid=transcript] .msg.notice').length);
   try {
     await page.goto(`${server.base}/`);
-    await waitUntil(page, 'home loads', () => window.__e2e.dayButtons().length === 30);
+    await waitUntil(page, 'home loads', (n) => window.__e2e.dayButtons().length === n, TOTAL_DAYS);
     // 325 turns, newest message a partner reply (resume re-speaks it, no API call).
     const seeded = Array.from({ length: 650 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', text: i % 2 ? `很好！第${i}句。` : `我走了${i}步` }));
     await page.evaluate((messages) => localStorage.setItem('speaking.session', JSON.stringify({ day: 8, messages, at: Date.now() })), seeded);
@@ -1077,10 +1086,10 @@ async function passwordScenario(browser) {
     await page.fill('[data-testid=password]', PASSWORD);
     await page.click('[data-testid=password-submit]');
     await waitUntil(page, 'right password (Thai + Chinese): form goes away and home loads',
-      () => !window.__e2e.visible('password-form') && window.__e2e.visible('start') && window.__e2e.dayButtons().length === 30);
+      (n) => !window.__e2e.visible('password-form') && window.__e2e.visible('start') && window.__e2e.dayButtons().length === n, TOTAL_DAYS);
     await page.reload();
     await waitUntil(page, 'after reload the stored password is reused',
-      () => window.__e2e.dayButtons().length === 30 && window.__e2e.visible('start'));
+      (n) => window.__e2e.dayButtons().length === n && window.__e2e.visible('start'), TOTAL_DAYS);
     record(await page.evaluate(() => !window.__e2e.visible('password-form')), 'after reload no password prompt');
   } finally {
     record(track.pageErrors.length === 0, 'password run: no uncaught page errors', track.pageErrors.join(' | '));
@@ -1115,7 +1124,7 @@ try {
   const server = await startServer();
   record(server.health.provider === 'mock' && server.health.passwordRequired === false, 'server healthy: mock provider, no password', JSON.stringify(server.health));
   const { days: plan } = await (await fetch(`${server.base}/api/plan`)).json();
-  must(Array.isArray(plan) && plan.length === 30, '/api/plan returns 30 days');
+  must(Array.isArray(plan) && plan.length === TOTAL_DAYS, `/api/plan returns ${TOTAL_DAYS} days`);
 
   await scenario('Main scenario', () => mainScenario(browser, server, plan));
   await scenario('Unsupported speech', () => unsupportedScenario(browser, server));

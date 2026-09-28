@@ -32,7 +32,7 @@ test('model settings come from env', () => {
 test('mock opens the session with the day topic', async () => {
   const mock = new MockProvider();
   const reply = await mock.chat({ system: '', messages: [], day: getDay(3) });
-  assert.equal(reply, "你好！今天是第3天：What's your name。我们开始吧！你今天怎么样？");
+  assert.equal(reply, '你好！今天是第3天：你叫什么名字。我们开始吧！你今天怎么样？');
 });
 
 test('mock replies are deterministic and echo the user', async () => {
@@ -57,11 +57,11 @@ test('mock summary uses the day words (review: words of the reviewed days)', asy
   const mock = new MockProvider();
   const s = await mock.summarize({ system: '', messages: [], schema: {}, day: getDay(1) });
   assert.deepEqual(s.words.map((w) => w.hanzi), getDay(1).words);
-  assert.deepEqual(s.words[0], { hanzi: '你好', pinyin: '-', meaning: '-' });
+  assert.deepEqual(s.words[0], { hanzi: '你', pinyin: 'nǐ', meaning: 'you' });
   assert.deepEqual(s.mistakes, ['(mock) no real analysis']);
-  assert.equal(s.practice, '我今天练习了Hello。');
+  assert.equal(s.practice, '我今天练习了「你好」。');
 
-  const r = await mock.summarize({ system: '', messages: [], schema: {}, day: getDay(5) });
+  const r = await mock.summarize({ system: '', messages: [], schema: {}, day: getDay(6) });
   assert.deepEqual(r.words.map((w) => w.hanzi).slice(0, 3), getDay(1).words.slice(0, 3));
   assert.equal(r.words.length, 12);
 });

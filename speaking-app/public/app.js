@@ -60,6 +60,7 @@ const el = {
   dayGrid: byTestId('day-grid'),
   progressText: $('progress-text'),
   progressBar: $('progress-bar'),
+  planHeading: $('plan-heading'),
   sessionEyebrow: $('session-eyebrow'),
   sessionTitle: $('session-title'),
   leave: byTestId('leave'),
@@ -209,7 +210,7 @@ const titleOf = (day) => (day ? `Day ${day.day} · ${day.topic}` : '');
 
 function defaultDay() {
   const done = [...doneDays()].filter((n) => Number.isInteger(n));
-  return done.length ? Math.min(Math.max(...done) + 1, 30) : 1;
+  return done.length ? Math.min(Math.max(...done) + 1, app.plan.length || 1) : 1;
 }
 
 function node(tag, { className, text, lang, attrs } = {}, children = []) {
@@ -265,11 +266,29 @@ function renderDetails(day) {
         ? node('p', { className: 'scene', text: `Everything from Day ${refs[0].day} to Day ${refs[refs.length - 1].day}.` })
         : node('ul', { className: 'chips topics' }, refs.map((d) => node('li', { text: `${d.day} · ${d.topic}` }))),
     ]));
-  } else if (day.words?.length) {
-    parts.push(node('div', {}, [
-      node('p', { className: 'detail-label', text: 'Target words' }),
-      node('ul', { className: 'chips', lang: 'zh-CN' }, day.words.map((w) => node('li', { text: w }))),
-    ]));
+  } else {
+    if (day.title) {
+      parts.push(node('div', {}, [
+        node('p', { className: 'detail-label', text: day.source || 'Lesson' }),
+        node('p', { className: 'lesson-title', lang: 'zh-CN', text: day.title }),
+      ]));
+    }
+    const glossary = day.glossary?.length ? day.glossary : (day.words || []).map((hanzi) => ({ hanzi }));
+    if (glossary.length) {
+      parts.push(node('div', {}, [
+        node('p', { className: 'detail-label', text: 'Target words' }),
+        node('ul', { className: 'chips glossed' }, glossary.map((g) => node('li', { attrs: g.meaning ? { title: g.meaning } : {} }, [
+          node('span', { className: 'chip-zh', lang: 'zh-CN', text: g.hanzi }),
+          ...(g.pinyin ? [node('span', { className: 'chip-py', lang: 'zh-Latn-pinyin', text: g.pinyin })] : []),
+        ]))),
+      ]));
+    }
+    if (day.pattern) {
+      parts.push(node('div', {}, [
+        node('p', { className: 'detail-label', text: 'Grammar point' }),
+        node('p', { className: 'pattern', lang: 'zh-CN', text: day.pattern }),
+      ]));
+    }
   }
   if (day.scene) {
     parts.push(node('div', {}, [
@@ -297,8 +316,9 @@ function renderHome() {
     btn.setAttribute('aria-label', `Day ${n}: ${d?.topic || ''}${done.has(n) ? ', done' : ''}`);
   });
   const count = app.plan.filter((d) => done.has(d.day)).length;
-  el.progressText.textContent = `${count} of ${app.plan.length || 30} days done`;
-  el.progressBar.style.width = `${(count / (app.plan.length || 30)) * 100}%`;
+  el.progressText.textContent = `${count} of ${app.plan.length} days done`;
+  el.progressBar.style.width = `${app.plan.length ? (count / app.plan.length) * 100 : 0}%`;
+  el.planHeading.textContent = `${app.plan.length}-day plan`;
   renderResume();
 }
 

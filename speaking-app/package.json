@@ -13,7 +13,7 @@
     "dev": "node --watch server.js",
     "test": "node --test",
     "lint": "eslint .",
-    "check": "for f in server.js eslint.config.js lib/*.js test/*.js public/*.js e2e/*.mjs; do [ -e \"$f\" ] || continue; node --check \"$f\" || exit 1; done",
+    "check": "for f in server.js eslint.config.js lib/*.js test/*.js public/*.js e2e/*.mjs scripts/*.mjs; do [ -e \"$f\" ] || continue; node --check \"$f\" || exit 1; done",
     "e2e": "node e2e/run.mjs"
   },
   "dependencies": {

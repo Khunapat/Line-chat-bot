@@ -1,4 +1,4 @@
-import { getDay } from './plan.js';
+import { getDay, TOTAL_DAYS } from './plan.js';
 
 const LANG_NAMES = { en: 'English', th: 'Thai' };
 
@@ -14,7 +14,7 @@ function resolveDay(day) {
 }
 
 function describeDay(entry) {
-  return `Day ${entry.day}: ${entry.topic}. Words / patterns: ${entry.words.join(', ')}. Scene: ${entry.scene}.`;
+  return `Day ${entry.day}: ${entry.title} (${entry.topic}). Words: ${entry.words.join(', ')}. Pattern: ${entry.pattern}. Scene: ${entry.scene}.`;
 }
 
 /** Words of the lesson days just before `entry`, for the warm-up. */
@@ -37,15 +37,16 @@ export function buildSystemPrompt(day, { explainLang = 'en' } = {}) {
 
   const today = entry.review
     ? [
-      `Today is Day ${entry.day} of a 30-day plan: ${entry.topic}. This is a REVIEW day: no new words.`,
+      `Today is Day ${entry.day} of a ${TOTAL_DAYS}-day plan: ${entry.topic}. This is a REVIEW day: no new words.`,
       `Scene for today: ${entry.scene}.`,
       'Mix scenes from these earlier days and quiz me on their words:',
       ...entry.reviewOf.map((d) => `- ${describeDay(getDay(d))}`),
     ]
     : [
-      `Today is Day ${entry.day} of a 30-day plan (week ${entry.week}: ${entry.weekTitle}).`,
-      `Topic: ${entry.topic}.`,
-      `Target words / patterns: ${entry.words.join(', ')}.`,
+      `Today is Day ${entry.day} of a ${TOTAL_DAYS}-day plan (week ${entry.week}: ${entry.weekTitle}).`,
+      `Lesson: ${entry.source}, 「${entry.title}」 (${entry.topic}).`,
+      `Target words (official HSK list): ${entry.glossary.map((g) => `${g.hanzi} ${g.pinyin}`).join(', ')}.`,
+      `Grammar pattern: ${entry.pattern}.`,
       `Role-play scene: ${entry.scene}.`,
     ];
 

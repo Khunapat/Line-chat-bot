@@ -1,7 +1,7 @@
 import path from 'node:path';
 import crypto from 'node:crypto';
 import express from 'express';
-import { PLAN, getDay } from './plan.js';
+import { PLAN, TOTAL_DAYS, getDay } from './plan.js';
 import { buildSystemPrompt, buildSummaryPrompt, SUMMARY_SCHEMA } from './prompt.js';
 import { isQuotaError } from './errors.js';
 import { APP_DIR } from './env.js';
@@ -40,7 +40,7 @@ export function headerPasswordMatches(header, expected) {
 function parseBody(body, maxMessages = LIMITS.messages) {
   const { day, messages } = body || {};
   const entry = getDay(day);
-  if (!entry) throw new BadRequest('day must be an integer from 1 to 30');
+  if (!entry) throw new BadRequest(`day must be an integer from 1 to ${TOTAL_DAYS}`);
   if (!Array.isArray(messages)) throw new BadRequest('messages must be an array');
   if (messages.length > maxMessages) throw new BadRequest(`at most ${maxMessages} messages`);
   const clean = messages.map((m, i) => {

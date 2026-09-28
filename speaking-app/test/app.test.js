@@ -49,11 +49,11 @@ test('health reports provider and password flag', async (t) => {
   assert.equal(r.headers.get('x-powered-by'), null);
 });
 
-test('plan returns all 30 days', async (t) => {
+test('plan returns all 36 days', async (t) => {
   const { call } = await start(t);
   const r = await call('GET', '/api/plan');
   assert.equal(r.status, 200);
-  assert.equal(r.json.days.length, 30);
+  assert.equal(r.json.days.length, 36);
   assert.deepEqual(r.json.days, JSON.parse(JSON.stringify(PLAN)));
 });
 
@@ -96,7 +96,7 @@ test('chat validation returns 400 bad_request', async (t) => {
   const user = (text) => ({ role: 'user', text });
   const cases = [
     { day: 0, messages: [] },
-    { day: 31, messages: [] },
+    { day: 37, messages: [] },
     { day: 1.5, messages: [] },
     { day: '3', messages: [] },
     { messages: [] },
@@ -121,7 +121,7 @@ test('chat validation returns 400 bad_request', async (t) => {
   assert.equal(bad.json.error, 'bad_request');
 
   // Boundaries are accepted.
-  const ok = await call('POST', '/api/chat', { day: 30, messages: [user('x'.repeat(2000))] });
+  const ok = await call('POST', '/api/chat', { day: 36, messages: [user('x'.repeat(2000))] });
   assert.equal(ok.status, 200);
 });
 
@@ -143,7 +143,8 @@ test('summary saves an entry and the log lists newest first', async (t) => {
   assert.ok(e.summary.words.length >= 1);
   assert.deepEqual(Object.keys(e.summary.words[0]), ['hanzi', 'pinyin', 'meaning']);
   assert.deepEqual(e.summary.mistakes, ['(mock) no real analysis']);
-  assert.match(e.summary.practice, /What's your name/);
+  assert.match(e.summary.practice, /你叫什么名字/);
+  assert.deepEqual(e.summary.words[0], { hanzi: '叫', pinyin: 'jiào', meaning: 'to be called' });
 
   const second = await call('POST', '/api/summary', { day: 4, messages });
   const log = await call('GET', '/api/log');
