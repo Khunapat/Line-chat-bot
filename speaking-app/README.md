@@ -62,8 +62,9 @@ code or settings with it.
 
 * Lesson days follow *HSK Standard Course* 1 and 2 (HSK标准教程, Beijing
   Language and Culture University Press), lessons 1-15 of each book, in the
-  books' order and with their lesson titles and grammar points: book 1 on days
-  1-17, book 2 on days 19-35.
+  books' order and with their lesson titles: book 1 on days 1-17, book 2 on
+  days 19-35. Grammar points follow the books from Book 1 lesson 3 on;
+  lessons 1-2 are pronunciation lessons, so their patterns are this app's own.
 * Every target word is on an official HSK level 1-2 word list (HSK 2.0, which
   the books are built on, or the HSK 3.0 standard of 2021). The words for each
   lesson were picked from those lists to fit the lesson topic; they are not a
@@ -71,7 +72,9 @@ code or settings with it.
   and its pinyin against the lists in `lib/hsk-words.js`, which
   `node scripts/build-hsk-words.mjs` regenerates from
   [complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary)
-  (MIT). The role-play scenes are this app's own.
+  (Copyright (c) 2026 Yanis Zafirópulos, MIT License). Pinyin is shown in
+  dictionary form; 不 and 一 change tone in speech (bú kèqi, yìqǐ). The
+  role-play scenes are this app's own.
 
 * Pick a day on the home screen (it suggests the day after the last one you
   finished) and tap **Start speaking**. Finished days are marked.

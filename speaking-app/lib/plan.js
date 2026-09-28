@@ -2,7 +2,10 @@
  * The 36-day speaking plan. Lesson days follow the 30 lessons of
  * HSK Standard Course 1 and 2 (HSK标准教程, Beijing Language and Culture
  * University Press) in order, five lessons a week, and every sixth day is a
- * review with no new words. Target words come from the official HSK level 1-2
+ * review with no new words. Grammar points follow the books from Book 1
+ * lesson 3 on; lessons 1-2 are pronunciation lessons, so their patterns are
+ * this app's own. Pinyin is the dictionary form (不 and 一 change tone in
+ * speech: bú kèqi, yìqǐ). Target words come from the official HSK level 1-2
  * word lists (test/plan.test.js checks each one against lib/hsk-words.js).
  */
 
@@ -100,7 +103,7 @@ const ROWS = [
     w('旅游', 'lǚyóu', 'to travel'), w('最', 'zuì', 'most'), w('觉得', 'juéde', 'to think, to feel'),
     w('为什么', 'wèishénme', 'why'), w('也', 'yě', 'also'), w('一起', 'yīqǐ', 'together'),
     w('要', 'yào', 'to want, going to')],
-  '最 + adjective / 觉得…', 'Plan a trip with a friend: when and where to go'],
+  '(想)要 + verb / 最 + adjective', 'Plan a trip with a friend: when and where to go'],
   [2, 2, '我每天六点起床', 'I get up at six every day', [
     w('起床', 'qǐchuáng', 'to get up'), w('每', 'měi', 'every'), w('早上', 'zǎoshang', 'early morning'),
     w('跑步', 'pǎobù', 'to run'), w('生病', 'shēngbìng', 'to get sick'), w('身体', 'shēntǐ', 'body, health'),
@@ -111,7 +114,7 @@ const ROWS = [
     w('颜色', 'yánsè', 'color'), w('旁边', 'pángbiān', 'beside'), w('手表', 'shǒubiǎo', 'watch'),
     w('送', 'sòng', 'to give (a gift)'), w('真', 'zhēn', 'really')],
   'adjective + 的 ("the … one")', 'Find your bag and coat at a party'],
-  [2, 4, '这个工作是他帮我介绍的', 'He recommended me for this job', [
+  [2, 4, '这个工作是他帮我介绍的', 'It was he who got me this job', [
     w('介绍', 'jièshào', 'to introduce'), w('公司', 'gōngsī', 'company'), w('上班', 'shàngbān', 'to go to work'),
     w('知道', 'zhīdào', 'to know'), w('已经', 'yǐjīng', 'already'), w('生日', 'shēngrì', 'birthday'),
     w('快乐', 'kuàilè', 'happy')],
@@ -143,7 +146,7 @@ const ROWS = [
     w('懂', 'dǒng', 'to understand'), w('考试', 'kǎoshì', 'exam'), w('意思', 'yìsi', 'meaning'),
     w('问题', 'wèntí', 'question, problem')],
   'verb + 完 / 懂 / 错 (result)', 'Talk with a classmate after a hard exam'],
-  [2, 10, '别找了，手机在桌子上呢', 'Stop looking, your phone is on the desk', [
+  [2, 10, '别找了，手机在桌子上呢', 'Stop looking, the phone is on the desk', [
     w('别', 'bié', "don't"), w('手机', 'shǒujī', 'mobile phone'), w('洗', 'xǐ', 'to wash'),
     w('到', 'dào', 'to arrive'), w('机场', 'jīchǎng', 'airport'), w('教室', 'jiàoshì', 'classroom'),
     w('正在', 'zhèngzài', 'in the middle of')],
