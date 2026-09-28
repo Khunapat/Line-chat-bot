@@ -1,0 +1,14 @@
+{
+  "name": "Speaking Partner · 口语伙伴",
+  "short_name": "Speaking",
+  "description": "Hands-free Mandarin speaking practice with an AI partner, one day at a time.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f3ee",
+  "theme_color": "#1d7a63",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

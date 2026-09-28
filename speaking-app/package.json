@@ -1,0 +1,31 @@
+{
+  "name": "speaking-partner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hands-free Mandarin speaking partner: a 30-day voice practice plan in the browser",
+  "main": "server.js",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "check": "for f in server.js eslint.config.js lib/*.js test/*.js public/*.js e2e/*.mjs; do [ -e \"$f\" ] || continue; node --check \"$f\" || exit 1; done",
+    "e2e": "node e2e/run.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "@google/genai": "^2.21.0",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "playwright": "1.56.1"
+  },
+  "license": "MIT"
+}

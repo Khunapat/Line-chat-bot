@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Speaking Partner</title>
+  <meta name="description" content="Hands-free Mandarin speaking practice with an AI partner, one day at a time.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f3ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111416" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></symbol>
+    <symbol id="i-slow" viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0M12 16l-3.5-4.5M4 20h16"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4M6 4h10.5l-2 4 2 4H6"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h13M12.5 6l6 6-6 6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6L3.5 8.5M3.5 4v4.5H8M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4zM16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5M6.5 9.5V20h11V9.5"/></symbol>
+  </svg>
+
+  <main id="app">
+    <!-- Home: pick a day, start speaking -->
+    <section id="screen-home" class="screen home" aria-labelledby="day-title">
+      <header class="topbar">
+        <div class="brand">
+          <img src="icon.svg" alt="" width="36" height="36">
+          <span class="brand-text">
+            <span class="brand-name">Speaking Partner</span>
+            <span class="brand-sub"><span lang="zh-CN">口语伙伴</span><span class="badge" data-testid="provider-badge" hidden></span></span>
+          </span>
+        </div>
+        <button class="btn ghost" type="button" data-testid="nav-log">
+          <svg class="icon" aria-hidden="true"><use href="#i-history"/></svg>
+          <span>History</span>
+        </button>
+      </header>
+
+      <div class="page home-layout">
+        <div class="home-main">
+          <p class="load-error" id="load-error" role="alert" hidden>
+            <span>Can’t reach the server.</span>
+            <button class="btn ghost" type="button" id="retry-load">Try again</button>
+          </p>
+
+          <div class="resume-banner" data-testid="resume-banner" hidden>
+            <p class="resume-text" id="resume-text">Resume your last session?</p>
+            <div class="resume-actions">
+              <button class="btn primary" type="button" data-testid="resume">Resume</button>
+              <button class="btn ghost" type="button" data-testid="discard">Discard</button>
+            </div>
+          </div>
+
+          <article class="card day-card">
+            <p class="eyebrow" id="day-week">&nbsp;</p>
+            <h1 class="day-title" id="day-title" data-testid="selected-day-title" tabindex="-1">Loading…</h1>
+            <div class="day-details" data-testid="day-details"></div>
+            <button class="btn primary xl start-btn" type="button" data-testid="start" disabled>
+              <svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>
+              <span>Start speaking</span>
+            </button>
+            <p class="hint">Earbuds in. The partner talks, then listens — no tapping needed. Say <span lang="zh-CN">总结</span> when you’re done.</p>
+          </article>
+        </div>
+
+        <section class="card plan-card" aria-labelledby="plan-heading">
+          <div class="plan-head">
+            <h2 id="plan-heading">30-day plan</h2>
+            <p class="muted" id="progress-text"></p>
+          </div>
+          <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+          <div class="day-grid" data-testid="day-grid"></div>
+        </section>
+
+        <section class="card tips-card" aria-labelledby="tips-heading">
+          <h2 id="tips-heading">Say it any time</h2>
+          <dl class="commands">
+            <div><dt lang="zh-CN">总结</dt><dd>Finish and get your summary</dd></div>
+            <div><dt lang="zh-CN">再说一遍</dt><dd>Hear that again</dd></div>
+            <div><dt lang="zh-CN">慢一点</dt><dd>Speak more slowly</dd></div>
+            <div><dt lang="zh-CN">暂停</dt><dd>Pause the session</dd></div>
+            <div><dt lang="zh-CN">累了</dt><dd>Tired? Switch to repeat&#8209;after&#8209;me</dd></div>
+          </dl>
+        </section>
+      </div>
+    </section>
+
+    <!-- Session: the hands-free voice loop -->
+    <section id="screen-session" class="screen session" aria-labelledby="session-title" hidden>
+      <header class="topbar">
+        <button class="btn ghost leave" type="button" data-testid="leave" aria-label="Leave without a summary (you can resume from home)" title="Leave without a summary — resume it later from home">
+          <svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>
+        </button>
+        <div class="topbar-title">
+          <p class="eyebrow" id="session-eyebrow">Speaking</p>
+          <h1 id="session-title" tabindex="-1"></h1>
+        </div>
+        <span class="badge soft timer" id="session-timer" role="timer" aria-label="Session time">0:00</span>
+      </header>
+
+      <div class="session-body">
+        <div class="side">
+          <div class="status-panel">
+            <div class="status" data-testid="status" data-state="idle" role="status" aria-live="polite">
+              <div class="orb" aria-hidden="true">
+                <svg class="orb-icon" data-for="idle listening"><use href="#i-mic"/></svg>
+                <svg class="orb-icon" data-for="thinking"><use href="#i-dots"/></svg>
+                <svg class="orb-icon" data-for="speaking"><use href="#i-wave"/></svg>
+                <svg class="orb-icon" data-for="paused"><use href="#i-pause"/></svg>
+                <svg class="orb-icon" data-for="error"><use href="#i-alert"/></svg>
+              </div>
+              <p class="status-label" id="status-label">Ready</p>
+            </div>
+            <p class="interim" data-testid="interim" lang="zh-CN"></p>
+            <p class="voice-warning" data-testid="voice-warning" role="alert" hidden></p>
+          </div>
+
+          <div class="controls" role="group" aria-label="Session controls">
+            <button class="ctrl" type="button" data-testid="pause">
+              <svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg>
+              <span class="label">Pause</span>
+            </button>
+            <button class="ctrl" type="button" data-testid="repeat">
+              <svg class="icon" aria-hidden="true"><use href="#i-repeat"/></svg>
+              <span class="label">Repeat</span>
+            </button>
+            <button class="ctrl" type="button" data-testid="slower" aria-pressed="false">
+              <svg class="icon" aria-hidden="true"><use href="#i-slow"/></svg>
+              <span class="label">Slower</span>
+            </button>
+            <button class="ctrl end" type="button" data-testid="end">
+              <svg class="icon" aria-hidden="true"><use href="#i-flag"/></svg>
+              <span class="label">Finish · <span lang="zh-CN">总结</span></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="transcript" data-testid="transcript" role="log" aria-live="polite" aria-label="Conversation" tabindex="0"></div>
+
+        <form class="composer" id="composer" autocomplete="off">
+          <label class="sr-only" for="text-input">Type a reply</label>
+          <input class="text-input" id="text-input" data-testid="text-input" type="text" lang="zh-CN" maxlength="2000"
+            placeholder="Or type here… 打字也可以" enterkeyhint="send" autocapitalize="off" spellcheck="false">
+          <button class="btn primary send" type="submit" data-testid="send" aria-label="Send">
+            <svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Summary: 总结 -->
+    <section id="screen-summary" class="screen summary" aria-labelledby="summary-title" hidden>
+      <header class="topbar">
+        <div class="topbar-title">
+          <p class="eyebrow" id="summary-eyebrow"></p>
+          <h1 id="summary-title" tabindex="-1">Summary <span lang="zh-CN">总结</span></h1>
+        </div>
+      </header>
+
+      <div class="page summary-layout">
+        <section class="card" aria-labelledby="words-heading">
+          <h2 id="words-heading">Words</h2>
+          <ul class="word-list" data-testid="summary-words"></ul>
+        </section>
+        <div class="summary-side">
+          <section class="card" aria-labelledby="mistakes-heading">
+            <h2 id="mistakes-heading">Mistakes to watch</h2>
+            <ul class="mistake-list" data-testid="summary-mistakes"></ul>
+          </section>
+          <section class="card practice-card" aria-labelledby="practice-heading">
+            <h2 id="practice-heading">Practice tomorrow</h2>
+            <p class="practice" data-testid="summary-practice" lang="zh-CN"></p>
+            <button class="btn ghost" type="button" id="play-practice">
+              <svg class="icon" aria-hidden="true"><use href="#i-speaker"/></svg>
+              <span>Listen</span>
+            </button>
+          </section>
+        </div>
+        <div class="page-actions">
+          <button class="btn primary xl" type="button" data-testid="home">
+            <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>
+            <span>Back to home</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section id="screen-log" class="screen log" aria-labelledby="log-title" hidden>
+      <header class="topbar">
+        <button class="btn ghost" type="button" data-testid="back">
+          <svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>
+          <span>Back</span>
+        </button>
+        <h1 id="log-title" tabindex="-1">History</h1>
+      </header>
+
+      <div class="page log-layout">
+        <ol class="log-list" data-testid="log-list"></ol>
+        <p class="empty" data-testid="log-empty" hidden>No sessions yet. Finish a session with <span lang="zh-CN">总结</span> and your summary will be saved here.</p>
+      </div>
+    </section>
+
+    <!-- Password gate (only when the server asks for one) -->
+    <section id="screen-password" class="screen gate" aria-labelledby="gate-title" hidden>
+      <form class="card gate-card" data-testid="password-form" novalidate>
+        <span class="gate-icon" aria-hidden="true"><svg class="icon"><use href="#i-lock"/></svg></span>
+        <h1 id="gate-title" tabindex="-1">Enter password</h1>
+        <p class="muted">This practice space is private.</p>
+        <label class="field-label" for="password">Password</label>
+        <input class="text-input" id="password" data-testid="password" type="password" autocomplete="current-password" aria-describedby="password-error">
+        <p class="form-error" id="password-error" role="alert" hidden>That password didn’t work. Try again.</p>
+        <button class="btn primary xl" type="submit" data-testid="password-submit">Continue</button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
