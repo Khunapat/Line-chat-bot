@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Reminder outcomes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.lbl{font-size:12.5px;font-weight:700;color:#686458;letter-spacing:.04em}
+.sheet{background:#F4EFE4;border:2px solid #3B3B3B;border-radius:22px;padding:12px 14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 3px 0 #3B3B3B}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px dashed #3B3B3B;background:#F6E7CB;white-space:nowrap}
+p,h1,h2{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:1300px;box-sizing:border-box;background:#EFE8D8;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px;padding:14px 16px;display:flex;flex-direction:column;gap:14px">
+  <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+
+  <p class="lbl">SAVED · only after the server confirms</p>
+  <section style="background:#F4EFE4;border:2px solid #3B3B3B;border-radius:18px;padding:18px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px">
+    <div style="position:relative;width:120px;height:72px" aria-hidden="true">
+      <img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="" style="position:absolute;left:30px;top:6px;width:64px;height:64px">
+      <img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt="" style="position:absolute;left:78px;top:0;width:32px;height:32px">
+    </div>
+    <h2 style="font-size:20px">ตั้งเตือนแล้วนะ</h2>
+    <p>จะเตือน “ส่งรายงานประจำสัปดาห์” พฤ. 8 ต.ค. 2569 · 09:00 น. ในแชตกับ JaiJa</p>
+    <p style="font-size:14px;color:#686458">ทุกวันพฤหัสบดี เวลา 09:00 น.</p>
+    <div style="display:flex;gap:8px;width:100%"><a class="btn pri" href="Reminders.dc.html" style="flex:1">ดูรายการเตือน</a><a class="btn" href="ReminderEditor.dc.html" style="flex:1">ตั้งอีกอัน</a></div>
+  </section>
+
+  <p class="lbl">CHANGE TIME · reschedule&amp;id=</p>
+  <section class="sheet" role="dialog" aria-labelledby="ct">
+    <div style="display:flex;align-items:center"><h2 id="ct" style="flex:1;font-size:17px">เปลี่ยนเวลาเตือน</h2><a class="btn ico" href="#" aria-label="ปิด"><img src="/_blob/7dd9ecc3fe69c80fa858c2138024f484" alt="" style="width:24px;height:24px"></a></div>
+    <p><b>“ส่งเอกสารฝ่ายบุคคล”</b></p>
+    <p style="font-size:14px">เวลาเดิม: <s>พฤ. 8 ต.ค. 2569 · 10:15 น.</s></p>
+    <p style="font-size:14px">เวลาใหม่: <b>พฤ. 8 ต.ค. 2569 · 13:30 น.</b></p>
+    <a class="btn pri" href="#">บันทึกเวลาใหม่</a>
+  </section>
+
+  <p class="lbl">CANCEL · cancel&amp;id= · confirm first, no undo exists</p>
+  <section class="sheet" role="dialog" aria-labelledby="cc">
+    <h2 id="cc" style="font-size:17px">ยกเลิกการเตือน “จ่ายค่าเน็ต”?</h2>
+    <p>การเตือนที่ทำซ้ำจะหยุดทุกครั้งต่อจากนี้</p>
+    <p style="font-size:14px;color:#686458">ทุกวันที่ 25 ของเดือน เวลา 09:00 น.</p>
+    <div style="display:flex;gap:8px"><a class="btn" href="#" style="flex:1">เก็บไว้</a><a class="btn" href="#" style="flex:1;color:#B5482F;border-color:#B5482F">ยกเลิกการเตือน</a></div>
+  </section>
+
+  <p class="lbl">SNOOZED · snooze&amp;min=10</p>
+  <div role="status" style="display:flex;gap:10px;align-items:center;background:#3B3B3B;color:#FFFFFF;border-radius:14px;padding:12px 16px"><span>เลื่อนไปเตือน พ. 7 ต.ค. 2569 · 13:01 น.</span></div>
+
+  <p class="lbl">ADD MENU · FAB</p>
+  <section class="sheet" role="dialog" aria-labelledby="am">
+    <h2 id="am" style="font-size:17px">ตั้งเตือนแบบไหน</h2>
+    <a class="btn" href="ReminderEditor.dc.html" style="justify-content:flex-start"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">ตั้งเตือนครั้งเดียว</a>
+    <a class="btn" href="ReminderEditor.dc.html" style="justify-content:flex-start"><img src="/_blob/87d1a18d29202acad76c9f753d634137" alt="" style="width:18px;height:18px">ตั้งเตือนซ้ำ</a>
+    <a class="btn" href="PhotoReminder.dc.html" style="justify-content:flex-start"><img src="/_blob/3400f2300b3a561c589833044a116fc1" alt="" style="width:18px;height:18px">จากรูป <span class="tag">Proposed</span></a>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

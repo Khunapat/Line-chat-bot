@@ -1,0 +1,90 @@
+{
+  "width": 2500,
+  "height": 1686,
+  "chatBarText": "JaiJa menu",
+  "areas": [
+    {
+      "data": "action=menu_new_reminder",
+      "text": "Set a reminder",
+      "bounds": {
+        "x": 76,
+        "y": 72,
+        "width": 1608,
+        "height": 640
+      },
+      "inputOption": "openKeyboard",
+      "fillInText": "remind me "
+    },
+    {
+      "data": "action=menu_help",
+      "text": "How it works",
+      "bounds": {
+        "x": 76,
+        "y": 712,
+        "width": 1608,
+        "height": 168
+      }
+    },
+    {
+      "data": "action=menu_notes",
+      "text": "Memory",
+      "bounds": {
+        "x": 1740,
+        "y": 56,
+        "width": 700,
+        "height": 410
+      }
+    },
+    {
+      "data": "action=menu_gallery",
+      "text": "Gallery",
+      "bounds": {
+        "x": 1740,
+        "y": 486,
+        "width": 700,
+        "height": 410
+      }
+    },
+    {
+      "data": "action=menu_reminders",
+      "text": "Reminders",
+      "bounds": {
+        "x": 60,
+        "y": 952,
+        "width": 565,
+        "height": 676
+      }
+    },
+    {
+      "data": "action=menu_deadlines",
+      "text": "Deadlines",
+      "bounds": {
+        "x": 665,
+        "y": 952,
+        "width": 565,
+        "height": 676
+      }
+    },
+    {
+      "data": "action=menu_files",
+      "text": "Files",
+      "bounds": {
+        "x": 1270,
+        "y": 952,
+        "width": 565,
+        "height": 676
+      }
+    },
+    {
+      "data": "action=menu_settings",
+      "text": "Me",
+      "bounds": {
+        "x": 1875,
+        "y": 952,
+        "width": 565,
+        "height": 676
+      },
+      "liffPath": "/me"
+    }
+  ]
+}

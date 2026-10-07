@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Photo to reminder draft</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px solid #3B3B3B;background:#DFE1D2;white-space:nowrap}
+.prop{border-style:dashed;background:#F6E7CB}
+.unsure{background:#F6E1D9;border-color:#B5482F}
+.rc{display:flex;gap:12px;align-items:center;min-height:44px;padding:12px 14px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1;box-sizing:border-box;font-weight:600}
+.rc input{width:20px;height:20px;margin:0;accent-color:#62694D;flex:none}
+.lbl{font-size:12.5px;font-weight:700;color:#686458}
+p,h1,h2,legend,fieldset,dl,dd{margin:0}
+fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<div style="width:390px;height:1250px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <p style="font-size:11px;color:#686458;text-align:right;padding:6px 16px 0">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <header style="display:flex;align-items:center;gap:8px;padding:0 16px 8px"><a class="btn ico" href="Reminders.dc.html" aria-label="ย้อนกลับ"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></a><h1 style="font-size:22px;line-height:1.35;flex:1">ตั้งเตือนจากรูป</h1></header>
+  <div style="padding:0 16px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:6px"><span class="tag prop">Proposed</span><span class="tag prop">ต้องทำ backend ใหม่</span></div>
+    <p>JaiJa ร่างการเตือนจากรูปให้ คุณตรวจแล้วกดยืนยันเอง <b>ไม่มีการตั้งเตือนเองเงียบ ๆ</b></p>
+
+    <p class="lbl">1 · READING (motion runs on web after 400 ms)</p>
+    <div style="display:flex;gap:12px;align-items:center;background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;padding:12px">
+      <img src="/_blob/e310c7d32a6f0ba4bdd7010e824bfdda" alt="บัตรนัดคลินิก (รูปสมมุติ)" style="width:92px;border-radius:8px;border:1.5px solid #3B3B3B">
+      <div><p><b>เก็บรูปแล้ว</b></p><p style="font-size:14px;color:#686458" role="status">กำลังอ่านรายละเอียด…</p></div>
+    </div>
+
+    <p class="lbl">2 · DRAFT · every field says how sure it is</p>
+    <section style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:14px;display:flex;flex-direction:column;gap:12px" aria-labelledby="dr">
+      <h2 id="dr" style="font-size:16px">ร่างจากรูป · ตรวจก่อนนะ</h2>
+      <dl style="display:grid;grid-template-columns:auto 1fr;gap:8px 12px;font-size:15px">
+        <dt style="color:#686458">เรื่อง</dt><dd>นัดขูดหินปูน คลินิกทันตกรรมตัวอย่าง <span class="tag">อ่านได้</span></dd>
+        <dt style="color:#686458">วันที่</dt><dd>พฤ. 15 ต.ค. 2569 <span class="tag">อ่านได้</span></dd>
+        <dt style="color:#686458">เวลา</dt><dd><span class="tag unsure">ไม่ชัด เลือกให้หน่อย</span></dd>
+      </dl>
+      <fieldset><legend style="font-weight:600">เลข “1?:30” อ่านไม่ชัด หมายถึงเวลาไหน</legend>
+        <label class="rc"><input type="radio" name="p">10:30 น.</label>
+        <label class="rc"><input type="radio" name="p">16:30 น.</label>
+      </fieldset>
+      <a class="btn pri" href="ReminderEditor.dc.html" aria-disabled="true" style="opacity:.55">ตรวจแล้ว ไปต่อ</a>
+      <p style="font-size:12.5px;color:#686458">“ไปต่อ” opens the normal editor pre-filled; the reminder is only scheduled when the user taps ตั้งเตือน there.</p>
+    </section>
+
+    <p class="lbl">3 · PARTIAL · photo saved, reading failed or AI busy</p>
+    <div role="alert" style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#F6E7CB">
+      <img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt="" style="width:24px;height:24px">
+      <div><b>เก็บรูปแล้ว แต่อ่านรายละเอียดไม่สำเร็จ</b><p style="font-size:14px">รูปอยู่ใน Drive ของคุณแล้ว ลองอ่านอีกครั้ง หรือกรอกเองก็ได้</p></div>
+      <div style="grid-column:1 / -1;display:flex;gap:8px"><a class="btn" href="#" style="flex:1">ลองอีกครั้ง</a><a class="btn pri" href="ReminderEditor.dc.html" style="flex:1">กรอกเอง</a></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

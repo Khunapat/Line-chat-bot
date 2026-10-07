@@ -3,21 +3,20 @@
  * and are fired by `/cron/reminders`, which Cloud Scheduler calls every minute.
  *
  * Reminder shape:
- *   { id, userId, text, at: ISO string, repeat: 'none'|'daily'|'weekly'|'monthly'|'yearly' }
+ *   { id, userId, text, at: ISO string, repeat: 'none'|'daily'|'weekly'|'monthly'|'yearly',
+ *     anchorDay?: day of month a monthly / yearly repeat was set for }
  */
+import { nextOccurrence as sharedNext, anchorOf } from '../web/shared/recurrence.js';
+import { L, currentLang } from './lang.js';
 
-export const REPEATS = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+export { REPEATS } from '../web/shared/recurrence.js';
 
-export function nextOccurrence(atIso, repeat) {
-  const d = new Date(atIso);
-  switch (repeat) {
-    case 'daily': d.setUTCDate(d.getUTCDate() + 1); break;
-    case 'weekly': d.setUTCDate(d.getUTCDate() + 7); break;
-    case 'monthly': d.setUTCMonth(d.getUTCMonth() + 1); break;
-    case 'yearly': d.setUTCFullYear(d.getUTCFullYear() + 1); break;
-    default: return null;
-  }
-  return d.toISOString();
+/**
+ * The occurrence after `atIso`. Computed on the wall clock of `timeZone`, and
+ * monthly / yearly repeats keep their `anchorDay` (see web/shared/recurrence.js).
+ */
+export function nextOccurrence(atIso, repeat, { timeZone = 'Asia/Bangkok', anchorDay } = {}) {
+  return sharedNext(atIso, repeat, { timeZone, anchorDay });
 }
 
 /**
@@ -29,14 +28,15 @@ export function nextOccurrence(atIso, repeat) {
  * can go out as one push (LINE counts one push per recipient, however many
  * messages it carries); they are marked done only when that push succeeds.
  */
-export async function fireDueReminders(store, notify, now = new Date(), { batch = false } = {}) {
+export async function fireDueReminders(store, notify, now = new Date(), { batch = false, timeZone = 'Asia/Bangkok' } = {}) {
   const list = await store.reminders();
   const due = list.filter((r) => !r.firedAt && new Date(r.at) <= now);
   const settle = async (r) => {
     if (r.repeat && r.repeat !== 'none') {
-      let next = nextOccurrence(r.at, r.repeat);
-      while (next && new Date(next) <= now) next = nextOccurrence(next, r.repeat);
-      await store.updateReminder(r.id, { at: next });
+      const anchorDay = anchorOf(r, timeZone);
+      let next = nextOccurrence(r.at, r.repeat, { timeZone, anchorDay });
+      while (next && new Date(next) <= now) next = nextOccurrence(next, r.repeat, { timeZone, anchorDay });
+      await store.updateReminder(r.id, { at: next, ...(r.repeat === 'monthly' || r.repeat === 'yearly' ? { anchorDay } : {}) });
     } else {
       // Keep it around (hidden) so the snooze / done buttons still work.
       await store.updateReminder(r.id, { firedAt: now.toISOString() });
@@ -92,6 +92,8 @@ export function pendingReminders(list, userId) {
 // ------------------------------------------------------------ formatting
 
 const THAI_DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'];
+const EN_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 /** Parts of a Date in a given IANA time zone. */
@@ -108,26 +110,30 @@ export function zonedParts(date, timeZone) {
   };
 }
 
-/** "วันนี้ 18:00 น." / "พรุ่งนี้ 10:15 น." / "ศุกร์ 12 ก.ย. 09:00 น." */
+/** "วันนี้ 18:00 น." / "พรุ่งนี้ 10:15 น." / "ศุกร์ 12 ก.ย. 09:00 น." (English: "Today 18:00", "Fri 12 Sep 09:00") */
 export function describeWhen(atIso, timeZone, now = new Date()) {
+  const lang = currentLang();
   const at = new Date(atIso);
   const a = zonedParts(at, timeZone);
   const n = zonedParts(now, timeZone);
-  const hhmm = `${String(a.hour).padStart(2, '0')}:${String(a.minute).padStart(2, '0')} น.`;
+  const hm = `${String(a.hour).padStart(2, '0')}:${String(a.minute).padStart(2, '0')}`;
+  const hhmm = lang === 'en' ? hm : `${hm} น.`;
 
   const dayIndex = (p) => Date.UTC(p.year, p.month - 1, p.day) / 86_400_000;
   const diff = dayIndex(a) - dayIndex(n);
-  if (diff === 0) return `วันนี้ ${hhmm}`;
-  if (diff === 1) return `พรุ่งนี้ ${hhmm}`;
-  if (diff === 2) return `มะรืนนี้ ${hhmm}`;
+  if (diff === 0) return `${L('b_today')} ${hhmm}`;
+  if (diff === 1) return `${L('b_tomorrow')} ${hhmm}`;
+  if (diff === 2) return `${L('b_dayAfter')} ${hhmm}`;
+  if (lang === 'en') {
+    const year = a.year !== n.year ? ` ${a.year}` : '';
+    return `${EN_DAYS[a.weekday]} ${a.day} ${EN_MONTHS[a.month - 1]}${year} ${hhmm}`;
+  }
   const year = a.year !== n.year ? ` ${a.year + 543}` : '';
   return `${THAI_DAYS[a.weekday]} ${a.day} ${THAI_MONTHS[a.month - 1]}${year} ${hhmm}`;
 }
 
 export function describeRepeat(repeat) {
-  return {
-    daily: 'ทุกวัน', weekly: 'ทุกสัปดาห์', monthly: 'ทุกเดือน', yearly: 'ทุกปี',
-  }[repeat] || '';
+  return ['daily', 'weekly', 'monthly', 'yearly'].includes(repeat) ? L(repeat) : '';
 }
 
 /** ISO-like local timestamp with offset, e.g. 2026-09-08T21:32:00+07:00 */

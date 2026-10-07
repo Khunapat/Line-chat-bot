@@ -1,10 +1,14 @@
 /**
- * One-time helper: create the bottom rich menu (แจ้งเตือน / Deadline / ไฟล์ / ตั้งค่า),
- * upload assets/richmenu.png, and make it the default menu for everyone.
+ * Upload the Thai and English rich menus (assets/richmenu.th.png / .en.png
+ * with their action maps from `npm run richmenu-image`), give them the
+ * aliases the bot uses to switch a person's menu when they change language
+ * in the web app, and make the Thai one the default for everyone.
  *
- *   LINE_CHANNEL_ACCESS_TOKEN=... npm run rich-menu
+ *   LINE_CHANNEL_ACCESS_TOKEN=... [LIFF_ID=...] npm run rich-menu
  *
- * Re-running replaces any menu previously created by this script.
+ * With LIFF_ID set, "ของฉัน / Me" opens the web app; otherwise it sends the
+ * menu_settings postback. Re-running replaces menus this script created.
+ * This talks to the live LINE channel: run it only when you mean to.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,63 +16,22 @@ import { fileURLToPath } from 'node:url';
 import { messagingApi } from '@line/bot-sdk';
 import { loadDotEnv } from './dotenv.js';
 
-loadDotEnv(); // so `npm run rich-menu` works straight from the project folder
+loadDotEnv();
 
 const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 if (!token) {
   console.error('Set LINE_CHANNEL_ACCESS_TOKEN first.');
   process.exit(1);
 }
+const liffId = process.env.LIFF_ID || '';
+const ALIAS = { th: process.env.RICH_MENU_ALIAS_TH || 'jaija-th', en: process.env.RICH_MENU_ALIAS_EN || 'jaija-en' };
+const NAME = (lang) => `jaija-menu-${lang}`;
+const OLD_NAMES = ['line-drive-archiver-menu'];
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const imagePath = process.argv[2] || path.join(here, '..', 'assets', 'richmenu.png');
-const MENU_NAME = 'line-drive-archiver-menu';
-
+const assets = path.join(here, '..', 'assets');
 const client = new messagingApi.MessagingApiClient({ channelAccessToken: token });
 const blob = new messagingApi.MessagingApiBlobClient({ channelAccessToken: token });
-
-// Layout is derived from the image: 2500 x 843 = one row of four buttons;
-// 2500 x 1686 = a mascot / help banner (top half) plus the four buttons.
-const { width: W, height: H } = pngSize(imagePath);
-if (W !== 2500 || ![843, 1686].includes(H)) {
-  console.error(`richmenu.png must be 2500x843 or 2500x1686, got ${W}x${H}`);
-  process.exit(1);
-}
-const TOP = H - 843; // banner height (0 when there is no banner)
-const col = W / 4;
-const buttons = [
-  { data: 'action=menu_reminders', text: 'แจ้งเตือน' },
-  { data: 'action=menu_deadlines', text: 'Deadline' },
-  { data: 'action=menu_files', text: 'ไฟล์/รูป' },
-  { data: 'action=menu_settings', text: 'ตั้งค่า' },
-];
-
-const areas = buttons.map((b, i) => ({
-  bounds: { x: Math.round(i * col), y: TOP, width: Math.round(col), height: H - TOP },
-  action: { type: 'postback', data: b.data, displayText: b.text },
-}));
-if (TOP > 0) {
-  areas.unshift({
-    bounds: { x: 0, y: 0, width: W, height: TOP },
-    action: { type: 'postback', data: 'action=menu_help', displayText: 'ทำอะไรได้บ้าง' },
-  });
-}
-
-// assets/richmenu-areas.json is written by `npm run richmenu-image` from the
-// same HTML the image comes from; prefer it when it matches this image.
-const areasFile = path.join(path.dirname(imagePath), 'richmenu-areas.json');
-if (fs.existsSync(areasFile)) {
-  const measured = JSON.parse(fs.readFileSync(areasFile, 'utf8'));
-  if (measured.width === W && measured.height === H && Array.isArray(measured.areas)) {
-    areas.length = 0;
-    for (const a of measured.areas) {
-      areas.push({ bounds: a.bounds, action: { type: 'postback', data: a.data, displayText: a.text } });
-    }
-    console.log('using', areas.length, 'tap areas from', path.basename(areasFile));
-  }
-}
-
-const menu = { size: { width: W, height: H }, selected: true, name: MENU_NAME, chatBarText: 'เมนู', areas };
 
 function pngSize(file) {
   const head = fs.readFileSync(file).subarray(0, 24);
@@ -76,19 +39,42 @@ function pngSize(file) {
   return { width: head.readUInt32BE(16), height: head.readUInt32BE(20) };
 }
 
-// Remove menus this script created earlier so we never pile them up.
-const { richmenus } = await client.getRichMenuList();
-for (const m of richmenus.filter((x) => x.name === MENU_NAME)) {
-  await client.deleteRichMenu(m.richMenuId);
-  console.log('deleted old menu', m.richMenuId);
+/** Rich menu object from an action map ({ data, text, bounds, inputOption?, fillInText?, liffPath? }). */
+function menuFrom(map, { lang, liffId: liff = '' }) {
+  return {
+    size: { width: map.width, height: map.height },
+    selected: true,
+    name: NAME(lang),
+    chatBarText: map.chatBarText,
+    areas: map.areas.map((a) => {
+      if (a.liffPath && liff) return { bounds: a.bounds, action: { type: 'uri', label: a.text.slice(0, 20), uri: `https://liff.line.me/${liff}#${a.liffPath}` } };
+      const action = { type: 'postback', data: a.data, displayText: a.text };
+      if (a.inputOption) action.inputOption = a.inputOption;
+      if (a.fillInText) action.fillInText = a.fillInText;
+      return { bounds: a.bounds, action };
+    }),
+  };
 }
 
-const { richMenuId } = await client.createRichMenu(menu);
-console.log('created', richMenuId);
+const { richmenus } = await client.getRichMenuList();
+for (const m of richmenus.filter((x) => OLD_NAMES.includes(x.name) || x.name === NAME('th') || x.name === NAME('en'))) {
+  await client.deleteRichMenu(m.richMenuId);
+  console.log('deleted old menu', m.name, m.richMenuId);
+}
 
-const image = new Blob([fs.readFileSync(imagePath)], { type: 'image/png' });
-await blob.setRichMenuImage(richMenuId, image);
-console.log('uploaded image', imagePath);
+const ids = {};
+for (const lang of ['th', 'en']) {
+  const image = path.join(assets, `richmenu.${lang}.png`);
+  const map = JSON.parse(fs.readFileSync(path.join(assets, `richmenu-areas.${lang}.json`), 'utf8'));
+  const size = pngSize(image);
+  if (size.width !== map.width || size.height !== map.height) throw new Error(`${image} does not match its action map`);
+  const { richMenuId } = await client.createRichMenu(menuFrom(map, { lang, liffId }));
+  await blob.setRichMenuImage(richMenuId, new Blob([fs.readFileSync(image)], { type: 'image/png' }));
+  ids[lang] = richMenuId;
+  try { await client.deleteRichMenuAlias(ALIAS[lang]); } catch { /* first run */ }
+  await client.createRichMenuAlias({ richMenuAliasId: ALIAS[lang], richMenuId });
+  console.log(`created ${lang} menu ${richMenuId} (alias ${ALIAS[lang]})`);
+}
 
-await client.setDefaultRichMenu(richMenuId);
-console.log('set as default. Open the chat and tap "เมนู" at the bottom.');
+await client.setDefaultRichMenu(ids.th);
+console.log('Thai menu is the default. People who choose English in the app get the English menu.');

@@ -7,8 +7,8 @@ import { isScopeError } from './calendar.js';
 import { Brain } from './brain.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { AnthropicProvider } from './providers/anthropic.js';
-import { isQuotaError, QUOTA_MESSAGE } from './providers/errors.js';
-import { Usage, describeReset } from './providers/usage.js';
+import { isQuotaError } from './providers/errors.js';
+import { Usage } from './providers/usage.js';
 import { fireDueReminders, pendingReminders, describeWhen, describeRepeat } from './reminders.js';
 import {
   textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, dueReminderCard, eventCard,
@@ -32,6 +32,12 @@ import { fileURLToPath } from 'node:url';
 import { registerOAuthRoutes, connectUrl, baseUrlOf } from './oauth.js';
 import { Tenants } from './tenants.js';
 import { Readable } from 'node:stream';
+import { L, withLang, currentLang } from './lang.js';
+import { Prefs } from './prefs.js';
+import { registerAppRoutes } from './appApi.js';
+import { registerWebApp } from './webApp.js';
+import { verifyLineIdToken } from './appAuth.js';
+import { formatTime, formatDay, zoned } from '../web/shared/dates.js';
 
 requireConfig();
 
@@ -54,6 +60,7 @@ const ownerDrive = new DriveArchive({
   timeZone: tz,
 });
 const ownerStore = new Store(ownerDrive);
+const prefs = new Prefs(ownerStore);
 const tenants = new Tenants({
   ownerStore,
   ownerIds: config.allowedUserIds,
@@ -94,8 +101,8 @@ const handlers = {
 
   async save_note({ text }, ctx) {
     const file = await ctx.svc.drive.appendNote(text, ctx.now);
-    ctx.attachments.push(infoCard('📝 จดไว้แล้ว', [`${ctx.svc.drive.todayKey(ctx.now)}/notes.md`], {
-      buttons: [linkButton('เปิดโน้ต', file.webViewLink)],
+    ctx.attachments.push(infoCard(L('b_noteSaved'), [`${ctx.svc.drive.todayKey(ctx.now)}/notes.md`], {
+      buttons: [linkButton(L('b_openNote'), file.webViewLink)],
     }));
     return { ok: true, file: file.name, day: ctx.svc.drive.todayKey(ctx.now) };
   },
@@ -103,7 +110,7 @@ const handlers = {
   async find_file({ query }, ctx) {
     const files = withThumbs(await searchFiles(query, 5, ctx), ctx);
     if (files.length === 0) return { found: 0, files: [] };
-    ctx.attachments.push(filesCarousel(files, { title: files.length > 1 ? `📁 เจอ ${files.length} ไฟล์` : '📁 เจอแล้ว' }));
+    ctx.attachments.push(filesCarousel(files, { title: files.length > 1 ? L('b_foundN', { n: files.length }) : L('b_foundOne') }));
     return { found: files.length, files: files.map((f) => ({ name: f.name, day: f.day, caption: f.caption || '' })) };
   },
 
@@ -116,7 +123,7 @@ const handlers = {
     const q = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
     const hit = (v) => { const h = String(v || '').toLowerCase(); return q.some((t) => h.includes(t)); };
     const oppHits = sortOpportunities(opps.filter((o) => hit(o.title) || hit(o.organizer) || hit(o.summary) || hit(o.eligibility)), tz, ctx.now).slice(0, 5);
-    if (files.length) ctx.attachments.push(filesCarousel(withThumbs(files, ctx), { title: `📁 ไฟล์ที่เกี่ยวกับ "${query}"` }));
+    if (files.length) ctx.attachments.push(filesCarousel(withThumbs(files, ctx), { title: L('b_filesAbout', { q: query }) }));
     if (oppHits.length) ctx.attachments.push(opportunityListCard(oppHits, { timeZone: tz, now: ctx.now }));
     return {
       files: files.map((f) => ({ name: f.name, day: f.day, caption: f.caption || '' })),
@@ -138,7 +145,7 @@ const handlers = {
     if (!target) return { error: 'no file has been sent yet' };
     const renamed = await ctx.svc.drive.renameFile(target.id, label);
     await ctx.svc.store.setUserState(ctx.userId, { lastFile: renamed });
-    ctx.attachments.push(fileCard(withThumb(renamed, ctx), { title: '📁 เก็บไว้แล้ว' }));
+    ctx.attachments.push(fileCard(withThumb(renamed, ctx), { title: L('b_savedCard') }));
     return { ok: true, name: renamed.name };
   },
 
@@ -146,7 +153,9 @@ const handlers = {
     const when = new Date(at);
     if (Number.isNaN(when.getTime())) return { error: 'invalid datetime' };
     if (when < ctx.now && (!repeat || repeat === 'none')) return { error: 'time is in the past; ask the user for a new time' };
-    const r = await ctx.svc.store.addReminder({ userId: ctx.userId, text, at: when.toISOString(), repeat: repeat || 'none' });
+    // Monthly / yearly repeats remember their day, so the 31st stays the 31st after a short month.
+    const anchorDay = repeat === 'monthly' || repeat === 'yearly' ? Number(zoned(when, tz).key.slice(8)) : undefined;
+    const r = await ctx.svc.store.addReminder({ userId: ctx.userId, text, at: when.toISOString(), repeat: repeat || 'none', ...(anchorDay ? { anchorDay } : {}) });
     ctx.attachments.push(reminderCard(r, { timeZone: tz, now: ctx.now }));
     return { ok: true, id: r.id, when: describeWhen(r.at, tz, ctx.now), repeat: describeRepeat(r.repeat) };
   },
@@ -173,7 +182,7 @@ const handlers = {
     if (Number.isNaN(when.getTime())) return { error: 'invalid datetime' };
     const r = await ctx.svc.store.updateReminder(id, { at: when.toISOString() });
     if (!r) return { error: 'not found' };
-    ctx.attachments.push(reminderCard(r, { timeZone: tz, now: ctx.now, title: '⏰ เปลี่ยนเวลาให้แล้ว' }));
+    ctx.attachments.push(reminderCard(r, { timeZone: tz, now: ctx.now, title: L('b_rescheduled') }));
     return { ok: true, when: describeWhen(r.at, tz, ctx.now) };
   },
 
@@ -309,28 +318,32 @@ app.all('/cron/reminders', async (req, res) => {
   const summary = { tenants: 0, fired: 0, errors: 0 };
   try {
     for (const tenant of await tenants.list()) {
-      try {
-        const svc = await tenants.services(tenant);
-        if (!svc) continue;
-        summary.tenants++;
-        const now = new Date();
+      // Pushes use the person's language; a group uses its host's.
+      const lang = await prefs.langFor(tenant.type === 'group' ? tenant.hostUserId : tenant.id).catch(() => 'th');
+      await withLang(lang, async () => {
         try {
-          if (await deadlines.ensureAlertsUpToDate(svc, { timeZone: tz, now })) console.log('deadline alerts re-planned for', tenant.id);
-        } catch (err) {
-          console.warn('re-planning deadline alerts failed', tenant.id, describeError(err));
-        }
-        const r = await fireDueReminders(svc.store, async (due) => {
-          const messages = await dueMessages(due, svc, tenant, now);
-          // One push carries up to 5 messages and counts once against LINE's monthly quota.
-          for (let i = 0; i < messages.length; i += 5) {
-            await lineClient.pushMessage({ to: tenant.id, messages: messages.slice(i, i + 5) });
+          const svc = await tenants.services(tenant);
+          if (!svc) return;
+          summary.tenants++;
+          const now = new Date();
+          try {
+            if (await deadlines.ensureAlertsUpToDate(svc, { timeZone: tz, now })) console.log('deadline alerts re-planned for', tenant.id);
+          } catch (err) {
+            console.warn('re-planning deadline alerts failed', tenant.id, describeError(err));
           }
-        }, now, { batch: true });
-        summary.fired += r.fired;
-      } catch (err) {
-        summary.errors++;
-        console.error('cron tenant failed', tenant.id, describeError(err));
-      }
+          const r = await fireDueReminders(svc.store, async (due) => {
+            const messages = await dueMessages(due, svc, tenant, now);
+            // One push carries up to 5 messages and counts once against LINE's monthly quota.
+            for (let i = 0; i < messages.length; i += 5) {
+              await lineClient.pushMessage({ to: tenant.id, messages: messages.slice(i, i + 5) });
+            }
+          }, now, { batch: true, timeZone: tz });
+          summary.fired += r.fired;
+        } catch (err) {
+          summary.errors++;
+          console.error('cron tenant failed', tenant.id, describeError(err));
+        }
+      });
     }
     res.json(summary);
   } catch (err) {
@@ -346,6 +359,22 @@ registerGalleryRoutes(app, {
   botName: config.botName,
 });
 
+// Web app (LIFF): static page + JSON API. Data routes need a LINE-verified session.
+registerWebApp(app);
+registerAppRoutes(app, {
+  tenants,
+  lineClient,
+  sessionSecret: config.appSessionSecret,
+  prefs,
+  timeZone: tz,
+  verifyIdToken: (idToken) => verifyLineIdToken(idToken, { channelId: config.lineLoginChannelId }),
+  aiUsage: async (now) => (provider ? aiUsage.snapshot(provider.models, now) : null),
+  thumbUrlFor: (req, tenantId, fileId) => thumbUrl(publicBase || baseUrlOf(req), config.gallerySecret, tenantId, fileId),
+  connectUrlFor: (req, userId) => connectUrl(publicBase || baseUrlOf(req), config.gallerySecret, userId),
+  onLangChanged: linkRichMenuFor,
+  settings: { liffId: config.liffId, rootFolderName: config.driveRootFolderName, botName: config.botName, multiUser: multiUserEnabled(), preview: false },
+});
+
 registerOAuthRoutes(app, {
   googleWeb: config.googleWeb,
   secret: config.gallerySecret,
@@ -357,7 +386,7 @@ registerOAuthRoutes(app, {
     await tenants.upsert({ id: userId, name });
     await lineClient.pushMessage({
       to: userId,
-      messages: [textMessage(`เชื่อม Google Drive ของ ${email || name || 'คุณ'} แล้ว 🎉 ต่อจากนี้ทุกอย่างที่ส่งมาจะเก็บในโฟลเดอร์ ${config.driveRootFolderName} ของคุณเอง`), textMessage(welcomeText())],
+      messages: await withLang(await prefs.langFor(userId), () => [textMessage(L('b_connected', { who: email || name || L('b_you'), root: config.driveRootFolderName })), textMessage(welcomeText())]),
     }).catch((err) => console.warn('welcome push failed', err?.message || err));
   },
 });
@@ -377,7 +406,13 @@ app.listen(config.port, () => {
 // Event handling
 // ---------------------------------------------------------------------------
 
+/** Every event runs in the sender's language (their choice in the web app; Thai by default). */
 async function handleEvent(event) {
+  const lang = await prefs.langFor(event.source?.userId).catch(() => 'th');
+  return withLang(lang, () => handleEventIn(event));
+}
+
+async function handleEventIn(event) {
   const userId = event.source?.userId;
   const chatType = event.source?.type || 'user'; // user | group | room
   const chatId = chatType === 'group' ? event.source.groupId : chatType === 'room' ? event.source.roomId : userId;
@@ -400,7 +435,7 @@ async function handleEvent(event) {
 
   // Legacy first-run helper: nobody configured yet, tell the sender their id.
   if (config.allowedUserIds.length === 0 && !multiUserEnabled()) {
-    await reply(replyToken, chatId, [textMessage(`Your LINE user ID is:\n${userId}\n\nSet ALLOWED_USER_IDS to this value and redeploy to start using the bot.`)]);
+    await reply(replyToken, chatId, [textMessage(L('b_firstId', { id: userId }))]);
     return;
   }
 
@@ -430,8 +465,8 @@ async function handleEvent(event) {
       case 'location': {
         const { title, address, latitude, longitude } = message;
         const maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        await ctx.svc.store.remember(['📍 ' + (title || 'ตำแหน่ง'), address, maps].filter(Boolean).join('\n'), { userId });
-        ctx.attachments.push(textMessage('จำตำแหน่งนี้ไว้ให้แล้วนะ 📍 ถามหาเมื่อไหร่ก็ได้'));
+        await ctx.svc.store.remember(['📍 ' + (title || L('b_location')), address, maps].filter(Boolean).join('\n'), { userId });
+        ctx.attachments.push(textMessage(L('b_locationSaved')));
         break;
       }
       case 'image':
@@ -444,16 +479,17 @@ async function handleEvent(event) {
         let file = saved;
         let read = null;
         if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'always') {
+          showLoading(ctx);
           read = await readMedia(buffer, mimeType, saved, ctx);
           if (read?.file) file = read.file;
         }
         await ctx.svc.store.setUserState(userId, { lastFile: file });
         const what = read?.fields?.caption ? `${kindThai(message.type)} (${read.fields.caption})` : kindThai(message.type);
-        if (chatType === 'user') ctx.attachments.push(textMessage(`เก็บ${what}ไว้ให้แล้ว ถ้าอยากตั้งชื่อเอง พิมพ์ "เก็บไฟล์ <ชื่อ>" ได้เลย`));
+        if (chatType === 'user') ctx.attachments.push(textMessage(L('b_mediaSaved', { what })));
         withThumb(file, ctx, { mimeType });
         if (read?.fields?.caption) file.caption = read.fields.caption;
-        ctx.attachments.push(fileCard(file, { title: chatType === 'user' ? '📁 เก็บไว้แล้ว' : '📁 เก็บไว้ในโฟลเดอร์กลุ่มแล้ว' }));
-        if (ctx.aiLimited) ctx.attachments.push(textMessage('AI ติดลิมิตชั่วคราว เลยยังไม่ได้อ่านเนื้อหาไฟล์นี้ ถ้าเป็นประกาศรับสมัคร ส่งมาใหม่ทีหลังได้นะ'));
+        ctx.attachments.push(fileCard(file, { title: chatType === 'user' ? L('b_savedCard') : L('b_savedGroupCard') }));
+        if (ctx.aiLimited) ctx.attachments.push(textMessage(L('b_aiLimitedFile')));
         if (read?.reg) ctx.attachments.push(textMessage(scanIntro(read.reg)), await oppCardFor(read.reg, ctx));
         else if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'ask') ctx.attachments.push(scanOfferCard(saved.id));
         break;
@@ -467,7 +503,7 @@ async function handleEvent(event) {
     await reply(replyToken, chatId, ctx.attachments);
   } catch (err) {
     console.error('handling failed', describeError(err));
-    const text = isQuotaError(err) ? QUOTA_MESSAGE : 'ขอโทษที มีอะไรพังนิดหน่อย ลองใหม่อีกทีนะ';
+    const text = isQuotaError(err) ? L('b_quota') : L('b_error');
     await reply(replyToken, chatId, [textMessage(text)]).catch(() => {});
   }
 }
@@ -477,7 +513,7 @@ async function handleEvent(event) {
 /** Messages for someone who has not connected a Drive yet. */
 async function onboardingMessages(userId, text) {
   if (!multiUserEnabled()) {
-    return [textMessage(`สวัสดี เราคือ ${config.botName} 👋 ตอนนี้บอทยังเปิดใช้เฉพาะเจ้าของอยู่ ถ้าอยากใช้ด้วย บอกเจ้าของบอทให้เปิดโหมดหลายผู้ใช้ได้เลย`)];
+    return [textMessage(L('b_ownerOnly', { bot: config.botName }))];
   }
   if (config.inviteCode) {
     const invites = await ownerStore.read('invites.json', {});
@@ -485,22 +521,22 @@ async function onboardingMessages(userId, text) {
       if (text && text.trim() === config.inviteCode) {
         await ownerStore.update('invites.json', {}, (inv) => { inv[userId] = { at: new Date().toISOString() }; });
       } else {
-        return [textMessage(`สวัสดี เราคือ ${config.botName} 👋 บอทนี้ใช้ได้เฉพาะคนที่มีรหัสเชิญ พิมพ์รหัสมาได้เลย`)];
+        return [textMessage(L('b_inviteAsk', { bot: config.botName }))];
       }
     }
   }
-  return [textMessage(`สวัสดี เราคือ ${config.botName} 👋 ผู้ช่วยที่เก็บทุกอย่างลง Google Drive ของคุณเอง จำของให้ เตือนให้ และจด deadline ให้`), connectCard(userId)];
+  return [textMessage(L('b_hello', { bot: config.botName })), connectCard(userId)];
 }
 
 function connectCard(userId) {
-  const lines = ['กดปุ่มเพื่อเชื่อม Google Drive ของคุณ (ใช้บัญชี Google ของคุณเอง ไม่มีใครเห็นไฟล์ของคุณ)'];
-  if (!publicBase) return infoCard('🔗 เชื่อม Google Drive', ['ยังสร้างลิงก์ไม่ได้ ลองพิมพ์ "เชื่อม Drive" อีกครั้งในอีกสักครู่']);
-  return infoCard('🔗 เชื่อม Google Drive', lines, { buttons: [linkButton('เชื่อม Google Drive', connectUrl(publicBase, config.gallerySecret, userId))] });
+  const lines = [L('b_connectBody')];
+  if (!publicBase) return infoCard(L('b_connectTitle'), [L('b_connectLater')]);
+  return infoCard(L('b_connectTitle'), lines, { buttons: [linkButton(L('b_connectBtn'), connectUrl(publicBase, config.gallerySecret, userId))] });
 }
 
 function hostCard() {
-  return infoCard('👥 ที่เก็บของกลุ่มนี้', ['ให้สมาชิกคนหนึ่งเป็นเจ้าของโฟลเดอร์ ไฟล์และรูปของกลุ่มจะเก็บที่ LineArchive/Groups/<ชื่อกลุ่ม> ใน Drive ของคนนั้น'], {
-    buttons: [postbackButton('ใช้ Drive ของฉันเป็นที่เก็บของกลุ่ม', 'action=group_host', 'ใช้ Drive ของฉันเป็นที่เก็บของกลุ่ม')],
+  return infoCard(L('b_hostTitle'), [L('b_hostBody', { root: config.driveRootFolderName })], {
+    buttons: [postbackButton(L('b_hostBtn'), 'action=group_host', L('b_hostBtn'))],
   });
 }
 
@@ -528,7 +564,7 @@ async function becomeHost(ctx) {
   const host = await tenants.get(ctx.userId);
   const hostSvc = host ? await tenants.services(host) : null;
   if (!hostSvc) {
-    ctx.attachments.push(textMessage('ต้องเชื่อม Google Drive ของคุณในแชทส่วนตัวกับบอทก่อน แล้วค่อยกลับมากดปุ่มนี้อีกครั้งนะ'));
+    ctx.attachments.push(textMessage(L('b_hostNeedsDrive')));
     if (multiUserEnabled()) ctx.attachments.push(connectCard(ctx.userId));
     return;
   }
@@ -539,15 +575,15 @@ async function becomeHost(ctx) {
   const safe = groupName.replace(/[\\/:*?"<>|]/g, ' ').trim().slice(0, 60) || 'Group';
   await tenants.upsert({ id: ctx.chatId, type: 'group', name: safe, hostUserId: ctx.userId, subFolders: ['Groups', safe] });
   ctx.attachments.push(
-    textMessage(`เรียบร้อย ${host.name || 'เจ้าของ'} เป็นคนดูแลที่เก็บของกลุ่มนี้แล้ว ไฟล์ รูป และลิงก์ที่ส่งในกลุ่มจะเก็บที่ ${config.driveRootFolderName}/Groups/${safe}`),
-    infoCard('👥 พร้อมใช้แล้ว', ['ส่งรูปหรือไฟล์ในกลุ่มได้เลย พิมพ์ @' + config.botName + ' นำหน้าถ้าจะสั่งงานหรือถาม', 'เจ้าของโฟลเดอร์กดปุ่มด้านล่างเพื่อแชร์ลิงก์โฟลเดอร์ให้ทุกคนดูได้'], {
-      buttons: [postbackButton('แชร์ลิงก์โฟลเดอร์ให้กลุ่ม', 'action=group_share', 'แชร์ลิงก์โฟลเดอร์ให้กลุ่ม')],
+    textMessage(L('b_hostDone', { host: host.name || L('b_hostDefault'), path: `${config.driveRootFolderName}/Groups/${safe}` })),
+    infoCard(L('b_groupReady'), [L('b_groupReady1', { bot: config.botName }), L('b_groupReady2')], {
+      buttons: [postbackButton(L('b_shareFolder'), 'action=group_share', L('b_shareFolder'))],
     }),
   );
 }
 
 function groupIntroText() {
-  return `สวัสดีทุกคน เราคือ ${config.botName} 👋 เก็บรูป ไฟล์ ลิงก์ที่ส่งในกลุ่มนี้ลง Google Drive ให้ พร้อมจด deadline และตั้งเตือนในกลุ่มได้`;
+  return L('b_groupIntro', { bot: config.botName });
 }
 
 /** In groups the bot answers text only when mentioned or addressed by name. */
@@ -574,8 +610,8 @@ async function handleText(text, ctx) {
   const trimmed = text.trim();
   const brain = brainFor(ctx.tenant);
 
-  if (/^เชื่อม\s*(drive|google|ไดรฟ์)/i.test(trimmed)) {
-    ctx.attachments.push(multiUserEnabled() ? connectCard(ctx.userId) : textMessage('บัญชีนี้เชื่อมผ่านการตั้งค่าของเจ้าของบอทอยู่แล้ว'));
+  if (/^(?:เชื่อม|connect)\s*(drive|google|ไดรฟ์)/i.test(trimmed)) {
+    ctx.attachments.push(multiUserEnabled() ? connectCard(ctx.userId) : textMessage(L('b_ownerConnected')));
     return;
   }
 
@@ -585,8 +621,8 @@ async function handleText(text, ctx) {
     const r = await deadlines.setAlertSettings(ctx.svc, alertCmd.off ? { off: true } : { days: alertCmd.days, time: alertCmd.time }, { timeZone: tz, now: ctx.now });
     ctx.attachments.push(
       textMessage(alertCmd.off
-        ? 'ปิดการเตือน deadline แล้ว เปิดใหม่ได้ที่เมนู Deadline > ตั้งเวลาเตือน'
-        : `ได้เลย ต่อไปจะเตือน deadline ${describeAlerts(r.alerts)} ปรับให้ทุกรายการแล้ว`),
+        ? L('b_alertsOffDone')
+        : L('b_alertsSetDone', { desc: describeAlerts(r.alerts) })),
       alertSettingsCard(r.alerts),
     );
     return;
@@ -603,8 +639,8 @@ async function handleText(text, ctx) {
     });
     await ctx.svc.store.setUserState(ctx.userId, { lastFile: linkAsFile(link) });
     ctx.attachments.push(
-      textMessage('เก็บลิงก์ไว้ให้แล้ว หาเจอได้จากเมนู ไฟล์/รูป หรือพิมพ์ "หา <คำค้น>"'),
-      fileCard(linkAsFile(link), { title: '🔗 เก็บลิงก์แล้ว' }),
+      textMessage(L('b_linkSaved')),
+      fileCard(linkAsFile(link), { title: L('b_linkCard') }),
     );
     if (brain && config.autoScan !== 'off') await scanLink(url, ctx, { text: page.text, linkId: link.id });
     return;
@@ -619,6 +655,7 @@ async function handleText(text, ctx) {
   }
 
   if (brain) {
+    showLoading(ctx);
     // One AI step at a time per chat: a poster sent with this message is read
     // and saved first, so the model below can see it and merge instead of
     // saving the same activity twice.
@@ -628,13 +665,13 @@ async function handleText(text, ctx) {
         ? `deadline ที่เพิ่งบันทึกในแชทนี้: ${recent.map((o) => `[id=${o.id}] ${o.title} (หมดเขต ${o.deadline || 'ไม่ระบุ'})`).join('; ')} ถ้าข้อความนี้เป็นงานเดียวกัน ให้เรียก save_opportunity พร้อม same_as=id นั้น เพื่อเพิ่มรายละเอียดเข้ารายการเดิม`
         : '';
       const { text: answer, attachments } = await brain.chat({
-        userId: ctx.userId, text: trimmed, hint: [hint, oppHint].filter(Boolean).join('\n') || undefined,
+        userId: ctx.userId, text: trimmed, hint: [hint, oppHint, await styleHint(ctx)].filter(Boolean).join('\n') || undefined,
         ctx: { svc: ctx.svc, tenant: ctx.tenant, tenantId: ctx.tenantId, chatId: ctx.chatId, chatType: ctx.chatType, oppHintGiven: recent.length > 0 },
       });
       if (answer) ctx.attachments.push(textMessage(answer));
       ctx.attachments.push(...attachments);
     });
-    if (ctx.attachments.length === 0) ctx.attachments.push(textMessage('โอเค 👍'));
+    if (ctx.attachments.length === 0) ctx.attachments.push(textMessage(L('b_ok')));
     return;
   }
 
@@ -647,40 +684,40 @@ async function fallbackText(text, ctx) {
   if ((m = /^(?:หา|ค้นหา|ค้น)\s+(.+?)\s*(?:หน่อย|ที|ให้หน่อย)?$/.exec(text)) && !/^(?:ไฟล์|รูป|วิดีโอ|คลิป)/.test(m[1])) {
     const r = await handlers.search({ query: m[1] }, ctx);
     const lines = [];
-    if (r.files.length) lines.push(`ไฟล์ ${r.files.length} รายการ (ดูการ์ดด้านล่าง)`);
-    if (r.opportunities.length) lines.push(`deadline ${r.opportunities.length} รายการ`);
-    for (const x of r.memories) lines.push(`🧠 ${x.text} (บันทึก ${x.savedAt})`);
-    ctx.attachments.unshift(textMessage(lines.length ? `เจอเกี่ยวกับ "${m[1]}":\n` + lines.join('\n') : `ไม่เจออะไรเกี่ยวกับ "${m[1]}" เลย ลองคำอื่นดูนะ`));
+    if (r.files.length) lines.push(L('b_foundFiles', { n: r.files.length }));
+    if (r.opportunities.length) lines.push(L('b_foundDl', { n: r.opportunities.length }));
+    for (const x of r.memories) lines.push(`🧠 ${x.text} ${L('b_savedAtLine', { when: x.savedAt })}`);
+    ctx.attachments.unshift(textMessage(lines.length ? L('b_found', { q: m[1], lines: lines.join('\n') }) : L('b_notFound', { q: m[1] })));
     return;
   }
   if ((m = /^(?:ขอ|หา|ค้นหา)\s*(?:ไฟล์|รูป|วิดีโอ|คลิป)\s*(.*?)\s*(?:หน่อย|ที|ให้หน่อย)?$/.exec(text))) {
     const r = await handlers.find_file({ query: m[1] }, ctx);
-    if (r.found === 0) ctx.attachments.push(textMessage('หาไม่เจอเลย ลองพิมพ์ชื่อไฟล์ให้ชัดขึ้นอีกนิดได้ไหม'));
-    else ctx.attachments.unshift(textMessage('เจอแล้ว กดปุ่มด้านล่างเพื่อเปิดได้เลย'));
+    if (r.found === 0) ctx.attachments.push(textMessage(L('b_noFileFound')));
+    else ctx.attachments.unshift(textMessage(L('b_fileFound')));
     return;
   }
   if ((m = /^(?:เก็บไฟล์|ตั้งชื่อไฟล์(?:ว่า)?|ไฟล์นี้คือ)\s*(.+?)\s*(?:หน่อย|ให้หน่อย|ที)?$/.exec(text))) {
     const r = await handlers.name_last_file({ label: m[1] }, ctx);
-    ctx.attachments.unshift(textMessage(r.error ? 'ยังไม่มีไฟล์ให้ตั้งชื่อเลย ส่งไฟล์มาก่อนนะ' : `บันทึกแล้วว่าไฟล์นี้ชื่อ ${r.name}`));
+    ctx.attachments.unshift(textMessage(r.error ? L('b_noFileToName') : L('b_named', { name: r.name })));
     return;
   }
   if ((m = /^(?:ช่วย)?(?:จำ|บันทึก)(?:ว่า|ไว้ว่า)?\s*(.+)$/s.exec(text))) {
     await handlers.remember({ text: m[1] }, ctx);
-    ctx.attachments.push(textMessage('จำให้แล้ว ถามหาเมื่อไหร่ก็ได้ 👌'));
+    ctx.attachments.push(textMessage(L('b_remembered')));
     return;
   }
   if ((m = /^(?:ขอ|มี|หา)\s*(.+?)\s*(?:หน่อย|ไหม|มั้ย|บ้าง|ที)?$/.exec(text))) {
     const r = await handlers.recall({ query: m[1] }, ctx);
     if (r.note === 'matched') {
-      ctx.attachments.push(textMessage('เจอแล้ว\n\n' + r.memories.map((x) => `${x.text}\n(บันทึก ${x.savedAt})`).join('\n\n')));
+      ctx.attachments.push(textMessage(L('b_foundMem', { list: r.memories.map((x) => `${x.text}\n${L('b_savedAtLine', { when: x.savedAt })}`).join('\n\n') })));
       return;
     }
   }
   if (/เตือน|calendar|ปฏิทิน/i.test(text)) {
-    ctx.attachments.push(textMessage('การเตือนและปฏิทินต้องเปิดโหมด AI ก่อน (ใส่ GEMINI_API_KEY) ตอนนี้จดข้อความไว้ให้แทนนะ'));
+    ctx.attachments.push(textMessage(L('b_needAi')));
   }
   const file = await ctx.svc.drive.appendNote(text, ctx.now);
-  ctx.attachments.push(infoCard('📝 จดไว้แล้ว', [`${ctx.svc.drive.todayKey(ctx.now)}/notes.md`], { buttons: [linkButton('เปิดโน้ต', file.webViewLink)] }));
+  ctx.attachments.push(infoCard(L('b_noteSaved'), [`${ctx.svc.drive.todayKey(ctx.now)}/notes.md`], { buttons: [linkButton(L('b_openNote'), file.webViewLink)] }));
 }
 
 // -------------------------------------------------------------- postbacks
@@ -696,34 +733,38 @@ async function handlePostback(event, ctx) {
     case 'snooze': {
       const minutes = Math.min(Math.max(Number(params.get('min')) || 10, 1), 24 * 60);
       const original = (await store.reminders()).find((x) => x.id === id);
-      if (!original) return void ctx.attachments.push(textMessage('หาการเตือนนี้ไม่เจอแล้ว ตั้งใหม่ได้เลยนะ'));
+      if (!original) return void ctx.attachments.push(textMessage(L('b_reminderGoneSet')));
       const at = new Date(ctx.now.getTime() + minutes * 60_000).toISOString();
       const r = original.repeat && original.repeat !== 'none'
         ? await store.addReminder({ userId: ctx.userId, text: original.text, at, repeat: 'none' })
         : await store.updateReminder(id, { at, firedAt: null });
-      const label = minutes >= 60 ? `${Math.round(minutes / 60)} ชั่วโมง` : `${minutes} นาที`;
-      ctx.attachments.push(textMessage(`โอเค อีก ${label} เดี๋ยวเตือนอีกที`), reminderCard(r, { timeZone: tz, now: ctx.now, title: '⏰ เลื่อนให้แล้ว' }));
+      const label = minutes >= 60 ? L('b_hours', { n: Math.round(minutes / 60) }) : L('b_minutes', { n: minutes });
+      ctx.attachments.push(textMessage(L('b_snoozeOk', { label })), reminderCard(r, { timeZone: tz, now: ctx.now, title: L('b_snoozedTitle') }));
       return;
     }
     case 'done': {
       const r = (await store.reminders()).find((x) => x.id === id);
       if (r && r.firedAt) await store.removeReminder(id);
-      ctx.attachments.push(textMessage('เยี่ยม 👍 เรียบร้อยไปอีกเรื่อง'));
+      ctx.attachments.push(textMessage(L('b_doneOk')));
       return;
     }
     case 'cancel': {
       const removed = await store.removeReminder(id);
-      ctx.attachments.push(textMessage(removed ? `ยกเลิกเตือน "${removed.text}" ให้แล้วนะ` : 'การเตือนนี้ถูกยกเลิกไปแล้ว'));
+      ctx.attachments.push(textMessage(removed ? L('b_cancelled', { text: removed.text }) : L('b_alreadyCancelled')));
       return;
     }
     case 'reschedule': {
       const r = (await store.reminders()).find((x) => x.id === id);
-      if (!r) return void ctx.attachments.push(textMessage('หาการเตือนนี้ไม่เจอแล้ว'));
-      if (!brain) return void ctx.attachments.push(textMessage('การเปลี่ยนเวลาต้องเปิดโหมด AI ก่อน (GEMINI_API_KEY)'));
+      if (!r) return void ctx.attachments.push(textMessage(L('b_reminderGone')));
+      if (!brain) return void ctx.attachments.push(textMessage(L('b_needAiReschedule')));
       await store.setUserState(ctx.userId, { pending: { type: 'reschedule', id: r.id, text: r.text } });
-      ctx.attachments.push(textMessage(`จะเปลี่ยน "${r.text}" เป็นเวลาไหนดี พิมพ์บอกได้เลย เช่น "พรุ่งนี้ 9 โมง"`));
+      ctx.attachments.push(textMessage(L('b_askNewTime', { text: r.text })));
       return;
     }
+    case 'menu_new_reminder':
+      // The rich-menu hero opens the keyboard; this is the nudge above it.
+      ctx.attachments.push(textMessage(L('b_newReminderHint')));
+      return;
     case 'menu_help':
       ctx.attachments.push(textMessage(ctx.chatType === 'user' ? welcomeText() : groupIntroText()));
       return;
@@ -733,49 +774,49 @@ async function handlePostback(event, ctx) {
       return;
     case 'opp_view': {
       const o = await deadlines.getOpportunity(ctx.svc, id);
-      ctx.attachments.push(o ? await detailCard(o, ctx, { title: '🎯 รายละเอียด' }) : textMessage(GONE));
+      ctx.attachments.push(o ? await detailCard(o, ctx, { title: L('b_detail') }) : textMessage(goneText()));
       return;
     }
     case 'opp_delete': {
       const removed = await removeOpportunityWithUndo(id, ctx);
-      if (!removed) ctx.attachments.push(textMessage(GONE));
+      if (!removed) ctx.attachments.push(textMessage(goneText()));
       return;
     }
     case 'opp_restore': {
       const state = await store.getUserState(ctx.chatId);
       const stack = state.deleted || [];
       const snap = stack.find((x) => x.opp?.id === id)?.opp;
-      if (!snap) return void ctx.attachments.push(textMessage('เอาคืนไม่ได้แล้ว เอาคืนได้เฉพาะ 5 รายการที่ลบล่าสุด'));
+      if (!snap) return void ctx.attachments.push(textMessage(L('b_restoreExpired')));
       const back = await deadlines.restoreOpportunity(ctx.svc, snap, { timeZone: tz, now: ctx.now });
       await store.setUserState(ctx.chatId, { deleted: stack.filter((x) => x.opp?.id !== id) });
-      if (!back) return void ctx.attachments.push(textMessage('รายการนี้กลับมาแล้ว'));
-      ctx.attachments.push(textMessage(`เอา "${back.title}" คืนให้แล้ว ตั้งเตือนให้ใหม่ด้วย`), await detailCard(back, ctx, { title: '🎯 เอาคืนแล้ว' }));
+      if (!back) return void ctx.attachments.push(textMessage(L('b_alreadyBack')));
+      ctx.attachments.push(textMessage(L('b_restored', { title: back.title })), await detailCard(back, ctx, { title: L('b_restoredTitle') }));
       return;
     }
     case 'opp_applied':
     case 'opp_unapplied': {
       const applied = action === 'opp_applied';
       const o = await deadlines.setApplied(ctx.svc, id, applied, { timeZone: tz, now: ctx.now });
-      if (!o) return void ctx.attachments.push(textMessage(GONE));
+      if (!o) return void ctx.attachments.push(textMessage(goneText()));
       if (applied) ctx.attachments.push(appliedCard(o));
-      else ctx.attachments.push(textMessage('โอเค เตือนต่อให้นะ'), await detailCard(o, ctx));
+      else ctx.attachments.push(textMessage(L('b_resumedOk')), await detailCard(o, ctx));
       return;
     }
     case 'opp_split': {
       const state = await store.getUserState(ctx.chatId);
       const lm = state.lastMerge;
-      if (!lm || lm.before?.id !== id) return void ctx.attachments.push(textMessage('แยกไม่ได้แล้ว แยกได้เฉพาะการรวมครั้งล่าสุด ถ้ายังผิดอยู่ ลบรายการนี้แล้วส่งใหม่ได้เลย'));
+      if (!lm || lm.before?.id !== id) return void ctx.attachments.push(textMessage(L('b_splitUnavailable')));
       const r = await deadlines.splitMerge(ctx.svc, lm, { userId: ctx.userId, timeZone: tz, now: ctx.now });
       await store.setUserState(ctx.chatId, { lastMerge: null });
-      if (!r) return void ctx.attachments.push(textMessage('แยกไม่ได้ ลองใหม่อีกทีนะ'));
-      ctx.attachments.push(textMessage('แยกเป็น 2 รายการให้แล้ว ตั้งเตือนแยกกันด้วย'));
-      if (r.restored) ctx.attachments.push(await detailCard(r.restored, ctx, { title: '🎯 รายการเดิม' }));
-      ctx.attachments.push(await detailCard(r.created, ctx, { title: '🎯 รายการใหม่' }));
+      if (!r) return void ctx.attachments.push(textMessage(L('b_splitFailed')));
+      ctx.attachments.push(textMessage(L('b_splitDone')));
+      if (r.restored) ctx.attachments.push(await detailCard(r.restored, ctx, { title: L('b_origItem') }));
+      ctx.attachments.push(await detailCard(r.created, ctx, { title: L('b_newItem') }));
       return;
     }
     case 'opp_merge': {
       const r = await deadlines.mergeInto(ctx.svc, id, params.get('src'), { timeZone: tz, now: ctx.now });
-      if (!r) return void ctx.attachments.push(textMessage('รวมไม่ได้แล้ว มีรายการหนึ่งถูกลบไปแล้ว'));
+      if (!r) return void ctx.attachments.push(textMessage(L('b_mergeFailed')));
       await rememberMerge(r, ctx);
       ctx.attachments.push(textMessage(scanIntro(r)), await oppCardFor(r, ctx));
       return;
@@ -783,7 +824,7 @@ async function handlePostback(event, ctx) {
     case 'alerts_menu': {
       const base = await deadlines.alertSettings(ctx.svc);
       const o = id ? await deadlines.getOpportunity(ctx.svc, id) : null;
-      if (id && !o) return void ctx.attachments.push(textMessage(GONE));
+      if (id && !o) return void ctx.attachments.push(textMessage(goneText()));
       ctx.attachments.push(alertSettingsCard(base, { opp: o }));
       return;
     }
@@ -794,12 +835,12 @@ async function handlePostback(event, ctx) {
       let change;
       if (action === 'alerts_set') {
         const preset = ALERT_PRESETS.find((x) => x.key === params.get('p'));
-        if (!preset) return void ctx.attachments.push(textMessage('ไม่รู้จักแบบนี้ ลองเลือกใหม่นะ'));
+        if (!preset) return void ctx.attachments.push(textMessage(L('b_unknownPreset')));
         change = { days: preset.days };
       } else if (action === 'alerts_time') {
         const raw = String(params.get('t') || '');
         const t = normalizeTime(`${raw.slice(0, 2)}:${raw.slice(2)}`);
-        if (!t) return void ctx.attachments.push(textMessage('เวลาไม่ถูกต้อง ลองเลือกใหม่นะ'));
+        if (!t) return void ctx.attachments.push(textMessage(L('b_badTime')));
         change = { time: t };
       } else if (action === 'alerts_off') {
         change = { off: true };
@@ -807,23 +848,23 @@ async function handlePostback(event, ctx) {
         change = { reset: true };
       }
       const r = await deadlines.setAlertSettings(ctx.svc, { ...change, oppId: id || undefined }, { timeZone: tz, now: ctx.now });
-      if (!r) return void ctx.attachments.push(textMessage(GONE));
+      if (!r) return void ctx.attachments.push(textMessage(goneText()));
       const base = await deadlines.alertSettings(ctx.svc);
-      const what = r.alerts.days.length ? `เตือน${describeAlerts(r.alerts)}` : 'ไม่เตือน';
+      const what = r.alerts.days.length ? L('b_alertsWhat', { desc: describeAlerts(r.alerts) }) : L('b_noAlerts');
       ctx.attachments.push(
-        textMessage(r.scope === 'item' ? `ได้เลย "${r.opp.title}" ${what}` : `ได้เลย ต่อไปทุก deadline ${what} ปรับให้ทุกรายการแล้ว`),
+        textMessage(r.scope === 'item' ? L('b_alertsItemDone', { title: r.opp.title, what }) : L('b_alertsAllDone', { what })),
         alertSettingsCard(base, { opp: r.scope === 'item' ? r.opp : null }),
       );
       return;
     }
     case 'scan': {
       const fileId = params.get('file');
-      if (!brain || !fileId) return void ctx.attachments.push(textMessage('ตอนนี้อ่านให้ไม่ได้ ลองใหม่อีกทีนะ'));
+      if (!brain || !fileId) return void ctx.attachments.push(textMessage(L('b_scanUnavailable')));
       const info = await drive.fileInfo(fileId);
       const buffer = await drive.download(fileId);
       const read = await readMedia(buffer, info.mimeType, info, ctx);
       if (read?.reg) ctx.attachments.push(textMessage(scanIntro(read.reg)), await oppCardFor(read.reg, ctx));
-      else ctx.attachments.push(textMessage(read?.fields?.caption ? `อ่านแล้ว เป็น${read.fields.caption} ไม่ใช่ประกาศรับสมัคร แต่จดคำค้นไว้ให้แล้ว` : 'อ่านแล้ว แต่ไม่เจอว่าเป็นประกาศรับสมัครนะ'));
+      else ctx.attachments.push(textMessage(read?.fields?.caption ? L('b_scanNotOpp', { caption: read.fields.caption }) : L('b_scanNothing')));
       return;
     }
     case 'list_reminders':
@@ -832,8 +873,8 @@ async function handlePostback(event, ctx) {
       return;
     case 'menu_files': {
       const files = withThumbs(await recentItems(5, ctx), ctx);
-      if (files.length === 0) ctx.attachments.push(textMessage('ยังไม่มีไฟล์เลย ส่งรูปหรือไฟล์มาได้เลย เดี๋ยวเก็บให้'));
-      else ctx.attachments.push(textMessage('ไฟล์ล่าสุดที่เก็บไว้ พิมพ์ "หา <คำค้น>" เพื่อค้นหาได้นะ'), filesCarousel(files, { title: '📁 ไฟล์ล่าสุด' }));
+      if (files.length === 0) ctx.attachments.push(textMessage(L('b_noFiles')));
+      else ctx.attachments.push(textMessage(L('b_recentFiles')), filesCarousel(files, { title: L('b_recentFilesTitle') }));
       if (publicBase) ctx.attachments.push(galleryCard(ctx));
       return;
     }
@@ -842,9 +883,9 @@ async function handlePostback(event, ctx) {
       const recent = memories.slice(-5).reverse();
       const lines = recent.length
         ? recent.map((m) => `• ${m.text.split('\n')[0].slice(0, 60)}`)
-        : ['ยังไม่มีอะไรที่จำไว้เลย พิมพ์ "ช่วยจำ ..." ได้เลย'];
-      ctx.attachments.push(infoCard(`🧠 จำไว้ ${memories.length} เรื่อง`, lines, {
-        buttons: [linkButton('เปิดโฟลเดอร์ Drive', await drive.rootFolderLink())],
+        : [L('b_noMemories')];
+      ctx.attachments.push(infoCard(L('b_memCount', { n: memories.length }), lines, {
+        buttons: [linkButton(L('b_openDriveFolder'), await drive.rootFolderLink())],
       }));
       return;
     }
@@ -852,79 +893,81 @@ async function handlePostback(event, ctx) {
       await becomeHost(ctx);
       return;
     case 'group_share': {
-      if (ctx.tenant.type !== 'group') return void ctx.attachments.push(textMessage('ปุ่มนี้ใช้ในกลุ่มเท่านั้น'));
-      if (ctx.tenant.hostUserId !== ctx.userId) return void ctx.attachments.push(textMessage('เฉพาะเจ้าของโฟลเดอร์กลุ่มเท่านั้นที่แชร์ได้นะ'));
+      if (ctx.tenant.type !== 'group') return void ctx.attachments.push(textMessage(L('b_groupOnly')));
+      if (ctx.tenant.hostUserId !== ctx.userId) return void ctx.attachments.push(textMessage(L('b_hostOnly')));
       const link = await drive.shareRootFolder();
-      ctx.attachments.push(infoCard('📂 โฟลเดอร์ของกลุ่ม', ['ทุกคนที่มีลิงก์นี้เปิดดูได้', `${config.driveRootFolderName}/Groups/${ctx.tenant.name}`], { buttons: [linkButton('เปิดโฟลเดอร์', link)] }));
+      ctx.attachments.push(infoCard(L('b_groupFolder'), [L('b_anyoneLink'), `${config.driveRootFolderName}/Groups/${ctx.tenant.name}`], { buttons: [linkButton(L('b_openFolder'), link)] }));
       return;
     }
     case 'disconnect': {
-      if (ctx.chatType !== 'user') return void ctx.attachments.push(textMessage('ยกเลิกการเชื่อมได้ในแชทส่วนตัวกับบอทเท่านั้น'));
-      if (tenants.isOwner(ctx.userId)) return void ctx.attachments.push(textMessage('บัญชีเจ้าของบอทเชื่อมผ่านการตั้งค่าเซิร์ฟเวอร์ ยกเลิกจากตรงนี้ไม่ได้'));
+      if (ctx.chatType !== 'user') return void ctx.attachments.push(textMessage(L('b_privateOnly')));
+      if (tenants.isOwner(ctx.userId)) return void ctx.attachments.push(textMessage(L('b_ownerNoDisconnect')));
       const groups = await tenants.groupsHostedBy(ctx.userId);
       for (const g of groups) await tenants.remove(g.id);
       await tenants.remove(ctx.userId);
-      ctx.attachments.push(textMessage(`ยกเลิกการเชื่อม Google Drive แล้ว ไฟล์ที่เก็บไว้ยังอยู่ใน Drive ของคุณตามเดิม${groups.length ? ` (กลุ่มที่คุณดูแล ${groups.length} กลุ่มต้องเลือกเจ้าของใหม่)` : ''}\nถ้าอยากใช้อีก พิมพ์ "เชื่อม Drive" ได้เลย`));
+      ctx.attachments.push(textMessage(L('b_disconnected', { groups: groups.length ? L('b_disconnectedGroups', { n: groups.length }) : '' })));
       return;
     }
     case 'menu_gallery': {
       if (publicBase) ctx.attachments.push(galleryCard(ctx));
-      else ctx.attachments.push(textMessage('ยังสร้างลิงก์แกลเลอรีไม่ได้ ลองอีกครั้งในอีกสักครู่นะ'));
+      else ctx.attachments.push(textMessage(L('b_galleryLater')));
       return;
     }
     case 'menu_ai': {
-      if (!provider) { ctx.attachments.push(textMessage('ยังไม่ได้เปิดโหมด AI')); return; }
+      if (!provider) { ctx.attachments.push(textMessage(L('b_aiOff'))); return; }
       const snap = await aiUsage.snapshot(provider.models, ctx.now);
       const lines = snap.models.map((m) => {
         const cap = m.limit ? `/${m.limit}` : '';
-        const state = m.exhausted ? 'หมดแล้ว ❌' : m.limit && m.used >= m.limit ? 'น่าจะหมดแล้ว' : 'ใช้ได้ ✅';
-        return `• ${m.model}: ใช้ไป ${m.used}${cap} ครั้ง ${state}`;
+        const state = m.exhausted ? L('b_aiDead') : m.limit && m.used >= m.limit ? L('b_aiProbablyDead') : L('b_aiOk');
+        return L('b_aiModel', { model: m.model, used: m.used, cap, state });
       });
-      lines.push(`รวมวันนี้ ${snap.total} ครั้ง · รีเซ็ต ${describeReset(snap.resetAt, tz, ctx.now)}`);
-      lines.push('1 ครั้ง = แชท 1 ข้อความ หรืออ่านโปสเตอร์/ลิงก์ 1 ชิ้น ลิมิตของ Gemini แบบฟรีนับแยกตามโมเดล ตัวเลขลิมิตจะรู้เมื่อโมเดลนั้นเคยชนลิมิตแล้ว');
-      ctx.attachments.push(infoCard('🤖 โควตา AI วันนี้', lines));
+      lines.push(L('b_aiTotal', { n: snap.total, when: resetWhen(snap.resetAt, ctx.now) }));
+      lines.push(L('b_aiExplain'));
+      ctx.attachments.push(infoCard(L('b_aiTitle'), lines));
       return;
     }
     case 'menu_settings': {
-      let cal = 'ยังไม่เชื่อม';
-      try { await calendar.listUpcoming({ days: 1, max: 1 }); cal = 'เชื่อมแล้ว ✅'; } catch { /* keep default */ }
+      let cal = L('b_calNo');
+      try { await calendar.listUpcoming({ days: 1, max: 1 }); cal = L('b_calOk'); } catch { /* keep default */ }
       const email = await drive.accountEmail();
       const lines = [
-        `ชื่อบอท: ${config.botName}`,
+        L('b_botName', { name: config.botName }),
         ctx.tenant.type === 'group'
-          ? `ที่เก็บของกลุ่ม: ${config.driveRootFolderName}/Groups/${ctx.tenant.name} (Drive ของ ${email || 'เจ้าของโฟลเดอร์'})`
-          : `Google Drive: ${email || 'บัญชีของคุณ'} → ${config.driveRootFolderName}/`,
-        `Google Calendar: ${cal}`,
-        `โหมด AI: ${brain ? brain.label : 'ปิด (ยังไม่ได้ใส่ GEMINI_API_KEY)'}`,
+          ? L('b_groupStore', { root: config.driveRootFolderName, name: ctx.tenant.name, who: email || L('b_groupHostWord') })
+          : L('b_driveLine', { email: email || L('b_yourAccount'), root: config.driveRootFolderName }),
+        L('b_calLine', { state: cal }),
+        L('b_aiMode', { state: brain ? brain.label : L('b_aiModeOff') }),
         ...(provider ? [await aiUsageLine()] : []),
-        `อ่านโปสเตอร์/ลิงก์อัตโนมัติ: ${{ always: 'เปิด', ask: 'ถามก่อน', off: 'ปิด' }[config.autoScan] || config.autoScan}`,
-        `เตือน deadline: ${describeAlerts(await deadlines.alertSettings(ctx.svc))}`,
-        `เขตเวลา: ${tz}`,
-        `LINE user ID: ${ctx.userId}`,
+        L('b_autoScan', { state: { always: L('b_scanAlways'), ask: L('b_scanAsk'), off: L('b_scanOff') }[config.autoScan] || config.autoScan }),
+        L('b_dlAlertLine', { desc: describeAlerts(await deadlines.alertSettings(ctx.svc)) }),
+        L('b_tzLine', { tz }),
+        L('b_langLine'),
+        L('b_userIdLine', { id: ctx.userId }),
       ];
       const buttons = [
         { type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
-          postbackButton('การเตือน', 'action=list_reminders', 'ดูการเตือนทั้งหมด'),
-          postbackButton('สิ่งที่จำไว้', 'action=menu_notes', 'ดูสิ่งที่จำไว้'),
+          postbackButton(L('b_btnReminders'), 'action=list_reminders', L('b_seeAllRemSaid')),
+          postbackButton(L('b_btnMemory'), 'action=menu_notes', L('b_btnMemorySaid')),
         ] },
       ];
       buttons.push({ type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
-        postbackButton('เตือน deadline', 'action=alerts_menu', 'ตั้งเวลาเตือน deadline'),
-        ...(provider ? [postbackButton('โควตา AI', 'action=menu_ai', 'ดูโควตา AI')] : []),
+        postbackButton(L('b_btnDlAlerts'), 'action=alerts_menu', L('b_alertSettingsSaid')),
+        ...(provider ? [postbackButton(L('b_btnAi'), 'action=menu_ai', L('b_btnAiSaid'))] : []),
       ] });
       if (ctx.tenant.type === 'group' && ctx.tenant.hostUserId === ctx.userId) {
-        buttons.push(postbackButton('แชร์ลิงก์โฟลเดอร์ให้กลุ่ม', 'action=group_share', 'แชร์ลิงก์โฟลเดอร์ให้กลุ่ม'));
+        buttons.push(postbackButton(L('b_shareFolder'), 'action=group_share', L('b_shareFolder')));
       } else if (ctx.chatType === 'user' && !tenants.isOwner(ctx.userId) && multiUserEnabled()) {
         buttons.push({ type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
-          linkButton('เชื่อม Drive ใหม่', connectUrl(publicBase || '', config.gallerySecret, ctx.userId)),
-          postbackButton('ยกเลิกการเชื่อม', 'action=disconnect', 'ยกเลิกการเชื่อม Google Drive'),
+          linkButton(L('b_reconnect'), connectUrl(publicBase || '', config.gallerySecret, ctx.userId)),
+          postbackButton(L('b_disconnect'), 'action=disconnect', L('b_disconnectSaid')),
         ] });
       }
-      ctx.attachments.push(infoCard('⚙️ ตั้งค่า', lines, { buttons }));
+      if (config.liffId) buttons.unshift(linkButton(L('b_openApp'), liffUrl('/me')));
+      ctx.attachments.push(infoCard(L('b_settings'), lines, { buttons }));
       return;
     }
     default:
-      ctx.attachments.push(textMessage('ปุ่มนี้ยังไม่รู้จักเลย'));
+      ctx.attachments.push(textMessage(L('b_unknownButton')));
   }
 }
 
@@ -1048,8 +1091,8 @@ function withThumbs(files, ctx) {
 }
 
 function galleryCard(ctx) {
-  return infoCard('🖼️ แกลเลอรี', ['ดูรูปและไฟล์ทั้งหมดเป็นปฏิทิน เลือกวัน ค้นหาได้ ลิงก์ใช้ได้ 24 ชั่วโมง'], {
-    buttons: [linkButton('เปิดแกลเลอรี', galleryUrl(publicBase, config.gallerySecret, ctx.tenantId))],
+  return infoCard(L('b_galleryTitle'), [L('b_galleryBody')], {
+    buttons: [linkButton(L('b_openGallery'), galleryUrl(publicBase, config.gallerySecret, ctx.tenantId))],
   });
 }
 
@@ -1062,7 +1105,7 @@ async function scanLinkNow(url, ctx, { text: given, linkId } = {}) {
   try {
     const text = given ?? await fetchPageText(url);
     if (text.length < 80) {
-      if (config.autoScan === 'always') ctx.attachments.push(textMessage('เปิดหน้าเว็บนี้อ่านไม่ได้ ถ้าเป็นประกาศรับสมัคร ส่งรูปโปสเตอร์มาด้วยได้นะ เดี๋ยวจด deadline ให้'));
+      if (config.autoScan === 'always') ctx.attachments.push(textMessage(L('b_linkUnreadable')));
       return null;
     }
     const candidates = oppCandidates(await ctx.svc.store.opportunities(), tz, ctx.now);
@@ -1079,7 +1122,7 @@ async function scanLinkNow(url, ctx, { text: given, linkId } = {}) {
     return reg.opp;
   } catch (err) {
     console.error('link scan failed', describeError(err));
-    if (isQuotaError(err)) ctx.attachments.push(textMessage('AI ติดลิมิตชั่วคราว เลยยังไม่ได้อ่านลิงก์นี้ ส่งมาใหม่ทีหลังได้นะ'));
+    if (isQuotaError(err)) ctx.attachments.push(textMessage(L('b_aiLimitedLink')));
     return null;
   }
 }
@@ -1088,14 +1131,14 @@ async function aiUsageLine() {
   try {
     const snap = await aiUsage.snapshot(provider.models);
     const dead = snap.models.filter((m) => m.exhausted).length;
-    const note = dead === 0 ? '' : dead >= snap.models.length ? ' (หมดทุกโมเดลแล้ว)' : ` (หมดแล้ว ${dead}/${snap.models.length} โมเดล)`;
-    return `AI วันนี้: ใช้ไป ${snap.total} ครั้ง${note} รีเซ็ต ${describeReset(snap.resetAt, tz)}`;
+    const note = dead === 0 ? '' : dead >= snap.models.length ? L('b_aiAllDead') : L('b_aiSomeDead', { d: dead, n: snap.models.length });
+    return L('b_aiLine', { n: snap.total, note, when: resetWhen(snap.resetAt) });
   } catch {
-    return 'AI วันนี้: นับไม่ได้';
+    return L('b_aiUncounted');
   }
 }
 
-const GONE = 'รายการนี้ถูกลบไปแล้ว';
+const goneText = () => L('b_gone');
 
 // One AI step at a time per chat (see handleText); a stuck call is skipped after 45 s.
 const aiLocks = new Map();
@@ -1111,17 +1154,17 @@ const shortDate = (iso) => {
 /** The line sent above a deadline card after a poster / link / message was read. */
 function scanIntro(r) {
   const o = r.opp;
-  const kind = ({ competition: 'การแข่งขัน', application: 'ประกาศรับสมัคร', scholarship: 'ทุน', course: 'คอร์สอบรม', event: 'กิจกรรม' })[o.kind] || 'ประกาศ';
+  const kind = ['competition', 'application', 'scholarship', 'course', 'event'].includes(o.kind) ? L(`b_kindAnn_${o.kind}`) : L('b_kindAnnouncement');
   if (r.merged) {
-    const what = r.added?.length ? `เลยรวมรายละเอียดใหม่ให้: ${r.added.join(', ')}` : 'ไม่มีอะไรใหม่ เลยไม่ได้จดซ้ำ';
+    const what = r.added?.length ? L('b_mergedAdded', { list: r.added.join(', ') }) : L('b_mergedNothing');
     const dates = r.otherDeadline && o.deadline
-      ? ` (เจอวันหมดเขต 2 แบบ ${shortDate(o.deadline)} กับ ${shortDate(r.otherDeadline)} ใช้วันที่เร็วกว่าไว้ก่อนกันพลาด)`
+      ? L('b_twoDates', { a: shortDate(o.deadline), b: shortDate(r.otherDeadline) })
       : '';
-    return `งานนี้จดไว้แล้วนะ ${what}${dates}`;
+    return L('b_mergedIntro', { what, dates });
   }
   const n = o.reminderIds?.length || 0;
-  const dl = o.deadline ? `หมดเขต ${describeDeadline(o.deadline, tz)}` : 'ไม่เห็นวันหมดเขตในนี้';
-  return `อ่านแล้ว เป็น${kind} จดไว้ให้แล้ว ${dl}${n ? ` จะเตือนให้ ${n} ครั้งก่อนหมดเขต` : ''}`;
+  const dl = o.deadline ? L('b_scannedDl', { when: currentLang() === 'en' ? `${shortDate(o.deadline)}` : describeDeadline(o.deadline, tz) }) : L('b_scannedNoDl');
+  return L('b_scanned', { kind, dl, n: n ? L('b_scannedAlerts', { n }) : '' });
 }
 
 /** Picture for a deadline card: its own poster, wherever it came from. */
@@ -1138,7 +1181,7 @@ async function detailCard(o, ctx, opts = {}) {
 /** Card for a freshly saved / merged deadline, with split or merge offers. */
 async function oppCardFor(r, ctx) {
   return detailCard(r.opp, ctx, {
-    title: r.merged ? '🎯 อัปเดตรายการเดิมแล้ว' : '🎯 บันทึกไว้แล้ว',
+    title: r.merged ? L('b_updated') : L('b_saved'),
     merged: r.merged,
     suggestion: r.suggestion,
   });
@@ -1203,7 +1246,7 @@ function sanitize(name) {
 }
 
 function kindThai(type) {
-  return { image: 'รูป', video: 'วิดีโอ', audio: 'เสียง', file: 'ไฟล์' }[type] || 'ไฟล์';
+  return L(`b_kind_${['image', 'video', 'audio'].includes(type) ? type : 'file'}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1227,22 +1270,57 @@ async function reply(replyToken, to, messages) {
 }
 
 function welcomeText() {
-  return `สวัสดี เราคือ ${config.botName} 👋
-ส่งอะไรมาก็ได้ เดี๋ยวเก็บให้หมดใน Google Drive ของคุณ
-
-• ส่งรูป/ไฟล์/ลิงก์ → เก็บให้ทันที
-• "เก็บไฟล์ bookbank" → ตั้งชื่อไฟล์ล่าสุด
-• "หา ใบเสร็จ" → ค้นทุกอย่างที่เก็บไว้
-• "ช่วยจำ ที่จอดรถชั้น 3 B12" → จำไว้ให้
-• "เตือนกินยา 19.00" → ตั้งเตือน
-• "ลง calendar พรุ่งนี้ 10 โมง ประชุม" → ลงปฏิทิน
-• ส่งโปสเตอร์/ลิงก์รับสมัคร → จด deadline + เตือนก่อนหมดเขต (ส่งรูปกับข้อความของงานเดียวกัน จะรวมเป็นรายการเดียว)
-• "เตือน deadline ก่อน 7 3 1 วัน 20:00" → ตั้งว่าจะให้เตือนกี่วันก่อน และกี่โมง
-• ถามอะไรก็ได้ คุยเล่นก็ได้`;
+  return L('b_welcome', { bot: config.botName });
 }
 
 function thaiDate(iso) {
   return new Intl.DateTimeFormat('th-TH', { timeZone: tz, day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso));
+}
+
+/**
+ * LINE's own three-dot "typing" indicator while the AI works. Only in 1:1
+ * chats (LINE does not support it in groups); it clears itself when the
+ * reply arrives. Failing to show it never blocks the reply.
+ */
+function showLoading(ctx) {
+  if (ctx.chatType !== 'user' || !ctx.userId) return;
+  lineClient.showLoadingAnimation({ chatId: ctx.userId, loadingSeconds: 20 }).catch((err) => console.warn('loading animation failed', err?.status || err?.message || err));
+}
+
+/** Language and tone for the AI's reply; facts, names and amounts stay as they are. */
+async function styleHint(ctx) {
+  const p = await prefs.get(ctx.userId).catch(() => ({ lang: 'th', tone: 'polite' }));
+  const parts = [];
+  if (currentLang() === 'en') parts.push('Reply in natural, concise English. Keep file names, saved facts, titles, amounts and times exactly as stored (do not translate them).');
+  if (p.tone === 'friend' && ctx.chatType === 'user') parts.push('ผู้ใช้เลือกโทน "เพื่อนสนิท": คุยแบบเพื่อนสนิท สั้น กันเอง ใช้คำอย่าง ลุย จัด อ่ออ ได้บ้าง แต่ข้อมูลวัน เวลา ตัวเลข ต้องเป๊ะ');
+  return parts.join('\n');
+}
+
+/** "today 14:00" / "tomorrow 15:00" for the AI quota reset, in the chat's language. */
+function resetWhen(resetAt, now = new Date()) {
+  const lang = currentLang();
+  const r = zoned(resetAt, tz);
+  const n = zoned(now, tz);
+  const time = formatTime(r.hm, lang);
+  if (r.key === n.key) return time;
+  return `${formatDay(r.key, lang, 'dm')} ${time}`;
+}
+
+function liffUrl(path = '') {
+  return `https://liff.line.me/${config.liffId}${path ? `#${path}` : ''}`;
+}
+
+/** Link the rich menu that matches the person's language (aliases from setup-rich-menu). */
+async function linkRichMenuFor(userId, lang) {
+  try {
+    const alias = await lineClient.getRichMenuAlias(config.richMenuAlias[lang === 'en' ? 'en' : 'th']);
+    if (!alias?.richMenuId) return { menuSwitched: false };
+    await lineClient.linkRichMenuIdToUser(userId, alias.richMenuId);
+    return { menuSwitched: true };
+  } catch (err) {
+    console.warn('rich menu link failed', err?.status || err?.message || err);
+    return { menuSwitched: false };
+  }
 }
 
 function describeError(err) {

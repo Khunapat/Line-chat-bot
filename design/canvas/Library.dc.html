@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Library files list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/2cb68634004ed475055ceb4051ac14e6) format("truetype");font-weight:500}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.pri img{filter:brightness(0) invert(1)}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 14px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;font:600 14px/1.3 "Bai Jamjuree",sans-serif;white-space:nowrap;color:#3B3B3B;flex:none}
+.it{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B}
+.th{width:52px;height:52px;border-radius:10px;border:1.5px solid #3B3B3B;object-fit:cover;background:#EFE8D8}
+.nm{font-weight:600;line-height:1.45;overflow-wrap:anywhere;color:#3B3B3B}
+.mt{font-size:12.5px;color:#686458}
+.ac{grid-column:2;display:flex;gap:8px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;padding:3px;background:#EFE8D8;border:2px solid #3B3B3B;border-radius:999px}
+.seg button{min-height:40px;border:0;border-radius:999px;background:transparent;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B;display:flex;gap:6px;align-items:center;justify-content:center}
+.seg .on{background:#FBF8F1;box-shadow:0 0 0 2px #3B3B3B}
+.nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12.5px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;text-decoration:none;border-radius:14px}
+.nav img{width:26px;height:26px}
+p,h1{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:1250px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <p style="font-size:11px;color:#686458;text-align:right;padding:6px 16px 0">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <div style="padding:0 16px 110px;display:flex;flex-direction:column;gap:12px">
+    <h1 style="font-size:22px;line-height:1.35">คลัง</h1>
+    <div class="seg" role="radiogroup" aria-label="เลือกคลัง"><button role="radio" aria-checked="true" class="on"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="" style="width:18px;height:18px">ของฉัน</button><button role="radio" aria-checked="false"><img src="/_blob/71d94ba304fe64fb2f465ad0361d3ee7" alt="" style="width:18px;height:18px">กลุ่ม 5 ซิปๆ</button></div>
+    <p style="font-size:14px;color:#686458;overflow-wrap:anywhere;display:flex;gap:6px;align-items:flex-start"><img src="/_blob/e85e595816db7f8bdfaf71b77e2df637" alt="" style="width:18px;height:18px;margin-top:3px"><span>เก็บใน Google Drive ของคุณ · <b style="color:#3B3B3B">j***@gmail.com</b> › My Drive › <b style="color:#3B3B3B">LineArchive</b></span></p>
+    <label style="position:relative;display:block" role="search"><span style="position:absolute;width:1px;height:1px;overflow:hidden">ค้นหาในคลัง</span><img src="/_blob/9582a03988c746b336e501b499d4cf98" alt="" style="position:absolute;left:12px;top:13px;width:22px;height:22px"><input type="search" placeholder="ชื่อไฟล์ คำอธิบาย หรือแท็ก" style="width:100%;box-sizing:border-box;min-height:48px;padding:10px 14px 10px 42px;border-radius:10px;border:2px solid #3B3B3B;background:#FFFFFF;font:400 16px 'Bai Jamjuree',sans-serif"></label>
+    <div role="tablist" aria-label="คลัง" style="display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 6px">
+      <button class="chip" role="tab" aria-selected="true" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/ef37c8d59f09327ba30e522f95a91a9a" alt="" style="width:18px;height:18px">ไฟล์/รูป <span style="font-weight:500;color:#686458">4</span></button>
+      <button class="chip" role="tab" aria-selected="false"><img src="/_blob/ecd80836901f5bc6690402dcd2052e36" alt="" style="width:18px;height:18px">ลิงก์ <span style="font-weight:500;color:#686458">1</span></button>
+      <button class="chip" role="tab" aria-selected="false"><img src="/_blob/17e1f7b45c72467f4a0d50a2e1a97c58" alt="" style="width:18px;height:18px">สิ่งที่จำไว้ <span style="font-weight:500;color:#686458">1</span></button>
+    </div>
+    <div class="seg" role="radiogroup" aria-label="มุมมอง"><button role="radio" aria-checked="true" class="on">รายการ</button><button role="radio" aria-checked="false">แกลเลอรี</button><button role="radio" aria-checked="false">ปฏิทิน</button></div>
+
+    <div class="it"><img class="th" src="/_blob/39b03a1325302af74996031ffe636177" alt=""><div style="min-width:0"><a class="nm" href="FileDetail.dc.html">10-21-05_ใบเสร็จร้านกาแฟ.jpg</a><p class="mt">รูปภาพ · เก็บเมื่อ 7 ต.ค. 69</p><p style="font-size:14px">ใบเสร็จร้านกาแฟ</p></div><div class="ac"><a class="btn pri" href="#" style="font-size:14px"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดใน Google Drive</a></div></div>
+    <div class="it"><img class="th" src="/_blob/37781f7549052cd921554ccf63eba25c" alt=""><div style="min-width:0"><a class="nm" href="FileDetail.dc.html">14-02-33_โปสเตอร์แข่ง Analog IC.jpg</a><p class="mt">รูปภาพ · เก็บเมื่อ 5 ต.ค. 69</p><p style="font-size:14px">โปสเตอร์แข่งออกแบบวงจร Analog IC</p></div><div class="ac"><a class="btn pri" href="#" style="font-size:14px"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดใน Google Drive</a></div></div>
+    <div class="it"><div class="th" style="display:flex;align-items:center;justify-content:center"><img src="/_blob/2b25d57670af88c76cace1c5478c6ae2" alt="" style="width:28px;height:28px"></div><div style="min-width:0"><a class="nm" href="FileDetail.dc.html">bookbank.pdf</a><p class="mt">PDF · เก็บเมื่อ 3 ต.ค. 69</p></div><div class="ac"><a class="btn pri" href="#" style="font-size:14px"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดใน Google Drive</a></div></div>
+    <div class="it"><div class="th" style="display:flex;align-items:center;justify-content:center"><img src="/_blob/c379d0a95699934f80cf638c997d055d" alt="" style="width:28px;height:28px"></div><div style="min-width:0"><a class="nm" href="FileDetail.dc.html">ใบสมัครงาน_ฉบับแก้ไขครั้งที่สาม_สุดท้ายจริงๆ_v7.docx</a><p class="mt">เอกสาร Word · เก็บเมื่อ 30 ก.ย. 69</p></div><div class="ac"><a class="btn pri" href="#" style="font-size:14px"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดใน Google Drive</a></div></div>
+    <p style="font-size:12.5px;color:#686458">Filenames wrap in full, never truncated, so “v7” stays visible. No storage bar: JaiJa doesn't read Drive quota (Proposed if wanted).</p>
+  </div>
+  <nav class="nav" aria-label="เมนูหลัก" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 8px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">
+    <a href="Today.dc.html"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">วันนี้</a>
+    <a href="Deadlines.dc.html"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadline</a>
+    <a href="Library.dc.html" aria-current="page" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">คลัง</a>
+    <a href="Me.dc.html"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">ของฉัน</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

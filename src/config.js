@@ -48,6 +48,15 @@ export const config = {
   // Public base URL of this service (derived from the webhook request when unset).
   publicUrl: env.PUBLIC_URL || '',
 
+  // Web app (LIFF). LIFF_ID comes from the LINE Login channel's LIFF tab; its
+  // first part is that channel's id, used to verify ID tokens server-side.
+  liffId: env.LIFF_ID || '',
+  lineLoginChannelId: env.LINE_LOGIN_CHANNEL_ID || (env.LIFF_ID ? env.LIFF_ID.split('-')[0] : ''),
+  // Signs web-app sessions. Falls back like the gallery secret so it needs no setup.
+  appSessionSecret: env.APP_SESSION_SECRET || env.GALLERY_SECRET || env.CRON_SECRET || env.LINE_CHANNEL_SECRET,
+  // Rich menu aliases created by `npm run rich-menu` (Thai default + English).
+  richMenuAlias: { th: env.RICH_MENU_ALIAS_TH || 'jaija-th', en: env.RICH_MENU_ALIAS_EN || 'jaija-en' },
+
   port: Number(env.PORT || 8080),
 };
 

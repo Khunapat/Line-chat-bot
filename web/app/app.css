@@ -1,0 +1,296 @@
+/* JaiJa web app. Tokens and components from the Claude Design canvas
+   (design/canvas/Components.dc.html, Prototype.dc.html). */
+@font-face{font-family:"Bai Jamjuree";src:url(/app/fonts/BaiJamjuree-Regular.ttf) format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:"Bai Jamjuree";src:url(/app/fonts/BaiJamjuree-Medium.ttf) format("truetype");font-weight:500;font-display:swap}
+@font-face{font-family:"Bai Jamjuree";src:url(/app/fonts/BaiJamjuree-SemiBold.ttf) format("truetype");font-weight:600;font-display:swap}
+@font-face{font-family:"Bai Jamjuree";src:url(/app/fonts/BaiJamjuree-Bold.ttf) format("truetype");font-weight:700;font-display:swap}
+
+:root{
+  --paper:#F4EFE4;--raised:#FBF8F1;--quiet:#EFE8D8;--ink:#3B3B3B;--ink2:#686458;--olive:#8B9270;--primary:#62694D;
+  --urgent:#B5482F;--soon:#C98A2B;--sel:#DFE1D2;--focus:#2F5DA8;--warn:#F6E7CB;--errbg:#F6E1D9;--line:#CFC6B2;
+  --nav-h:84px;--safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;min-height:100vh;background:var(--paper);background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:"Bai Jamjuree",system-ui,sans-serif;color:var(--ink);line-height:1.6;font-size:16px}
+p,h1,h2,h3,fieldset,legend,dl,dd,ul{margin:0}
+ul{padding-left:18px}
+h1{font-size:22px;line-height:1.35}
+h2{font-size:18px;line-height:1.45}
+h3{font-size:16px;line-height:1.45}
+fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+legend{padding:0;margin-bottom:8px}
+img{max-width:100%}
+a{color:inherit}
+.sr{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{position:absolute;left:8px;top:-60px;z-index:50;background:var(--raised);padding:8px 14px;border:2px solid var(--ink);border-radius:10px}
+.skip:focus{top:8px}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* layout */
+.shell{min-height:100vh}
+.main{max-width:640px;margin:0 auto;padding:calc(8px + var(--safe-t)) 16px calc(112px + var(--safe-b));display:flex;flex-direction:column;gap:14px}
+.main.no-nav{padding-bottom:calc(40px + var(--safe-b))}
+.top{display:flex;align-items:center;gap:8px}
+.top h1{flex:1;min-width:0;overflow-wrap:anywhere}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grow{flex:1;min-width:0}
+.stack{display:flex;flex-direction:column;gap:8px;min-width:0}
+.badge-preview{font-size:12px;color:var(--ink2);text-align:right}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid var(--ink);background:var(--raised);color:var(--ink);font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;cursor:pointer;text-align:center;transition:background-color .14s ease-out,box-shadow .14s ease-out}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;box-shadow:none}
+.pri{background:var(--primary);color:#FFFFFF;box-shadow:0 2px 0 var(--ink)}
+.pri img{filter:brightness(0) invert(1)}
+.dan{color:var(--urgent);border-color:var(--urgent)}
+.ghost{background:transparent;border-color:transparent}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent;flex:none}
+.sm{font-size:14px}
+.xs{font-size:12.5px}
+.blk{width:100%}
+.big{min-height:52px}
+.muted{color:var(--ink2)}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips.wrap{flex-wrap:wrap;overflow:visible;margin:0;padding:0}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 14px;border-radius:999px;border:2px solid var(--ink);background:var(--raised);font:600 14px/1.3 "Bai Jamjuree",sans-serif;white-space:nowrap;color:var(--ink);flex:none;cursor:pointer;transition:background-color .14s ease-out}
+.chip.on,.chip[aria-pressed="true"],.chip[aria-checked="true"],.chip[aria-selected="true"]{background:var(--sel);box-shadow:inset 0 -3px 0 var(--primary)}
+.chip .n{font-weight:500;color:var(--ink2)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;padding:3px;background:var(--quiet);border:2px solid var(--ink);border-radius:999px}
+.seg button{min-height:44px;border:0;border-radius:999px;background:transparent;font:600 14px "Bai Jamjuree",sans-serif;color:var(--ink);cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center;padding:2px 8px;min-width:0;transition:background-color .14s ease-out}
+.seg button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg button.on{background:var(--raised);box-shadow:0 0 0 2px var(--ink)}
+
+/* surfaces */
+.card{background:var(--raised);border:2px solid var(--ink);border-radius:16px;box-shadow:0 3px 0 var(--ink);padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.flat{box-shadow:none;background:var(--paper)}
+.panel{background:var(--quiet);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px solid var(--ink);background:var(--sel);white-space:nowrap}
+.tag.plain{background:var(--raised)}
+.tag.est{background:var(--warn);border-style:dashed}
+.tag.u{background:var(--errbg);border-color:var(--urgent)}
+.banner{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid var(--ink);background:var(--raised);align-items:start}
+.banner.err{background:var(--errbg);border-color:var(--urgent)}
+.banner.warn{background:var(--warn)}
+.banner.ok{background:var(--sel)}
+.banner > img{width:24px;height:24px}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:20px 12px;border:2px dashed var(--line);border-radius:16px}
+.empty.solid{border-style:solid;border-color:var(--ink);background:var(--raised)}
+.empty.bad{border-style:solid;border-color:var(--urgent);background:var(--errbg)}
+.empty .face{width:60px;height:60px;border-radius:50%;border:2px solid var(--ink)}
+.ex{background:var(--raised);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:14px;text-align:left}
+.skel{background:var(--quiet);border-radius:10px;height:76px}
+.err-t{color:var(--urgent);font-size:14px;font-weight:600}
+
+/* agenda rows: reminder solid + ink edge, calendar dashed, deadline urgency edge */
+.ag{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:12px;border-radius:10px;background:var(--raised);border:2px solid var(--ink);text-align:left;font:inherit;color:var(--ink);width:100%;min-width:0}
+.ag > div{min-width:0}
+.ag b{line-height:1.5;overflow-wrap:anywhere}
+.ag:is(a){text-decoration:none}
+.ag.r{box-shadow:inset 5px 0 0 var(--ink)}
+.ag.e{border-style:dashed;background:var(--paper)}
+.ag.d{box-shadow:inset 5px 0 0 var(--urgent);cursor:pointer}
+.ag.d.later,.ag.d.nodate{box-shadow:inset 5px 0 0 var(--olive)}
+.ag.d.soon{box-shadow:inset 5px 0 0 var(--soon)}
+.ag.past{opacity:.78}
+.kind{font-size:13.5px;color:var(--ink2);display:flex;gap:6px;align-items:center;line-height:1.4;margin-top:2px;flex-wrap:wrap}
+.kind img{width:16px;height:16px}
+
+/* week strip + month grid */
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 -10px}
+.day{min-height:64px;border-radius:14px;border:2px solid transparent;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Bai Jamjuree",sans-serif;color:var(--ink);padding:4px 0;cursor:pointer;min-width:0;transition:background-color .14s ease-out}
+.day small{font-size:12.5px;color:var(--ink2);line-height:1.4}
+.day b{font-size:18px;line-height:1.3}
+.day[aria-pressed="true"]{background:var(--raised);border-color:var(--ink);box-shadow:0 2px 0 var(--ink)}
+.day.today b,.mday.today .dn{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:var(--olive)}
+.day.out b{color:var(--ink2)}
+.mk{display:flex;gap:3px;height:9px;align-items:center}
+.mk i,.lg-i{display:inline-block}
+.mr{width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.md{width:7px;height:7px;transform:rotate(45deg);background:var(--urgent)}
+.me{width:10px;height:4px;border:1.5px solid var(--ink);border-radius:2px}
+.mf{width:7px;height:7px;border:1.5px solid var(--primary);background:var(--sel);border-radius:2px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--ink2)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.mgrid .w{text-align:center;font-size:12px;color:var(--ink2);padding:2px 0}
+.mday{min-height:44px;border:2px solid transparent;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 15px/1.3 "Bai Jamjuree",sans-serif;color:var(--ink);cursor:pointer;padding:2px 0;min-width:0}
+.mday.out{color:var(--ink2);font-weight:400}
+.mday[aria-pressed="true"]{background:var(--sel);border-color:var(--ink)}
+
+/* deadline stub + rows */
+.stub{width:58px;flex:none;border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--raised);text-align:center}
+.stub .b{height:22px;border-bottom:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+.stub .dd{font-size:22px;font-weight:700;line-height:1.15;padding-top:4px}
+.stub .mm{font-size:12px;line-height:1.3;padding-bottom:5px}
+.t-urgent .b{background:var(--urgent)}.t-soon .b{background:var(--soon)}.t-later .b{background:var(--olive)}.t-closed .b,.t-nodate .b,.t-applied .b{background:var(--quiet)}
+.t-closed .dd,.t-closed .mm{color:var(--ink2)}
+.cd{display:inline-flex;gap:6px;align-items:center;font-weight:700;font-size:14px}
+.cd.urgent{color:var(--urgent)}.cd.closed,.cd.nodate{color:var(--ink2)}
+.dlc{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start}
+.rowb{display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;font:inherit;color:var(--ink);cursor:pointer;min-width:0}
+.ttl{font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-top:.12em;overflow-wrap:anywhere}
+.kv{display:grid;grid-template-columns:104px 1fr;gap:6px 12px}
+.kv dt{color:var(--ink2);font-size:14px}
+.kv dd{overflow-wrap:anywhere;min-width:0}
+.al{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.al img{width:18px;height:18px;margin-top:2px}
+.al.past{color:var(--ink2)}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lg{font-weight:600}
+.inp{width:100%;min-height:48px;padding:10px 14px;border-radius:10px;border:2px solid var(--ink);background:#FFFFFF;font:400 16px/1.5 "Bai Jamjuree",sans-serif;color:var(--ink)}
+.inp.bad,.inp[aria-invalid="true"]{border-color:var(--urgent);box-shadow:0 0 0 2px var(--errbg)}
+.inp[readonly]{background:var(--quiet)}
+.rc{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px 14px;border:2px solid var(--ink);border-radius:10px;background:var(--raised);cursor:pointer}
+.rc:has(input:checked){background:var(--sel);box-shadow:inset 4px 0 0 var(--primary)}
+.rc input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.rc b{display:block;font-weight:600}
+.rc small{display:block;font-size:14px;color:var(--ink2)}
+.rc:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.search{position:relative}
+.search img{position:absolute;left:12px;top:13px;width:22px;height:22px}
+.search .inp{padding-left:42px}
+
+/* library */
+.it{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:var(--raised);border:2px solid var(--ink);min-width:0}
+.it > div{min-width:0}
+.th{width:52px;height:52px;border-radius:10px;border:1.5px solid var(--ink);object-fit:cover;background:var(--quiet);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.th img.ib{width:52px;height:52px;object-fit:cover}
+.th img.is{width:28px;height:28px}
+.nm{font-weight:600;line-height:1.45;overflow-wrap:anywhere;word-break:break-word;background:none;border:0;padding:0;font-family:inherit;font-size:16px;color:var(--ink);text-align:left;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.nm.plain{text-decoration:none;cursor:default}
+.gal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gc{display:flex;flex-direction:column;gap:6px;background:var(--raised);border:2px solid var(--ink);border-radius:10px;padding:6px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;min-width:0}
+.gc .ph{width:100%;aspect-ratio:4 / 3;border-radius:8px;background:var(--quiet);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.gc .ph img{width:100%;height:100%;object-fit:cover}
+.gc .ph img.is{width:40px;height:40px;object-fit:contain}
+.gc span{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.hero{width:100%;aspect-ratio:4 / 3;object-fit:contain;border-radius:10px;border:2px solid var(--ink);background:var(--quiet)}
+
+/* me */
+.st{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.st b{display:block;font-size:22px;line-height:1.25}
+.st span{display:block;font-size:14px;color:var(--ink2);line-height:1.4}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.meter{height:10px;border-radius:999px;border:1.5px solid var(--ink);background:var(--raised);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--primary)}
+.meter i.full{background:var(--urgent)}
+.li{display:flex;gap:10px;align-items:center;min-height:52px;padding:6px 14px;border:2px solid var(--ink);border-radius:999px;color:var(--ink);font:600 15px "Bai Jamjuree",sans-serif;background:var(--raised);cursor:pointer;width:100%;text-align:left;text-decoration:none}
+.li img{width:20px;height:20px}
+.li .v{font-weight:400;font-size:14px;color:var(--ink2)}
+.avatar{width:52px;height:52px;flex:none;border-radius:50%;border:2px solid var(--ink);background:var(--sel);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.speech{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:end}
+.speech img{width:52px;height:52px;border-radius:50%;border:2px solid var(--ink)}
+.bub{background:#FFFFFF;border:2px solid var(--ink);border-radius:18px 18px 18px 4px;padding:10px 14px;line-height:1.55}
+.bub.me{border-radius:18px 18px 4px 18px;background:var(--sel);align-self:flex-end;max-width:85%}
+.demo{display:flex;flex-direction:column;gap:8px}
+
+/* nav (pinned) */
+.nav{position:fixed;left:0;right:0;bottom:0;min-height:calc(var(--nav-h) + var(--safe-b));background:var(--raised);border-top:2px solid var(--ink);padding:6px 8px calc(16px + var(--safe-b));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;z-index:5}
+.navb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12.5px/1.3 "Bai Jamjuree",sans-serif;color:var(--ink);background:transparent;border:0;border-radius:14px;cursor:pointer;min-height:52px;text-decoration:none;min-width:0;text-align:center;padding:2px}
+.navb span{overflow-wrap:anywhere}
+.navb img{width:26px;height:26px}
+.navb[aria-current="page"]{background:var(--sel);box-shadow:inset 0 -3px 0 var(--primary)}
+.nav .brand{display:none}
+.fab{position:fixed;right:16px;bottom:calc(var(--nav-h) + 16px + var(--safe-b));z-index:4;min-height:52px;padding:6px 20px}
+
+/* toast + dialogs */
+.toast{position:fixed;left:16px;right:16px;bottom:calc(var(--nav-h) + 16px + var(--safe-b));z-index:8;display:flex;gap:10px;align-items:center;background:var(--ink);color:#FFFFFF;border-radius:14px;padding:8px 8px 8px 16px;max-width:608px;margin:0 auto}
+.toast span{flex:1;line-height:1.45;padding:6px 0}
+.toast .btn{background:transparent;color:#FFFFFF;border-color:#FFFFFF}
+.no-nav ~ .toast{bottom:calc(16px + var(--safe-b))}
+.scrim{position:fixed;inset:0;z-index:10;background:rgba(59,59,59,.42);display:flex;align-items:center;justify-content:center;padding:16px;animation:fade .2s ease-out}
+.scrim.sheet-wrap{align-items:flex-end;padding:0}
+.dlg{width:100%;max-width:440px;max-height:calc(100vh - 32px);overflow:auto;background:var(--paper);border:2px solid var(--ink);border-radius:22px;box-shadow:0 3px 0 var(--ink);padding:12px 14px 16px;display:flex;flex-direction:column;gap:10px}
+.sheet{max-width:640px;border-radius:22px 22px 0 0;padding-bottom:calc(16px + var(--safe-b))}
+.dlg h2{font-size:17px}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+/* mini JaiJa motion */
+.mo{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mo svg{overflow:visible;max-width:100%}
+.mo.compact svg{width:150px;height:75px}
+.mo svg *{transform-box:fill-box}
+.mo .leg{transform-origin:30% 0%}
+.mo .arm{transform-origin:0% 100%;opacity:0}
+.mo .folder,.mo .check,.mo .clock,.mo .bad,.mo .part,.mo .fnote{opacity:0}
+.mo .dot{transform:translateX(250px)}
+.mo.is-idle .d1,.mo.is-wave .d1,.mo.is-failure .d1,.mo.is-longwait .d1,.mo.rm.is-pending .d1{transform:translateX(150px)}
+.mo.is-idle .d2,.mo.is-wave .d2,.mo.is-failure .d2,.mo.is-longwait .d2,.mo.rm.is-pending .d2{transform:translateX(176px)}
+.mo.is-idle .d3,.mo.is-wave .d3,.mo.is-failure .d3,.mo.is-longwait .d3,.mo.rm.is-pending .d3{transform:translateX(202px)}
+.mo.is-wave .note{opacity:0}
+.mo.is-wave .arm{opacity:1;animation:wave .7s ease-in-out 2}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-22deg)}}
+.mo.is-pending .dot{animation:pass 2.4s linear infinite}
+.mo.is-pending .d2{animation-delay:-.8s}.mo.is-pending .d3{animation-delay:-1.6s}
+@keyframes pass{0%{transform:translateX(250px) translateY(0)}62%{transform:translateX(86px) translateY(0)}70%{transform:translateX(64px) translateY(-6px)}78%{transform:translateX(43px) translateY(0)}100%{transform:translateX(-12px)}}
+.mo.is-pending .char{animation:bob .6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.mo.is-pending .ll{animation:stride .6s ease-in-out infinite}.mo.is-pending .lr{animation:stride .6s ease-in-out infinite reverse}
+@keyframes stride{0%,100%{transform:rotate(24deg)}50%{transform:rotate(-24deg)}}
+.mo.is-success .folder,.mo.is-partial .folder{opacity:1;animation:inr .2s cubic-bezier(.2,.7,.2,1) both}
+.mo.is-success .note{animation:tofolder .32s .12s cubic-bezier(.2,.7,.2,1) both}
+.mo.is-success .fnote,.mo.is-partial .fnote{animation:fin .12s .4s both}
+.mo.is-success .check,.mo.is-partial .check{animation:pop .16s .4s cubic-bezier(.2,.7,.2,1) both}
+.mo.is-success .dot,.mo.is-partial .dot{opacity:0}
+.mo.is-partial .part{opacity:1}
+.mo.is-failure .bad{opacity:1}
+.mo.is-failure .dot,.mo.is-longwait .dot{fill:#D9D2C1}
+.mo.is-longwait .clock{opacity:1}
+@keyframes inr{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes tofolder{from{transform:none;opacity:1}to{transform:translate(98px,-4px) scale(.7);opacity:0}}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.mo.around.is-pending .actor{animation:around 4.8s ease-in-out infinite}
+@keyframes around{0%{transform:translate(-30px,0) scaleX(1)}25%{transform:translate(40px,-14px) scaleX(1)}48%{transform:translate(110px,0) scaleX(1)}50%{transform:translate(110px,0) scaleX(-1)}75%{transform:translate(40px,-14px) scaleX(-1)}98%{transform:translate(-30px,0) scaleX(-1)}100%{transform:translate(-30px,0) scaleX(1)}}
+.mo.around.is-pending .dot{animation:none}
+.mo.around.is-pending .d1{transform:translateX(150px)}.mo.around.is-pending .d2{transform:translateX(176px)}.mo.around.is-pending .d3{transform:translateX(202px)}
+.mo.paused *{animation-play-state:paused!important}
+.mo.rm *{animation:none!important;transition:none!important}
+.mo.rm.is-success .note{opacity:0}
+.mo.rm.is-success .folder,.mo.rm.is-success .check,.mo.rm.is-success .fnote{opacity:1}
+.mo.rm.is-partial .folder,.mo.rm.is-partial .check,.mo.rm.is-partial .fnote,.mo.rm.is-partial .part{opacity:1}
+.mo.rm.is-wave .arm{opacity:1;transform:rotate(-12deg)}
+.mo .status{font-size:14px;text-align:center;min-height:22px;max-width:32ch;margin:0}
+.hide{visibility:hidden}
+
+@media (prefers-reduced-motion: reduce){
+  .scrim{animation:none}
+  .btn,.chip,.seg button,.day{transition:none}
+}
+
+/* desktop companion: side navigation, wider content, two panes */
+@media (min-width: 960px){
+  .nav{top:0;right:auto;width:248px;min-height:100vh;border-top:0;border-right:2px solid var(--ink);display:flex;flex-direction:column;gap:6px;padding:20px 14px}
+  .nav .brand{display:flex;gap:10px;align-items:center;padding:4px 8px 16px;font-weight:700;font-size:22px}
+  .nav .brand img{width:44px;height:44px;border-radius:50%;border:2px solid var(--ink)}
+  .nav .brand .ja{color:var(--olive);margin-left:-10px}
+  .navb{flex-direction:row;justify-content:flex-start;gap:12px;min-height:48px;padding:6px 12px;font-size:16px}
+  .navb[aria-current="page"]{box-shadow:inset 4px 0 0 var(--primary)}
+  .main{margin-left:248px;max-width:none;padding:20px 32px 48px}
+  .main > *{max-width:760px}
+  .main.wide > *{max-width:1040px}
+  .fab{right:32px;bottom:24px}
+  .toast{left:280px;bottom:24px}
+  .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+  .two > *{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .desk-only{display:flex!important}
+  .mob-only{display:none!important}
+}
+@media (max-width: 959px){
+  .desk-only{display:none!important}
+}
+@media (max-width: 359px){
+  .kv{grid-template-columns:1fr;gap:2px}
+  .kv dd{margin-bottom:6px}
+  .week{margin:0 -12px;gap:2px}
+  .day b{font-size:16px}
+  .dlc{grid-template-columns:auto 1fr;}
+  .dlc .more{grid-column:2;justify-self:end;margin-top:-8px}
+}

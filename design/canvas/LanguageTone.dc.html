@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Language and tone settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.rc{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px 14px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1;box-sizing:border-box}
+.rc input{width:20px;height:20px;margin:3px 0 0;accent-color:#62694D;flex:none}
+.rc b{display:block;font-weight:600}
+.rc small{display:block;font-size:14px;color:#686458}
+.on{background:#DFE1D2;box-shadow:inset 4px 0 0 #62694D}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px dashed #3B3B3B;background:#F6E7CB;white-space:nowrap}
+.bub{background:#FFFFFF;border:2px solid #3B3B3B;border-radius:18px 18px 18px 4px;padding:10px 14px;line-height:1.55}
+p,h1,h2,fieldset,legend{margin:0}
+fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<div style="width:390px;height:1250px;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px;padding:6px 16px;display:flex;flex-direction:column;gap:14px">
+  <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <header style="display:flex;align-items:center;gap:8px"><a class="btn ico" href="Me.dc.html" aria-label="ย้อนกลับ"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></a><h1 style="font-size:22px;line-height:1.35;flex:1">ภาษา / Language</h1></header>
+  <p>ใช้กับเมนู ปุ่ม การ์ดในแชต การแจ้งเตือน และคำตอบพื้นฐานของบอท ชื่อไฟล์และสิ่งที่จำไว้จะไม่ถูกแปล</p>
+  <fieldset><legend style="position:absolute;width:1px;height:1px;overflow:hidden">ภาษา</legend>
+    <label class="rc on"><input type="radio" name="l" checked=""><span lang="th"><b>ไทย</b><small>วันที่แบบ พ. 7 ต.ค. 2569 · 09:00 น.</small></span></label>
+    <label class="rc"><input type="radio" name="l"><span lang="en"><b>English</b><small>Dates like Wed 7 Oct 2026 · 09:00</small></span></label>
+  </fieldset>
+  <p style="font-size:12.5px;color:#686458">Each label is written in its own language so anyone can find theirs. Saved per user; the rich menu switches to the matching image. <span class="tag">Proposed</span></p>
+
+  <div style="border-top:2px dashed #CFC6B2;padding-top:14px;display:flex;flex-direction:column;gap:12px">
+    <header style="display:flex;align-items:center;gap:8px"><a class="btn ico" href="Me.dc.html" aria-label="ย้อนกลับ"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></a><h2 style="font-size:22px;line-height:1.35;flex:1">โทนการคุย</h2><span class="tag">Proposed</span></header>
+    <fieldset><legend style="position:absolute;width:1px;height:1px;overflow:hidden">โทน</legend>
+      <label class="rc"><input type="radio" name="t"><span><b>สุภาพเป็นกันเอง</b><small>ค่าเริ่มต้น ใช้กับทุกคนและทุกกลุ่ม</small></span></label>
+      <label class="rc on"><input type="radio" name="t" checked=""><span><b>เพื่อนสนิท</b><small>เลือกเองเท่านั้น ใช้เฉพาะแชตส่วนตัว ไม่ใช้ในกลุ่ม</small></span></label>
+    </fieldset>
+    <p style="font-size:14px;color:#686458">ตัวอย่างคำตอบ</p>
+    <div style="display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:end"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:52px;height:52px;border-radius:50%;border:2px solid #3B3B3B"><p class="bub" aria-live="polite">จัดให้ละ พรุ่งนี้ 10:15 เดี๋ยวเตือนส่งเอกสาร ลุยย</p></div>
+    <p style="font-size:12.5px;color:#686458">Polite preview: “จดไว้แล้วนะ พรุ่งนี้ 10:15 น. เดี๋ยวเตือนส่งเอกสารฝ่ายบุคคลให้”. Swearing and กุ/มึง only ever appear for the owner who opted in. Dates, times and filenames stay exact in every tone (A15 adapted).</p>
+    <a class="btn" href="#" style="width:100%;min-height:52px;background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B">บันทึก</a>
+    <p style="font-size:12.5px;color:#686458">Unchanged → button disabled and reads “ยังไม่ได้เปลี่ยน”.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

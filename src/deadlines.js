@@ -6,6 +6,7 @@
  *   - how to fold the new details into the saved record
  *   - the order the deadline list is shown in
  */
+import { L } from './lang.js';
 import { daysUntil, localDateTimeToUtc } from './opportunities.js';
 
 // ------------------------------------------------------------------ alerts
@@ -85,19 +86,19 @@ export function alertsFor(opp, settings) {
 /** "ก่อน 7 · 3 · 1 วัน + วันสุดท้าย" */
 export function describeAlertDays(days) {
   const d = normalizeDays(days);
-  if (d.length === 0) return 'ไม่เตือน';
+  if (d.length === 0) return L('b_noAlerts');
   const before = d.filter((x) => x > 0);
   const parts = [];
-  if (before.length) parts.push(`ก่อน ${before.join(' · ')} วัน`);
-  if (d.includes(0)) parts.push('วันสุดท้าย');
+  if (before.length) parts.push(L('b_daysBefore', { list: before.join(' · ') }));
+  if (d.includes(0)) parts.push(L('b_closingDay'));
   return parts.join(' + ');
 }
 
-/** "ก่อน 7 · 3 · 1 วัน + วันสุดท้าย เวลา 09:00 น." */
+/** "ก่อน 7 · 3 · 1 วัน + วันสุดท้าย เวลา 09:00 น." (in the chat's language) */
 export function describeAlerts(alerts) {
   const a = normalizeAlerts(alerts);
-  if (a.days.length === 0) return 'ปิดการเตือน deadline อยู่';
-  return `${describeAlertDays(a.days)} เวลา ${a.time} น.`;
+  if (a.days.length === 0) return L('b_alertsOff');
+  return `${describeAlertDays(a.days)} ${L('b_atTime', { time: a.time })}`;
 }
 
 /**

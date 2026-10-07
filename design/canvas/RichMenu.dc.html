@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>JaiJa rich menu Thai and English</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.ar{position:absolute;border:3px dashed #2F5DA8;border-radius:10px;background:rgba(47,93,168,.08)}
+.ar span{position:absolute;left:8px;top:8px;min-width:28px;height:28px;border-radius:999px;background:#2F5DA8;color:#FFFFFF;font:700 15px/28px "Bai Jamjuree",sans-serif;text-align:center;padding:0 8px}
+</style>
+</helmet>
+<div style="width:1340px;height:2000px;box-sizing:border-box;padding:40px 45px;background:#F4EFE4;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.55;display:flex;flex-direction:column;gap:20px">
+  <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+    <p style="margin:0;font-size:24px;font-weight:700">ไทย · richmenu.th.png</p>
+    <p style="margin:0;font-size:15px;color:#686458">2500×1686 · 126 KB PNG (limit 1 MB) · 8 tap areas, no overlap · chat bar “เมนู JaiJa”</p>
+  </div>
+  <div style="position:relative;width:1250px;height:843px;border:2px solid #3B3B3B;border-radius:12px;overflow:hidden">
+    <img src="/_blob/1869860c80fe6216a081342b2accf7cb" alt="Thai rich menu: ตั้งเตือน hero with mascot, สิ่งที่จำไว้ and แกลเลอรี shortcuts, tiles แจ้งเตือน Deadline ไฟล์/รูป ของฉัน" style="width:1250px;height:843px;display:block">
+    <sc-if value="{{showAreas}}" hint-placeholder-val="{{ true }}">
+      <div class="ar" style="left:34px;top:32px;width:812px;height:328px"><span>1</span></div>
+      <div class="ar" style="left:34px;top:360px;width:812px;height:84px"><span>2</span></div>
+      <div class="ar" style="left:870px;top:28px;width:350px;height:205px"><span>3</span></div>
+      <div class="ar" style="left:870px;top:243px;width:350px;height:205px"><span>4</span></div>
+      <div class="ar" style="left:30px;top:476px;width:282px;height:338px"><span>5</span></div>
+      <div class="ar" style="left:332px;top:476px;width:282px;height:338px"><span>6</span></div>
+      <div class="ar" style="left:635px;top:476px;width:282px;height:338px"><span>7</span></div>
+      <div class="ar" style="left:937px;top:476px;width:282px;height:338px"><span>8</span></div>
+    </sc-if>
+  </div>
+  <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-top:12px">
+    <p style="margin:0;font-size:24px;font-weight:700">English · richmenu.en.png</p>
+    <p style="margin:0;font-size:15px;color:#686458">Same rectangles, so one action map shape serves both · labels shrink-to-fit, none clipped · chat bar “JaiJa menu”</p>
+  </div>
+  <div style="position:relative;width:1250px;height:843px;border:2px solid #3B3B3B;border-radius:12px;overflow:hidden">
+    <img src="/_blob/928cd9b28dd6de514dfe3e0966d3f332" alt="English rich menu: Set a reminder hero with mascot, Memory and Gallery shortcuts, tiles Reminders Deadlines Files Me" style="width:1250px;height:843px;display:block">
+    <sc-if value="{{showAreas}}" hint-placeholder-val="{{ true }}">
+      <div class="ar" style="left:34px;top:32px;width:812px;height:328px"><span>1</span></div>
+      <div class="ar" style="left:34px;top:360px;width:812px;height:84px"><span>2</span></div>
+      <div class="ar" style="left:870px;top:28px;width:350px;height:205px"><span>3</span></div>
+      <div class="ar" style="left:870px;top:243px;width:350px;height:205px"><span>4</span></div>
+      <div class="ar" style="left:30px;top:476px;width:282px;height:338px"><span>5</span></div>
+      <div class="ar" style="left:332px;top:476px;width:282px;height:338px"><span>6</span></div>
+      <div class="ar" style="left:635px;top:476px;width:282px;height:338px"><span>7</span></div>
+      <div class="ar" style="left:937px;top:476px;width:282px;height:338px"><span>8</span></div>
+    </sc-if>
+  </div>
+  <p style="margin:0;font-size:14px;color:#686458;max-width:1100px">Reminder-first hero: ตั้งเตือน, a smaller mascot and one short example. The promise band at the hero's foot is its own tap area (วิธีใช้ → menu_help), replacing the old full-banner help tap. ของฉัน replaces ตั้งค่า; the โควตา AI shortcut moves inside ของฉัน (supplement §5, §11). The image is static. Thai and English are two images, linked per user (Proposed).</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"showAreas":{"editor":"boolean","default":true},"$preview":{"width":1340,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() { return { showAreas: this.props.showAreas ?? true }; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Today planner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/2cb68634004ed475055ceb4051ac14e6) format("truetype");font-weight:500}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.ag{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:12px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B;text-decoration:none;color:#3B3B3B}
+.ag b{line-height:1.5}
+.k{font-size:14px;color:#686458;display:flex;gap:6px;align-items:center;line-height:1.4;margin-top:2px}
+.k img{width:18px;height:18px}
+.day{min-height:64px;border-radius:14px;border:2px solid transparent;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Bai Jamjuree",sans-serif;color:#3B3B3B;padding:4px 0}
+.day small{font-size:12.5px;color:#686458;line-height:1.4}
+.day b{font-size:18px;line-height:1.3}
+.mk{display:flex;gap:3px;height:9px;align-items:center}
+.r{width:7px;height:7px;border-radius:50%;background:#3B3B3B}
+.d{width:7px;height:7px;transform:rotate(45deg);background:#B5482F}
+.e{width:10px;height:4px;border:1.5px solid #3B3B3B;border-radius:2px}
+.f{width:7px;height:7px;border:1.5px solid #62694D;background:#DFE1D2;border-radius:2px}
+.nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12.5px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;text-decoration:none;border-radius:14px}
+.nav img{width:26px;height:26px}
+h2,h3,p{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:1500px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <div style="padding:6px 16px 120px;display:flex;flex-direction:column;gap:16px">
+    <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+    <div style="display:flex;gap:10px;align-items:center">
+      <img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:44px;height:44px;border-radius:50%;border:2px solid #3B3B3B">
+      <div style="flex:1;min-width:0"><h1 style="margin:0;font-size:22px;line-height:1.35">สวัสดีตอนบ่าย Jai</h1><p style="font-size:14px;color:#686458">วันนี้ให้ JaiJa ช่วยอะไรดี?</p></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end"><a class="btn" href="Me.dc.html" style="font-size:14px"><img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt="" style="width:18px;height:18px">Drive เชื่อมแล้ว</a></div>
+    <div role="tablist" aria-label="วันนี้" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#EFE8D8;border:2px solid #3B3B3B;border-radius:999px">
+      <button role="tab" aria-selected="true" style="min-height:40px;border:0;border-radius:999px;background:#FBF8F1;box-shadow:0 0 0 2px #3B3B3B;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B">แพลนเนอร์</button>
+      <a role="tab" aria-selected="false" href="Reminders.dc.html" style="min-height:40px;display:flex;align-items:center;justify-content:center;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B;text-decoration:none">เตือนทั้งหมด</a>
+    </div>
+
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <h2 style="font-size:18px">ถัดไป</h2>
+      <a class="ag" href="DeadlineDetail.dc.html" style="box-shadow:inset 5px 0 0 #B5482F"><div><small style="font-size:12.5px;color:#686458">วันนี้</small><br><b>ทั้งวัน</b></div><div><b>ทุนเรียนต่อ ป.โท ต่างประเทศ รุ่นที่ 12</b><span class="k"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadline · ไม่ระบุเวลา</span><span style="display:inline-flex;gap:6px;align-items:center;color:#B5482F;font-weight:700;font-size:14px"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 15 14H1z M8 6.2v3.6M8 11.9v.1" fill="none" stroke="#B5482F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>วันนี้วันสุดท้าย!</span></div></a>
+      <div class="ag" style="box-shadow:inset 5px 0 0 #3B3B3B"><div><small style="font-size:12.5px;color:#686458">วันนี้</small><br><b>19:00</b></div><div><b>กินยา</b><span class="k"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="">เตือน · ทุกวัน</span></div></div>
+      <div class="ag" style="box-shadow:inset 5px 0 0 #3B3B3B"><div><small style="font-size:12.5px;color:#686458">พรุ่งนี้</small><br><b>10:15</b></div><div><b>ส่งเอกสารฝ่ายบุคคล</b><span class="k"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="">เตือน · ครั้งเดียว</span></div></div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:2px">
+        <a class="btn" href="MonthOverlay.dc.html" aria-haspopup="dialog" style="border-color:transparent;background:transparent;padding:0 6px;font-size:18px;font-weight:700"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="" style="width:20px;height:20px">ตุลาคม 2569<img src="/_blob/08c104cd17bb3e0338672c15926bb3c2" alt="" style="width:18px;height:18px"></a>
+        <span style="flex:1"></span>
+        <a class="btn ico" href="#" aria-label="สัปดาห์ก่อน"><img src="/_blob/f92ebc7e4fc1422d70bdd4c2a0d8479d" alt="" style="width:24px;height:24px"></a>
+        <a class="btn ico" href="TodayOtherDay.dc.html" aria-label="สัปดาห์ถัดไป"><img src="/_blob/a5a39331a6c7d8ad8bb702e4f7d1188a" alt="" style="width:24px;height:24px"></a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 -10px">
+        <button class="day" aria-label="จ. 5 ต.ค. 2569: ของที่เก็บ 0"><small>จ.</small><b>5</b><span class="mk"></span></button>
+        <button class="day" aria-label="อ. 6 ต.ค. 2569: ลิงก์ที่เก็บ 1"><small>อ.</small><b>6</b><span class="mk"><i class="f"></i></span></button>
+        <button class="day" aria-pressed="true" aria-label="พ. 7 ต.ค. 2569 วันนี้: เตือน 2, Deadline 1, ของที่เก็บ 1" style="background:#FBF8F1;border-color:#3B3B3B;box-shadow:0 2px 0 #3B3B3B"><small>พ.</small><b style="text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:#8B9270">7</b><span class="mk"><i class="r"></i><i class="d"></i><i class="f"></i></span></button>
+        <a class="day" href="TodayOtherDay.dc.html" aria-label="พฤ. 8 ต.ค. 2569: เตือน 2, นัด 1" style="text-decoration:none"><small>พฤ.</small><b>8</b><span class="mk"><i class="r"></i><i class="e"></i></span></a>
+        <button class="day" aria-label="ศ. 9 ต.ค. 2569: เตือน 1"><small>ศ.</small><b>9</b><span class="mk"><i class="r"></i></span></button>
+        <button class="day" aria-label="ส. 10 ต.ค. 2569: เตือน 1, Deadline 1"><small>ส.</small><b>10</b><span class="mk"><i class="r"></i><i class="d"></i></span></button>
+        <button class="day" aria-label="อา. 11 ต.ค. 2569: เตือน 1"><small>อา.</small><b>11</b><span class="mk"><i class="r"></i></span></button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:#686458">
+        <span style="display:inline-flex;gap:6px;align-items:center"><i class="r"></i>เตือน</span><span style="display:inline-flex;gap:6px;align-items:center"><i class="d"></i>Deadline</span><span style="display:inline-flex;gap:6px;align-items:center"><i class="e"></i>นัดใน Calendar</span><span style="display:inline-flex;gap:6px;align-items:center"><i class="f"></i>ของที่เก็บ</span>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <h2 style="font-size:18px;line-height:1.4">วันพุธที่ 7 ตุลาคม 2569 (วันนี้)</h2>
+      <h3 style="font-size:14px;display:flex;gap:6px;align-items:center"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="" style="width:18px;height:18px">Deadline ที่ปิดวันนี้</h3>
+      <a class="ag" href="DeadlineDetail.dc.html" style="box-shadow:inset 5px 0 0 #B5482F"><b>ทั้งวัน</b><div><b>ทุนเรียนต่อ ป.โท ต่างประเทศ รุ่นที่ 12</b><span class="k"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">ปิดรับวันนี้ · ไม่ระบุเวลา</span></div></a>
+      <h3 style="font-size:14px;display:flex;gap:6px;align-items:center"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">เตือน <span style="font-weight:500;color:#686458">2</span></h3>
+      <div class="ag" style="box-shadow:inset 5px 0 0 #3B3B3B;background:#F4EFE4"><b>12:45</b><div><b>โทรหาคลินิกทันตกรรม</b><span class="k"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="">เตือน · เตือนแล้ว 12:45 น.</span></div></div>
+      <div class="ag" style="box-shadow:inset 5px 0 0 #3B3B3B"><b>19:00</b><div><b>กินยา</b><span class="k"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="">เตือน · ทุกวัน</span></div></div>
+    </section>
+
+    <section style="background:#EFE8D8;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px">
+      <button aria-expanded="true" style="display:flex;align-items:center;gap:8px;min-height:44px;background:none;border:0;padding:0;font:700 16px 'Bai Jamjuree',sans-serif;color:#3B3B3B;text-align:left"><img src="/_blob/17e1f7b45c72467f4a0d50a2e1a97c58" alt="" style="width:18px;height:18px"><span style="flex:1">เก็บไว้วันนี้ <span style="font-weight:500;font-size:14px;color:#686458">1 รายการ</span></span><img src="/_blob/08c104cd17bb3e0338672c15926bb3c2" alt="" style="width:18px;height:18px"></button>
+      <a href="FileDetail.dc.html" style="display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center;padding:10px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B;color:#3B3B3B;text-decoration:none"><img src="/_blob/39b03a1325302af74996031ffe636177" alt="" style="width:52px;height:52px;border-radius:10px;border:1.5px solid #3B3B3B;object-fit:cover"><span style="min-width:0"><b style="display:block;overflow-wrap:anywhere;line-height:1.45">10-21-05_ใบเสร็จร้านกาแฟ.jpg</b><span style="font-size:12.5px;color:#686458">รูปภาพ · เก็บ 10:21 น.</span></span></a>
+    </section>
+  </div>
+
+  <a class="btn" href="ReminderEditor.dc.html" style="position:absolute;right:16px;bottom:104px;min-height:52px;padding:6px 20px;background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"></path></svg>ตั้งเตือน</a>
+  <nav class="nav" aria-label="เมนูหลัก" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 8px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">
+    <a href="Today.dc.html" aria-current="page" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">วันนี้</a>
+    <a href="Deadlines.dc.html"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadline</a>
+    <a href="Library.dc.html"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">คลัง</a>
+    <a href="Me.dc.html"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">ของฉัน</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

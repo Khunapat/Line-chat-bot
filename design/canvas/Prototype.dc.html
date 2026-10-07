@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>JaiJa interactive prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/2cb68634004ed475055ceb4051ac14e6) format("truetype");font-weight:500}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.app *{box-sizing:border-box}
+.app p,.app h1,.app h2,.app h3,.app fieldset,.app legend,.app dl,.app dd{margin:0}
+.app fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.scroll{position:absolute;left:0;right:0;top:0;bottom:84px;overflow-y:auto;overflow-x:hidden}
+.scroll.full{bottom:0}
+.pad{padding:6px 16px 112px;display:flex;flex-direction:column;gap:14px}
+.proto{font-size:11px;color:#686458;text-align:right}
+.top{display:flex;align-items:center;gap:8px}
+.top h1{font-size:22px;line-height:1.35;flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;cursor:pointer;text-align:center}
+.btn:focus-visible,.chip:focus-visible,.day:focus-visible,.mday:focus-visible,.navb:focus-visible,.rowb:focus-visible{outline:3px solid #2F5DA8;outline-offset:2px}
+.btn[disabled]{opacity:.55;cursor:not-allowed;box-shadow:none}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.pri img{filter:brightness(0) invert(1)}
+.dan{color:#B5482F;border-color:#B5482F}
+.ghost{background:transparent;border-color:transparent}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent;flex:none}
+.sm{font-size:14px}
+.blk{width:100%}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 6px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 14px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;font:600 14px/1.3 "Bai Jamjuree",sans-serif;white-space:nowrap;color:#3B3B3B;flex:none;cursor:pointer}
+.chip.on{background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D}
+.chip .n{font-weight:500;color:#686458}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;padding:3px;background:#EFE8D8;border:2px solid #3B3B3B;border-radius:999px}
+.seg button{min-height:40px;border:0;border-radius:999px;background:transparent;font:600 14px "Bai Jamjuree",sans-serif;color:#3B3B3B;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center;padding:2px 8px}
+.seg button.on{background:#FBF8F1;box-shadow:0 0 0 2px #3B3B3B}
+.card{background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.flat{box-shadow:none;background:#F4EFE4}
+.panel{background:#EFE8D8;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.muted{color:#686458}
+.xs{font-size:12.5px}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px solid #3B3B3B;background:#DFE1D2;white-space:nowrap}
+.tag.prop{background:#F6E7CB;border-style:dashed}
+.tag.u{background:#F6E1D9;border-color:#B5482F}
+.ag{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:12px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B;text-align:left;font:inherit;color:#3B3B3B;width:100%}
+.ag.r{box-shadow:inset 5px 0 0 #3B3B3B}
+.ag.e{border-style:dashed;background:#F4EFE4}
+.ag.d{box-shadow:inset 5px 0 0 #B5482F;cursor:pointer}
+.ag.d.later{box-shadow:inset 5px 0 0 #8B9270}
+.ag.d.soon{box-shadow:inset 5px 0 0 #C98A2B}
+.ag b{line-height:1.5}
+.kind{font-size:13.5px;color:#686458;display:flex;gap:6px;align-items:center;line-height:1.4;margin-top:2px}
+.kind img{width:16px;height:16px}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 -10px}
+.day{min-height:64px;border-radius:14px;border:2px solid transparent;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Bai Jamjuree",sans-serif;color:#3B3B3B;padding:4px 0;cursor:pointer}
+.day small{font-size:12.5px;color:#686458;line-height:1.4}
+.day b{font-size:18px;line-height:1.3}
+.day.on{background:#FBF8F1;border-color:#3B3B3B;box-shadow:0 2px 0 #3B3B3B}
+.day.today b,.mday.today span.dn{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:#8B9270}
+.day.out b{color:#686458}
+.mk{display:flex;gap:3px;height:9px;align-items:center}
+.mk i{display:inline-block}
+.mr{width:7px;height:7px;border-radius:50%;background:#3B3B3B}
+.md{width:7px;height:7px;transform:rotate(45deg);background:#B5482F}
+.me{width:10px;height:4px;border:1.5px solid #3B3B3B;border-radius:2px}
+.mf{width:7px;height:7px;border:1.5px solid #62694D;background:#DFE1D2;border-radius:2px}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.mgrid .w{text-align:center;font-size:12px;color:#686458;padding:2px 0}
+.mday{min-height:44px;border:2px solid transparent;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 15px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;cursor:pointer;padding:2px 0}
+.mday.out{color:#9A968A;font-weight:400}
+.mday.on{background:#DFE1D2;border-color:#3B3B3B}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:20px 12px;border:2px dashed #CFC6B2;border-radius:16px}
+.empty img{width:60px;height:60px;border-radius:50%;border:2px solid #3B3B3B}
+.ex{background:#FBF8F1;border:1px solid #CFC6B2;border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:14px;text-align:left}
+.stub{width:58px;flex:none;border:2px solid #3B3B3B;border-radius:12px;overflow:hidden;background:#FBF8F1;text-align:center}
+.stub .b{height:22px;border-bottom:2px solid #3B3B3B;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;line-height:1}
+.stub .dd{font-size:22px;font-weight:700;line-height:1.15;padding-top:4px}
+.stub .mm{font-size:12px;line-height:1.3;padding-bottom:5px}
+.t-urgent .b{background:#B5482F;color:#FFFFFF}.t-soon .b{background:#C98A2B}.t-later .b{background:#8B9270}.t-closed .b,.t-nodate .b,.t-applied .b{background:#EFE8D8;color:#686458}
+.t-closed .dd,.t-closed .mm{color:#686458}
+.cd{display:inline-flex;gap:6px;align-items:center;font-weight:700;font-size:14px}
+.cd.urgent{color:#B5482F}.cd.closed,.cd.nodate{color:#686458}
+.dlc{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.rowb{display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;font:inherit;color:#3B3B3B;cursor:pointer;min-width:0}
+.ttl{font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-top:.12em}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lg{font-weight:600}
+.inp{width:100%;min-height:48px;padding:10px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#FFFFFF;font:400 16px/1.5 "Bai Jamjuree",sans-serif;color:#3B3B3B}
+.inp.bad{border-color:#B5482F;box-shadow:0 0 0 2px #F6E1D9}
+.err{color:#B5482F;font-size:14px;font-weight:600}
+.rc{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px 14px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1;cursor:pointer}
+.rc.on{background:#DFE1D2;box-shadow:inset 4px 0 0 #62694D}
+.rc input{width:20px;height:20px;margin:2px 0 0;accent-color:#62694D;flex:none}
+.rc b{display:block;font-weight:600}
+.rc small{display:block;font-size:14px;color:#686458}
+.rc.dis{border-style:dashed;opacity:.75;cursor:not-allowed}
+.banner{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#FBF8F1}
+.banner.err2{background:#F6E1D9;border-color:#B5482F}
+.banner.warn{background:#F6E7CB}
+.banner.ok{background:#DFE1D2}
+.banner img{width:24px;height:24px}
+.it{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B}
+.th{width:52px;height:52px;border-radius:10px;border:1.5px solid #3B3B3B;object-fit:cover;background:#EFE8D8;display:flex;align-items:center;justify-content:center}
+.nm{font-weight:600;line-height:1.45;overflow-wrap:anywhere;background:none;border:0;padding:0;font-family:inherit;font-size:16px;color:#3B3B3B;text-align:left;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.gal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gc{display:flex;flex-direction:column;gap:6px;background:#FBF8F1;border:2px solid #3B3B3B;border-radius:10px;padding:6px;text-align:left;font:inherit;color:#3B3B3B;cursor:pointer;min-width:0}
+.gc img{width:100%;aspect-ratio:4 / 3;object-fit:cover;border-radius:8px}
+.gc span{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.st{background:#F4EFE4;border:1.5px solid #CFC6B2;border-radius:12px;padding:10px 12px;min-width:0}
+.st b{display:block;font-size:22px;line-height:1.25}
+.st span{display:block;font-size:14px;color:#686458;line-height:1.4}
+.meter{height:10px;border-radius:999px;border:1.5px solid #3B3B3B;background:#FBF8F1;overflow:hidden}
+.meter i{display:block;height:100%;background:#62694D}
+.meter i.w70{width:70%}.meter i.w100{width:100%;background:#B5482F}
+.li{display:flex;gap:10px;align-items:center;min-height:52px;padding:6px 14px;border:2px solid #3B3B3B;border-radius:999px;color:#3B3B3B;font:600 15px "Bai Jamjuree",sans-serif;background:#FBF8F1;cursor:pointer;width:100%;text-align:left}
+.li img{width:20px;height:20px}
+.kv{display:grid;grid-template-columns:104px 1fr;gap:6px 12px}
+.kv dt{color:#686458;font-size:14px}
+.kv dd{overflow-wrap:anywhere}
+.nav{position:absolute;left:0;right:0;bottom:0;height:84px;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 8px 24px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;z-index:5}
+.navb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12.5px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;background:transparent;border:0;border-radius:14px;cursor:pointer;min-height:52px}
+.navb img{width:26px;height:26px}
+.navb.on{background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D}
+.fab{position:absolute;right:16px;bottom:100px;z-index:4;min-height:52px;padding:6px 20px}
+.toast{position:absolute;left:16px;right:16px;bottom:100px;z-index:8;display:flex;gap:10px;align-items:center;background:#3B3B3B;color:#FFFFFF;border-radius:14px;padding:8px 8px 8px 16px}
+.toast span{flex:1;line-height:1.45}
+.toast button{background:transparent;color:#FFFFFF;border-color:#FFFFFF}
+.scrim{position:absolute;inset:0;z-index:10;background:rgba(59,59,59,.42);display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{width:100%;max-height:100%;overflow:auto;background:#F4EFE4;border:2px solid #3B3B3B;border-radius:22px;box-shadow:0 3px 0 #3B3B3B;padding:12px 14px 16px;display:flex;flex-direction:column;gap:10px}
+.speech{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:end}
+.speech img{width:52px;height:52px;border-radius:50%;border:2px solid #3B3B3B}
+.bub{background:#FFFFFF;border:2px solid #3B3B3B;border-radius:18px 18px 18px 4px;padding:10px 14px;line-height:1.55}
+.skel{background:#EFE8D8;border-radius:10px;height:76px}
+.ib{width:52px;height:52px;border-radius:10px;object-fit:cover}.is{width:28px;height:28px}
+/* mini JaiJa */
+.mo{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mo svg *{transform-box:fill-box}
+.mo .leg{transform-origin:30% 0%}
+.mo .folder,.mo .check,.mo .clock,.mo .bad,.mo .fnote{opacity:0}
+.mo .dot{transform:translateX(250px)}
+.mo.is-failure .d1,.mo.is-longwait .d1,.mo.rm .d1{transform:translateX(150px)}
+.mo.is-failure .d2,.mo.is-longwait .d2,.mo.rm .d2{transform:translateX(176px)}
+.mo.is-failure .d3,.mo.is-longwait .d3,.mo.rm .d3{transform:translateX(202px)}
+.mo.is-pending .dot{animation:pass 2.4s linear infinite}
+.mo.is-pending .d2{animation-delay:-.8s}.mo.is-pending .d3{animation-delay:-1.6s}
+@keyframes pass{0%{transform:translateX(250px) translateY(0)}62%{transform:translateX(86px) translateY(0)}70%{transform:translateX(64px) translateY(-6px)}78%{transform:translateX(43px) translateY(0)}100%{transform:translateX(-12px)}}
+.mo.is-pending .char{animation:bob .6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.mo.is-pending .ll{animation:stride .6s ease-in-out infinite}.mo.is-pending .lr{animation:stride .6s ease-in-out infinite reverse}
+@keyframes stride{0%,100%{transform:rotate(24deg)}50%{transform:rotate(-24deg)}}
+.mo.is-success .folder{opacity:1;animation:inr .2s ease-out both}
+.mo.is-success .note{animation:tofolder .32s .12s ease-out both}
+.mo.is-success .fnote{animation:fin .12s .4s both}
+.mo.is-success .check{animation:pop .16s .4s ease-out both}
+.mo.is-success .dot{opacity:0}
+.mo.is-failure .bad{opacity:1}
+.mo.is-failure .dot,.mo.is-longwait .dot{fill:#D9D2C1}
+.mo.is-longwait .clock{opacity:1}
+@keyframes inr{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes tofolder{from{transform:none;opacity:1}to{transform:translate(98px,-4px) scale(.7);opacity:0}}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.mo.rm *{animation:none !important}
+.mo.rm.is-success .note{opacity:0}
+.mo.rm.is-success .folder,.mo.rm.is-success .check,.mo.rm.is-success .fnote{opacity:1}
+.mo.rm.is-success .dot{opacity:0}
+.mo .status{font-size:14px;text-align:center;min-height:22px;max-width:30ch}
+.hide{visibility:hidden}
+</style>
+</helmet>
+<div class="app" lang="{{lang}}" style="width:390px;height:844px;position:relative;overflow:hidden;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+
+<sc-if value="{{isWelcome}}" hint-placeholder-val="{{ false }}">
+  <div class="scroll full"><div class="pad" style="padding-bottom:40px">
+    <p class="proto">{{t.proto}}</p>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding-top:28px">
+      <img src="/_blob/96588bdfec5b2a1fc416880aca42affb" alt="JaiJa" style="width:140px;height:140px;border-radius:50%;border:3px solid #3B3B3B;box-shadow:0 5px 0 #8B9270">
+      <h1 style="font-size:28px;line-height:1.35">{{t.obHi}}</h1>
+      <p style="font-size:22px;font-weight:700">{{t.p1}} <span style="color:#62694D">{{t.p2}}</span> {{t.p3}}</p>
+      <p class="sm">{{t.obSub}}</p>
+    </div>
+    <fieldset><legend class="lg">ภาษา / Language</legend>
+      <label class="rc {{langThOn}}"><input type="radio" name="oblang" checked="{{isTh}}" onChange="{{setTh}}"><span lang="th"><b>ไทย</b></span></label>
+      <label class="rc {{langEnOn}}"><input type="radio" name="oblang" checked="{{isEn}}" onChange="{{setEn}}"><span lang="en"><b>English</b></span></label>
+    </fieldset>
+    <button class="btn pri" onClick="{{finishWelcome}}">{{t.obStart}}</button>
+    <p class="xs muted">{{t.obNote}}</p>
+  </div></div>
+</sc-if>
+
+<sc-if value="{{isApp}}" hint-placeholder-val="{{ true }}">
+<div class="scroll {{scrollFull}}"><div class="pad">
+  <p class="proto">{{t.proto}}</p>
+
+  
+  <sc-if value="{{showDriveOff}}" hint-placeholder-val="{{ false }}">
+    <div class="empty" role="alert" style="border-style:solid;border-color:#3B3B3B;background:#FBF8F1"><img src="/_blob/e85e595816db7f8bdfaf71b77e2df637" alt="" style="border:0;border-radius:0;width:48px;height:48px"><h2 style="font-size:18px;line-height:1.45">{{t.driveOffH}}</h2><p class="sm muted">{{t.driveOffB}}</p><button class="btn pri blk" onClick="{{reconnect}}" disabled="{{reconPending}}">{{reconLabel}}</button></div>
+  </sc-if>
+  <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+    <div aria-busy="true" style="display:flex;flex-direction:column;gap:12px">
+      <div class="mo is-{{loadMo}} {{rm}}">
+        <svg class="{{loadArtHide}}" viewBox="0 0 240 120" width="220" height="110" aria-hidden="true" style="overflow:visible">
+          <circle class="dot d1" cx="0" cy="100" r="6" fill="#8B9270" stroke="#3B3B3B" stroke-width="1.5"></circle><circle class="dot d2" cx="0" cy="100" r="6" fill="#8B9270" stroke="#3B3B3B" stroke-width="1.5"></circle><circle class="dot d3" cx="0" cy="100" r="6" fill="#8B9270" stroke="#3B3B3B" stroke-width="1.5"></circle>
+          <g class="clock"><circle cx="120" cy="26" r="11" fill="#FBF8F1" stroke="#3B3B3B" stroke-width="2.2"></circle><path d="M120 19.5 v7 l4.5 3" stroke="#3B3B3B" stroke-width="2.2" fill="none" stroke-linecap="round"></path></g>
+          <g transform="translate(40 10)"><g class="char">
+            <path d="M13 47 C8 22 24 5 41 5 C60 5 73 20 67 47 C64 41 62 37 59 35 L21 35 C18 38 15 42 13 47 Z" fill="#4E4540" stroke="#3B3B3B" stroke-width="2.4"></path>
+            <ellipse cx="40" cy="42" rx="21" ry="20" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="2.4"></ellipse>
+            <path d="M18.5 39 C18 22 29 13 41 13 C54 13 63 22 62 39 C58 34 54 30 49 28 C46 33 40 34 34 31 C30 33 24 35 18.5 39 Z" fill="#4E4540"></path>
+            <ellipse cx="32" cy="43" rx="2.4" ry="2.8" fill="#3B3B3B"></ellipse><ellipse cx="48" cy="43" rx="2.4" ry="2.8" fill="#3B3B3B"></ellipse>
+            <path d="M35 52 q5 4 10 0" stroke="#3B3B3B" stroke-width="1.8" fill="none" stroke-linecap="round"></path>
+            <path d="M23 81 L25 65 Q40 58 55 65 L57 81 Q40 85 23 81 Z" fill="#FFFFFF" stroke="#3B3B3B" stroke-width="2.4"></path>
+            <rect x="46" y="69" width="6" height="5" rx="1" fill="#8B9270"></rect>
+            <g class="leg ll"><path d="M34 80 L32 93 L27 94" stroke="#3B3B3B" stroke-width="3.2" fill="none" stroke-linecap="round"></path></g>
+            <g class="leg lr"><path d="M46 80 L48 93 L53 94" stroke="#3B3B3B" stroke-width="3.2" fill="none" stroke-linecap="round"></path></g>
+            <g class="note"><rect x="52" y="60" width="20" height="24" rx="2.5" fill="#FBF8F1" stroke="#3B3B3B" stroke-width="2" transform="rotate(-8 62 72)"></rect><circle cx="53" cy="75" r="3.2" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="1.8"></circle></g>
+          </g></g>
+        </svg>
+        <p class="status" role="status" aria-live="polite">{{loadText}}</p>
+      </div>
+      <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+    <div class="empty" role="alert" style="border-style:solid;border-color:#B5482F;background:#F6E1D9"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt="" style="border:0;border-radius:0;width:44px;height:44px"><h2 style="font-size:18px;line-height:1.45">{{t.errLoad}}</h2><p class="sm">{{t.errWhy}}</p><button class="btn pri blk" onClick="{{retryLoad}}">{{t.retry}}</button><p class="xs">{{t.reopen}}</p></div>
+  </sc-if>
+
+  <sc-if value="{{showContent}}" hint-placeholder-val="{{ true }}">
+
+  
+  <sc-if value="{{isToday}}" hint-placeholder-val="{{ true }}">
+    <div class="top"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:44px;height:44px;border-radius:50%;border:2px solid #3B3B3B"><div style="flex:1;min-width:0"><h1 style="font-size:22px;line-height:1.35">{{t.greet}}</h1><p class="sm muted">{{t.todaySub}}</p></div></div>
+    <div style="display:flex;justify-content:flex-end"><button class="btn sm" onClick="{{goMe}}"><img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt="" style="width:18px;height:18px">{{t.driveOk}}</button></div>
+    <div class="seg" role="tablist" aria-label="{{t.navToday}}"><button role="tab" class="{{segPlanOn}}" aria-selected="{{segPlanSel}}" onClick="{{showPlanner}}">{{t.planner}}</button><button role="tab" class="{{segRemOn}}" aria-selected="{{segRemSel}}" onClick="{{showRemList}}">{{t.allRem}}</button></div>
+
+    <sc-if value="{{isPlanner}}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{selIsToday}}" hint-placeholder-val="{{ true }}">
+        <h2 style="font-size:18px">{{t.upNext}}</h2>
+        <sc-for list="{{upNext}}" as="u" hint-placeholder-count="3">
+          <div class="ag {{u.cls}}"><div><small class="xs muted">{{u.day}}</small><br><b>{{u.when}}</b></div><div><b>{{u.title}}</b><span class="kind"><img src="{{u.icon}}" alt="">{{u.kind}}</span><span class="cd {{u.cdCls}}">{{u.cd}}</span></div></div>
+        </sc-for>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">
+        <button class="btn ghost" onClick="{{openMonth}}" aria-haspopup="dialog" style="padding:0 6px;font-size:18px;font-weight:700"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="" style="width:20px;height:20px">{{weekTitle}}<img src="/_blob/08c104cd17bb3e0338672c15926bb3c2" alt="" style="width:18px;height:18px"></button>
+        <span style="flex:1"></span>
+        <sc-if value="{{notToday}}" hint-placeholder-val="{{ false }}"><button class="btn sm" onClick="{{backToday}}">{{t.backToday}}</button></sc-if>
+        <button class="btn ico" onClick="{{prevWeek}}" aria-label="{{t.prevWeek}}"><img src="/_blob/f92ebc7e4fc1422d70bdd4c2a0d8479d" alt="" style="width:24px;height:24px"></button>
+        <button class="btn ico" onClick="{{nextWeek}}" aria-label="{{t.nextWeek}}"><img src="/_blob/a5a39331a6c7d8ad8bb702e4f7d1188a" alt="" style="width:24px;height:24px"></button>
+      </div>
+      <div class="week">
+        <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+          <button class="day {{d.cls}}" aria-pressed="{{d.on}}" aria-label="{{d.aria}}" onClick="{{d.pick}}"><small>{{d.dw}}</small><b>{{d.dn}}</b><span class="mk"><sc-if value="{{d.r}}" hint-placeholder-val="{{ false }}"><i class="mr"></i></sc-if><sc-if value="{{d.dl}}" hint-placeholder-val="{{ false }}"><i class="md"></i></sc-if><sc-if value="{{d.e}}" hint-placeholder-val="{{ false }}"><i class="me"></i></sc-if><sc-if value="{{d.f}}" hint-placeholder-val="{{ false }}"><i class="mf"></i></sc-if></span></button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:#686458"><span style="display:inline-flex;gap:6px;align-items:center"><i class="mr" style="display:inline-block"></i>{{t.lgRem}}</span><span style="display:inline-flex;gap:6px;align-items:center"><i class="md" style="display:inline-block"></i>Deadline</span><span style="display:inline-flex;gap:6px;align-items:center"><i class="me" style="display:inline-block"></i>{{t.lgEv}}</span><span style="display:inline-flex;gap:6px;align-items:center"><i class="mf" style="display:inline-block"></i>{{t.lgSaved}}</span></div>
+      <h2 style="font-size:18px;line-height:1.4" aria-live="polite">{{dayHeading}}</h2>
+      <sc-for list="{{dayDl}}" as="x" hint-placeholder-count="1">
+        <button class="ag d {{x.tone}}" onClick="{{x.open}}"><b>{{t.allDay}}</b><span><b style="display:block">{{x.title}}</b><span class="kind"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">{{x.kind}}</span></span></button>
+      </sc-for>
+      <h3 style="font-size:14px;display:flex;gap:6px;align-items:center"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">{{t.lgRem}} <span class="muted" style="font-weight:500">{{dayRemCount}}</span></h3>
+      <sc-for list="{{dayRem}}" as="x" hint-placeholder-count="2">
+        <div class="ag r"><b>{{x.hm}}</b><div><b>{{x.text}}</b><span class="kind"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="">{{x.kind}}</span></div></div>
+      </sc-for>
+      <sc-if value="{{dayRemEmpty}}" hint-placeholder-val="{{ false }}">
+        <div class="empty"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt=""><p><b>{{dayEmptyTitle}}</b></p><p class="ex">{{t.chatEx}}</p><sc-if value="{{dayCanAdd}}" hint-placeholder-val="{{ true }}"><button class="btn" onClick="{{addForDay}}">{{dayAddLabel}}</button></sc-if></div>
+      </sc-if>
+      <sc-for list="{{dayEv}}" as="x" hint-placeholder-count="1">
+        <div class="ag e"><b>{{x.hm}}</b><div><b>{{x.title}}</b><span class="kind"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">{{t.evKind}}</span></div></div>
+      </sc-for>
+      <section class="panel">
+        <button onClick="{{toggleNb}}" aria-expanded="{{nbOpen}}" style="display:flex;align-items:center;gap:8px;min-height:44px;background:none;border:0;padding:0;font:700 16px 'Bai Jamjuree',sans-serif;color:#3B3B3B;text-align:left;cursor:pointer"><img src="/_blob/17e1f7b45c72467f4a0d50a2e1a97c58" alt="" style="width:18px;height:18px"><span style="flex:1">{{nbTitle}} <span class="sm muted" style="font-weight:500">{{nbCount}}</span></span><img src="/_blob/08c104cd17bb3e0338672c15926bb3c2" alt="" style="width:18px;height:18px"></button>
+        <sc-if value="{{nbOpen}}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{daySaved}}" as="x" hint-placeholder-count="1"><div class="it"><div class="th"><img src="{{x.icon}}" alt="" style="width:28px;height:28px"></div><div style="min-width:0"><p style="font-weight:600;overflow-wrap:anywhere">{{x.name}}</p><p class="xs muted">{{x.meta}}</p></div></div></sc-for>
+          <sc-if value="{{daySavedEmpty}}" hint-placeholder-val="{{ false }}"><p class="sm muted">{{nbEmpty}}</p></sc-if>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{isRemList}}" hint-placeholder-val="{{ false }}">
+      <div class="chips" role="group" aria-label="{{t.allRem}}">
+        <sc-for list="{{remCats}}" as="c" hint-placeholder-count="3"><button class="chip {{c.on}}" aria-pressed="{{c.sel}}" onClick="{{c.pick}}">{{c.label}} <span class="n">{{c.n}}</span></button></sc-for>
+      </div>
+      <sc-if value="{{remCatDone}}" hint-placeholder-val="{{ false }}"><p class="xs muted">{{t.doneNote}} <span class="tag prop">Proposed</span></p></sc-if>
+      <sc-for list="{{remList}}" as="r" hint-placeholder-count="3">
+        <article class="card">
+          <sc-if value="{{r.fired}}" hint-placeholder-val="{{ false }}"><span class="cd urgent">{{r.firedLabel}}</span></sc-if>
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="min-width:64px"><b style="font-size:22px;line-height:1.3">{{r.hm}}</b><p class="xs muted">{{r.day}}</p></div>
+            <div style="flex:1;min-width:0"><b style="line-height:1.5">{{r.text}}</b><p class="sm">{{r.summary}}</p><p class="xs muted">{{r.next}}</p><sc-if value="{{r.warn}}" hint-placeholder-val="{{ false }}"><p class="sm" style="background:#F6E7CB;border-radius:10px;padding:6px 10px;margin-top:4px">{{r.warnText}}</p></sc-if></div>
+          </div>
+          <p class="xs muted">{{t.dest}}</p>
+          <sc-if value="{{r.fired}}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn pri" onClick="{{r.done}}">{{t.remDone}}</button><button class="btn sm" onClick="{{r.snooze10}}">{{t.snooze10}}</button><button class="btn sm" onClick="{{r.snooze60}}">{{t.snooze60}}</button></div>
+          </sc-if>
+          <sc-if value="{{r.notFired}}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-wrap:wrap;gap:8px"><button class="btn sm" onClick="{{r.change}}"><img src="/_blob/87d1a18d29202acad76c9f753d634137" alt="" style="width:18px;height:18px">{{t.changeTime}}</button><button class="btn sm dan" onClick="{{r.cancel}}" aria-haspopup="dialog">{{t.cancelRem}}</button></div>
+          </sc-if>
+        </article>
+      </sc-for>
+      <sc-if value="{{remListEmpty}}" hint-placeholder-val="{{ false }}"><div class="empty"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt=""><p><b>{{remEmptyTitle}}</b></p><p class="ex">{{t.chatEx}}</p></div></sc-if>
+    </sc-if>
+  </sc-if>
+
+  
+  <sc-if value="{{isEditor}}" hint-placeholder-val="{{ false }}">
+    <div class="top"><button class="btn ico" onClick="{{leaveEditor}}" aria-label="{{t.back}}"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></button><h1>{{edTitle}}</h1></div>
+    <sc-if value="{{edFailed}}" hint-placeholder-val="{{ false }}"><div class="banner err2" role="alert"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt=""><div><b>{{t.edFail}}</b><p class="sm">{{t.edFailB}}</p></div></div></sc-if>
+    <sc-if value="{{edHasErr}}" hint-placeholder-val="{{ false }}"><div class="banner err2" role="alert"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt=""><b>{{t.edErrSum}}</b></div></sc-if>
+    <section class="card" aria-live="polite"><h2 style="font-size:16px;display:flex;gap:6px;align-items:center"><img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt="" style="width:18px;height:18px">{{t.summary}}</h2><p><b>{{edSumText}}</b></p><p>{{edSumWhen}}</p><p class="sm">{{edSumNext}}</p><p class="xs muted">{{t.dest}} · {{t.tz}}</p></section>
+    <sc-if value="{{edIsNew}}" hint-placeholder-val="{{ true }}">
+      <div class="field"><span class="lg">{{t.nlLabel}}</span><div class="chips">
+        <sc-for list="{{nlEx}}" as="n" hint-placeholder-count="3"><button class="chip" onClick="{{n.pick}}">“{{n.text}}”</button></sc-for>
+      </div><p class="xs muted">{{edNlMsg}}</p></div>
+    </sc-if>
+    <sc-if value="{{edAmb}}" hint-placeholder-val="{{ false }}">
+      <fieldset class="panel"><legend class="lg" style="padding-top:2px">{{edAmbQ}}</legend>
+        <sc-for list="{{edAmbOpts}}" as="o" hint-placeholder-count="2"><label class="rc {{o.on}}"><input type="radio" name="amb" checked="{{o.sel}}" onChange="{{o.pick}}"><span><b>{{o.label}}</b><small>{{o.sub}}</small></span></label></sc-for>
+        <sc-if value="{{edAmbErr}}" hint-placeholder-val="{{ false }}"><p class="err">! {{t.errAmb}}</p></sc-if>
+      </fieldset>
+    </sc-if>
+    <div class="field"><label for="p-text">{{t.task}}</label><input id="p-text" class="inp {{edTextBad}}" type="text" value="{{edText}}" onChange="{{onText}}" placeholder="{{t.taskPh}}" readOnly="{{edIsTime}}"><sc-if value="{{edTextErr}}" hint-placeholder-val="{{ false }}"><p class="err">! {{t.errText}}</p></sc-if></div>
+    <fieldset><legend class="lg">{{t.when}}</legend>
+      <div class="chips"><sc-for list="{{edDayChips}}" as="c" hint-placeholder-count="2"><button class="chip {{c.on}}" aria-pressed="{{c.sel}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1 1 180px"><label for="p-day" class="sm">{{t.date}}</label><input id="p-day" class="inp {{edWhenBad}}" type="date" min="2026-10-07" value="{{edDay}}" onChange="{{onDay}}"></div><div class="field" style="flex:1 1 110px"><label for="p-hm" class="sm">{{t.time}}</label><input id="p-hm" class="inp {{edWhenBad}}" type="time" value="{{edHm}}" onChange="{{onHm}}"></div></div>
+      <div class="chips"><sc-for list="{{edHmChips}}" as="c" hint-placeholder-count="4"><button class="chip {{c.on}}" aria-pressed="{{c.sel}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div>
+      <sc-if value="{{edWhenErr}}" hint-placeholder-val="{{ false }}"><p class="err">! {{edWhenErrText}}</p></sc-if>
+    </fieldset>
+    <sc-if value="{{edIsNew}}" hint-placeholder-val="{{ true }}">
+      <fieldset><legend class="lg">{{t.freq}}</legend><div class="seg" role="radiogroup"><button role="radio" class="{{edOnceOn}}" aria-checked="{{edOnceSel}}" onClick="{{setOnce}}">{{t.once}}</button><button role="radio" class="{{edRepOn}}" aria-checked="{{edRepSel}}" onClick="{{setRepeat}}">{{t.repeat}}</button></div></fieldset>
+      <sc-if value="{{edIsRepeat}}" hint-placeholder-val="{{ false }}">
+        <fieldset><legend class="lg">{{t.howOften}}</legend>
+          <sc-for list="{{edFreqs}}" as="f" hint-placeholder-count="4"><label class="rc {{f.on}}"><input type="radio" name="freq" checked="{{f.sel}}" onChange="{{f.pick}}"><span><b>{{f.label}}</b><small>{{f.sub}}</small></span></label></sc-for>
+          <sc-if value="{{edWeekly}}" hint-placeholder-val="{{ false }}"><label class="rc dis"><input type="checkbox" disabled="{{ true }}"><span><b>{{t.weekdaysProp}}</b><small><span class="tag prop">Proposed</span></small></span></label></sc-if>
+          <sc-if value="{{edMonthly}}" hint-placeholder-val="{{ false }}"><label class="rc dis"><input type="checkbox" disabled="{{ true }}"><span><b>{{t.monthEndProp}}</b><small><span class="tag prop">Proposed</span></small></span></label></sc-if>
+        </fieldset>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{edPending}}" hint-placeholder-val="{{ false }}"><p class="sm" role="status" style="text-align:center">{{t.saving}}</p></sc-if>
+    <button class="btn pri blk" style="min-height:52px" onClick="{{saveRem}}" disabled="{{edPending}}">{{edSubmit}}</button>
+  </sc-if>
+
+  
+  <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding-top:30px">
+      <div class="mo is-success {{rm}}">
+        <svg viewBox="0 0 240 120" width="240" height="120" aria-hidden="true" style="overflow:visible">
+          <g class="folder"><path d="M160 66 h20 l6 6 h30 a4 4 0 0 1 4 4 v26 a4 4 0 0 1 -4 4 h-56 a4 4 0 0 1 -4 -4 v-32 a4 4 0 0 1 4 -4 z" fill="#8B9270" stroke="#3B3B3B" stroke-width="2.4"></path><rect class="fnote" x="170" y="62" width="22" height="20" rx="2" fill="#FBF8F1" stroke="#3B3B3B" stroke-width="2"></rect><path d="M156 80 h68 l-4 22 a4 4 0 0 1 -4 4 h-56 a4 4 0 0 1 -4 -4 z" fill="#EFE8D8" stroke="#3B3B3B" stroke-width="2.4"></path></g>
+          <g class="check"><circle cx="214" cy="60" r="12" fill="#62694D" stroke="#3B3B3B" stroke-width="2"></circle><path d="M208 60 l4.5 4.5 l8 -9" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round"></path></g>
+          <g transform="translate(40 10)"><g class="char">
+            <path d="M13 47 C8 22 24 5 41 5 C60 5 73 20 67 47 C64 41 62 37 59 35 L21 35 C18 38 15 42 13 47 Z" fill="#4E4540" stroke="#3B3B3B" stroke-width="2.4"></path>
+            <ellipse cx="40" cy="42" rx="21" ry="20" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="2.4"></ellipse>
+            <path d="M18.5 39 C18 22 29 13 41 13 C54 13 63 22 62 39 C58 34 54 30 49 28 C46 33 40 34 34 31 C30 33 24 35 18.5 39 Z" fill="#4E4540"></path>
+            <ellipse cx="32" cy="43" rx="2.4" ry="2.8" fill="#3B3B3B"></ellipse><ellipse cx="48" cy="43" rx="2.4" ry="2.8" fill="#3B3B3B"></ellipse>
+            <path d="M35 52 q5 4 10 0" stroke="#3B3B3B" stroke-width="1.8" fill="none" stroke-linecap="round"></path>
+            <path d="M23 81 L25 65 Q40 58 55 65 L57 81 Q40 85 23 81 Z" fill="#FFFFFF" stroke="#3B3B3B" stroke-width="2.4"></path>
+            <g class="leg"><path d="M34 80 L32 93 L27 94 M46 80 L48 93 L53 94" stroke="#3B3B3B" stroke-width="3.2" fill="none" stroke-linecap="round"></path></g>
+            <g class="note"><rect x="52" y="60" width="20" height="24" rx="2.5" fill="#FBF8F1" stroke="#3B3B3B" stroke-width="2"></rect></g>
+          </g></g>
+        </svg>
+      </div>
+      <h1 style="font-size:22px">{{doneTitle}}</h1>
+      <p>{{doneBody}}</p>
+      <p class="sm muted">{{doneSummary}}</p>
+      <button class="btn pri blk" onClick="{{showRemList}}">{{t.seeRem}}</button>
+      <button class="btn blk" onClick="{{newRem}}">{{t.another}}</button>
+    </div>
+  </sc-if>
+
+  
+  <sc-if value="{{isDeadlines}}" hint-placeholder-val="{{ false }}">
+    <h1 style="font-size:22px;line-height:1.35">{{t.navDl}}</h1>
+    <button class="btn sm" style="justify-content:flex-start" onClick="{{goAlerts}}"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">{{alertChip}}</button>
+    <div class="chips" role="group" aria-label="{{t.navDl}}"><sc-for list="{{dlFilters}}" as="c" hint-placeholder-count="4"><button class="chip {{c.on}}" aria-pressed="{{c.sel}}" onClick="{{c.pick}}">{{c.label}} <span class="n">{{c.n}}</span></button></sc-for></div>
+    <sc-for list="{{dlList}}" as="x" hint-placeholder-count="4">
+      <article class="card {{x.flat}}">
+        <div class="dlc">
+          <div class="stub t-{{x.stone}}" aria-hidden="true"><div class="b">{{x.mark}}</div><div class="dd">{{x.dd}}</div><div class="mm">{{x.mm}}</div></div>
+          <button class="rowb" onClick="{{x.open}}"><span><span class="tag">{{x.kind}}</span> <sc-if value="{{x.merged}}" hint-placeholder-val="{{ false }}"><span class="tag" style="background:#FBF8F1">{{x.mergedLabel}}</span></sc-if></span><span class="ttl">{{x.title}}</span><span class="cd {{x.tone}}">{{x.cd}}</span><span class="sm">{{x.close}}</span></button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm {{x.priCls}}" onClick="{{x.primary}}">{{x.priLabel}}</button></div>
+      </article>
+    </sc-for>
+    <sc-if value="{{dlEmpty}}" hint-placeholder-val="{{ false }}"><div class="empty"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt=""><p><b>{{dlEmptyTitle}}</b></p><p class="ex">{{t.dlEmptyEx}}</p></div></sc-if>
+  </sc-if>
+
+  
+  <sc-if value="{{isDl}}" hint-placeholder-val="{{ false }}">
+    <div class="top"><button class="btn ico" onClick="{{goDeadlines}}" aria-label="{{t.back}}"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></button><h1>{{t.details}}</h1></div>
+    <div style="display:flex;gap:12px;align-items:flex-start"><div class="stub t-{{dd.stone}}" aria-hidden="true"><div class="b">{{dd.mark}}</div><div class="dd">{{dd.dd}}</div><div class="mm">{{dd.mm}}</div></div><div style="flex:1;min-width:0"><span class="tag">{{dd.kind}}</span><h2 style="font-size:21px;line-height:1.4;overflow-wrap:anywhere">{{dd.title}}</h2><p class="sm muted">{{dd.org}}</p></div></div>
+    <section class="card"><p class="sm muted">{{t.closing}}</p><p style="font-size:21px;font-weight:700;line-height:1.35">{{dd.date}}</p><p>{{dd.note}}</p><span class="cd {{dd.tone}}">{{dd.cd}}</span><sc-if value="{{dd.hasEvent}}" hint-placeholder-val="{{ false }}"><p class="sm">{{t.eventDates}}: <b>{{dd.event}}</b> <span class="muted">({{t.notClosing}})</span></p></sc-if></section>
+    <sc-if value="{{dd.applied}}" hint-placeholder-val="{{ false }}"><div class="banner ok"><img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt=""><div><b>{{t.appliedState}}</b><p class="sm">{{dd.appliedWhen}}</p></div></div><button class="btn pri" onClick="{{dlResume}}" disabled="{{dlPend}}">{{dlResumeLabel}}</button></sc-if>
+    <sc-if value="{{dd.canApply}}" hint-placeholder-val="{{ true }}"><button class="btn pri" onClick="{{dlApply}}" disabled="{{dlPend}}">{{dlApplyLabel}}</button></sc-if>
+    <section style="display:flex;flex-direction:column;gap:6px"><h3 style="font-size:16px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">{{t.itemAlerts}} <span class="tag">{{dd.alertMode}}</span></h3>
+      <sc-for list="{{dd.alerts}}" as="a" hint-placeholder-count="4"><p class="sm {{a.cls}}">{{a.text}}</p></sc-for>
+      <p class="sm">{{dd.alertNote}}</p><p class="xs muted">{{dd.timeNote}}</p>
+    </section>
+    <sc-if value="{{dd.merged}}" hint-placeholder-val="{{ false }}"><section class="panel"><h3 style="font-size:16px">{{t.mergedH}}</h3><p>{{dd.mergeBody}}</p><button class="btn sm" style="align-self:flex-start" onClick="{{askSplit}}" aria-haspopup="dialog">{{t.splitAsk}}</button></section></sc-if>
+    <dl class="kv"><dt>{{t.summaryL}}</dt><dd>{{dd.summary}}</dd><dt>{{t.elig}}</dt><dd>{{dd.elig}}</dd><dt>{{t.cost}}</dt><dd>{{dd.cost}}</dd><dt>{{t.source}}</dt><dd>{{dd.source}}</dd></dl>
+    <button class="btn dan" style="align-self:flex-start" onClick="{{dlDelete}}"><img src="/_blob/c7c5f60a8bfb980a1f8efde7cab766c4" alt="" style="width:18px;height:18px">{{t.del}}</button>
+  </sc-if>
+
+  
+  <sc-if value="{{isAlerts}}" hint-placeholder-val="{{ false }}">
+    <div class="top"><button class="btn ico" onClick="{{goDeadlines}}" aria-label="{{t.back}}"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></button><h1>{{t.alertsTitle}}</h1></div>
+    <p>{{t.alertsIntro}}</p>
+    <fieldset><legend class="lg">{{t.howManyDays}}</legend><sc-for list="{{alPresets}}" as="p" hint-placeholder-count="4"><label class="rc {{p.on}}"><input type="radio" name="pr" checked="{{p.sel}}" onChange="{{p.pick}}"><span><b>{{p.label}}</b><small>{{p.sub}}</small></span></label></sc-for></fieldset>
+    <fieldset><legend class="lg">{{t.alertTime}}</legend><div class="chips"><sc-for list="{{alTimes}}" as="c" hint-placeholder-count="3"><button class="chip {{c.on}}" aria-pressed="{{c.sel}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div></fieldset>
+    <section class="card"><p class="sm muted">{{alPrevTitle}}</p><sc-for list="{{alPrev}}" as="a" hint-placeholder-count="4"><p class="sm">{{a}}</p></sc-for></section>
+    <p class="sm">{{t.batchNote}}</p>
+    <button class="btn pri blk" onClick="{{saveAlerts}}" disabled="{{alDisabled}}">{{alSaveLabel}}</button>
+  </sc-if>
+
+  
+  <sc-if value="{{isLibrary}}" hint-placeholder-val="{{ false }}">
+    <h1 style="font-size:22px;line-height:1.35">{{t.navLib}}</h1>
+    <div class="seg" role="radiogroup" aria-label="{{t.libCtx}}"><button role="radio" class="{{ctxMeOn}}" aria-checked="{{ctxMeSel}}" onClick="{{ctxMe}}"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="" style="width:18px;height:18px">{{t.mine}}</button><button role="radio" class="{{ctxGrOn}}" aria-checked="{{ctxGrSel}}" onClick="{{ctxGr}}"><img src="/_blob/71d94ba304fe64fb2f465ad0361d3ee7" alt="" style="width:18px;height:18px">กลุ่ม 5 ซิปๆ</button></div>
+    <p class="sm muted" style="overflow-wrap:anywhere">{{ownerLine}}</p>
+    <sc-if value="{{aiBusy}}" hint-placeholder-val="{{ false }}"><div class="banner warn"><img src="/_blob/6aa173fcbb5268c09ff29acbc91e4f43" alt=""><div><b>{{t.aiBusyH}}</b><p class="sm">{{t.aiBusyB}}</p></div></div></sc-if>
+    <div class="field"><label for="p-q" style="position:absolute;width:1px;height:1px;overflow:hidden">{{t.search}}</label><input id="p-q" class="inp" type="search" value="{{q}}" onChange="{{onQ}}" placeholder="{{t.searchPh}}"></div>
+    <div class="chips" role="tablist"><sc-for list="{{libTabs}}" as="c" hint-placeholder-count="3"><button class="chip {{c.on}}" role="tab" aria-selected="{{c.sel}}" onClick="{{c.pick}}">{{c.label}} <span class="n">{{c.n}}</span></button></sc-for></div>
+    <sc-if value="{{libIsFiles}}" hint-placeholder-val="{{ true }}"><div class="seg" role="radiogroup"><button role="radio" class="{{viewListOn}}" aria-checked="{{viewListSel}}" onClick="{{viewList}}">{{t.vList}}</button><button role="radio" class="{{viewGalOn}}" aria-checked="{{viewGalSel}}" onClick="{{viewGal}}">{{t.vGal}}</button></div></sc-if>
+    <sc-if value="{{searching}}" hint-placeholder-val="{{ false }}"><p class="sm" role="status" style="text-align:center">{{t.searchingL}}</p></sc-if>
+    <sc-if value="{{qResultLine}}" hint-placeholder-val="{{ false }}"><p class="sm" role="status">{{qResultText}}</p></sc-if>
+    <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+      <sc-for list="{{libItems}}" as="x" hint-placeholder-count="3">
+        <div class="it"><div class="th"><img src="{{x.icon}}" alt="" class="{{x.icoCls}}"></div><div style="min-width:0"><button class="nm" onClick="{{x.open}}">{{x.name}}</button><p class="xs muted">{{x.meta}}</p></div><div style="grid-column:2"><button class="btn sm {{x.btnCls}}" onClick="{{x.act}}">{{x.actLabel}}</button></div></div>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{showGal}}" hint-placeholder-val="{{ false }}"><div class="gal"><sc-for list="{{libItems}}" as="x" hint-placeholder-count="4"><button class="gc" onClick="{{x.open}}"><img src="{{x.big}}" alt=""><span>{{x.cap}}</span><span class="xs muted">{{x.day}}</span></button></sc-for></div></sc-if>
+    <sc-if value="{{libEmpty}}" hint-placeholder-val="{{ false }}"><div class="empty"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt=""><p><b>{{libEmptyTitle}}</b></p><sc-if value="{{libEmptyEx}}" hint-placeholder-val="{{ false }}"><p class="ex">{{libEmptyExText}}</p></sc-if></div></sc-if>
+  </sc-if>
+
+  
+  <sc-if value="{{isFile}}" hint-placeholder-val="{{ false }}">
+    <div class="top"><button class="btn ico" onClick="{{goLibrary}}" aria-label="{{t.back}}"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></button><h1>{{t.filesTab}}</h1></div>
+    <img src="{{fd.big}}" alt="" style="width:100%;aspect-ratio:4 / 3;object-fit:cover;border-radius:10px;border:2px solid #3B3B3B">
+    <h2 style="font-size:18px;line-height:1.45;overflow-wrap:anywhere">{{fd.name}}</h2>
+    <button class="btn pri" onClick="{{openDrive}}"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">{{t.openDrive}}</button>
+    <dl class="kv"><dt>{{t.where}}</dt><dd class="sm">{{fd.where}}</dd><dt>{{t.savedOn}}</dt><dd>{{fd.day}}</dd><dt>{{t.kindL}}</dt><dd>{{fd.kind}}</dd><dt>{{t.caption}}</dt><dd>{{fd.cap}}</dd></dl>
+  </sc-if>
+
+  
+  <sc-if value="{{isMe}}" hint-placeholder-val="{{ false }}">
+    <h1 style="font-size:22px;line-height:1.35">{{t.navMe}}</h1>
+    <section class="card" style="flex-direction:row;align-items:center;gap:12px"><div aria-hidden="true" style="width:52px;height:52px;flex:none;border-radius:50%;border:2px solid #3B3B3B;background:#DFE1D2;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px">J</div><div><b style="font-size:18px">Jai</b><p class="sm muted">{{t.privateChat}}</p></div></section>
+    <section class="card"><h2 style="font-size:17px">{{t.account}}</h2><dl class="kv"><dt>Google</dt><dd>j***@gmail.com <span class="tag {{driveTagCls}}">{{driveTag}}</span></dd><dt>{{t.dest2}}</dt><dd class="sm">My Drive › LineArchive</dd></dl></section>
+    <section class="card"><h2 style="font-size:17px">{{t.counts}}</h2><p class="xs muted">{{t.countsNote}}</p><sc-if value="{{driveOn}}" hint-placeholder-val="{{ true }}"><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><sc-for list="{{stats}}" as="s" hint-placeholder-count="5"><div class="st"><b>{{s.n}}</b><span>{{s.label}}</span></div></sc-for></div></sc-if><sc-if value="{{driveOff}}" hint-placeholder-val="{{ false }}"><p class="sm">{{t.driveOffB}}</p></sc-if></section>
+    <section class="card"><h2 style="font-size:17px;display:flex;gap:8px;align-items:center"><img src="/_blob/6aa173fcbb5268c09ff29acbc91e4f43" alt="" style="width:20px;height:20px">{{t.aiH}}</h2><p class="xs muted">{{t.aiNote}}</p>
+      <div style="display:flex"><b style="flex:1">gemini-flash</b><span class="sm">{{aiLeft}}</span></div><div class="meter" role="img" aria-label="{{aiUsedText}}"><i class="{{aiBar}}"></i></div><p class="xs">{{aiUsedText}}</p>
+      <b>gemini-flash-lite</b><p class="xs">{{aiLiteText}}</p>
+      <p class="sm"><b>{{aiReset}}</b> · {{t.aiResetWhy}}</p></section>
+    <section class="card"><h2 style="font-size:17px">{{t.prefs}}</h2>
+      <button class="li" onClick="{{goLang}}"><img src="/_blob/987b3ff2ae93dcabb56f19e8b2420a43" alt=""><span style="flex:1">ภาษา / Language</span><span class="sm muted" style="font-weight:400">{{langName}}</span></button>
+      <button class="li" onClick="{{goTone}}"><img src="/_blob/9dc4dfc579a5693312ff65359d944bfb" alt=""><span style="flex:1">{{t.tone}} <span class="tag prop">Proposed</span></span><span class="sm muted" style="font-weight:400">{{toneName}}</span></button>
+      <button class="li" onClick="{{goAlerts}}"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt=""><span style="flex:1">{{t.alertsTitle}}</span></button>
+    </section>
+    <section class="panel" style="border:2px dashed #686458"><h2 style="font-size:16px">{{t.simH}}</h2><p class="xs muted">{{t.simNote}}</p>
+      <p class="sm" style="font-weight:600">{{t.simNet}}</p><div class="chips"><sc-for list="{{simNets}}" as="c" hint-placeholder-count="4"><button class="chip {{c.on}}" aria-pressed="{{c.sel}}" onClick="{{c.pick}}">{{c.label}}</button></sc-for></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip {{aiChipOn}}" aria-pressed="{{aiBusy}}" onClick="{{toggleAi}}">{{t.simAi}}</button><button class="chip" onClick="{{replayWelcome}}">{{t.simWelcome}}</button></div>
+    </section>
+    <section class="card"><h2 style="font-size:17px">{{t.conn}}</h2><sc-if value="{{driveOn}}" hint-placeholder-val="{{ true }}"><button class="btn dan" onClick="{{askDisconnect}}" aria-haspopup="dialog">{{t.disconnect}}</button></sc-if><sc-if value="{{driveOff}}" hint-placeholder-val="{{ false }}"><button class="btn pri" onClick="{{reconnect}}" disabled="{{reconPending}}">{{reconLabel}}</button></sc-if></section>
+    <section class="card"><h2 style="font-size:17px">{{t.helpH}}</h2><p class="sm">{{t.privacyB}}</p></section>
+  </sc-if>
+
+  
+  <sc-if value="{{isLang}}" hint-placeholder-val="{{ false }}">
+    <div class="top"><button class="btn ico" onClick="{{goMe}}" aria-label="{{t.back}}"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></button><h1>ภาษา / Language</h1></div>
+    <p>{{t.langIntro}}</p>
+    <fieldset><legend style="position:absolute;width:1px;height:1px;overflow:hidden">ภาษา / Language</legend>
+      <label class="rc {{langThOn}}"><input type="radio" name="lang" checked="{{isTh}}" onChange="{{saveTh}}" disabled="{{langPending}}"><span lang="th"><b>ไทย</b><small>พ. 7 ต.ค. 2569 · 09:00 น.</small></span></label>
+      <label class="rc {{langEnOn}}"><input type="radio" name="lang" checked="{{isEn}}" onChange="{{saveEn}}" disabled="{{langPending}}"><span lang="en"><b>English</b><small>Wed 7 Oct 2026 · 09:00</small></span></label>
+    </fieldset>
+    <sc-if value="{{langPending}}" hint-placeholder-val="{{ false }}"><p class="sm" role="status">{{t.saving}}</p></sc-if>
+    <p class="xs muted">{{t.langNote}}</p>
+  </sc-if>
+
+  
+  <sc-if value="{{isTone}}" hint-placeholder-val="{{ false }}">
+    <div class="top"><button class="btn ico" onClick="{{goMe}}" aria-label="{{t.back}}"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></button><h1>{{t.tone}}</h1><span class="tag prop">Proposed</span></div>
+    <fieldset><legend style="position:absolute;width:1px;height:1px;overflow:hidden">{{t.tone}}</legend>
+      <label class="rc {{tonePolOn}}"><input type="radio" name="tone" checked="{{tonePolSel}}" onChange="{{pickPolite}}"><span><b>{{t.tonePol}}</b><small>{{t.tonePolD}}</small></span></label>
+      <label class="rc {{toneFrOn}}"><input type="radio" name="tone" checked="{{toneFrSel}}" onChange="{{pickFriend}}"><span><b>{{t.toneFr}}</b><small>{{t.toneFrD}}</small></span></label>
+    </fieldset>
+    <p class="sm muted">{{t.preview}}</p>
+    <div class="speech"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt=""><p class="bub" aria-live="polite">{{toneSample}}</p></div>
+    <button class="btn pri blk" onClick="{{saveTone}}" disabled="{{toneDisabled}}">{{toneSaveLabel}}</button>
+  </sc-if>
+
+  </sc-if>
+</div></div>
+
+<sc-if value="{{showFab}}" hint-placeholder-val="{{ true }}"><button class="btn pri fab" onClick="{{newRem}}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"></path></svg>{{t.fab}}</button></sc-if>
+
+<nav class="nav" aria-label="{{t.navLabel}}">
+  <sc-for list="{{nav}}" as="n" hint-placeholder-count="4"><button class="navb {{n.on}}" aria-current="{{n.cur}}" onClick="{{n.pick}}"><img src="{{n.icon}}" alt="">{{n.label}}</button></sc-for>
+</nav>
+</sc-if>
+
+<sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="toast" role="status"><span>{{toastText}}</span><sc-if value="{{toastHasAct}}" hint-placeholder-val="{{ false }}"><button class="btn sm" onClick="{{toastAct}}">{{toastActLabel}}</button></sc-if></div></sc-if>
+
+<sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="p-dlg" onKeyDown="{{dlgKey}}"><h2 id="p-dlg" style="font-size:17px;line-height:1.45">{{dlgTitle}}</h2><p>{{dlgBody}}</p><div style="display:flex;gap:8px"><button class="btn" style="flex:1" onClick="{{dlgNo}}">{{dlgNoLabel}}</button><button class="btn {{dlgYesCls}}" style="flex:1" onClick="{{dlgYes}}" disabled="{{dlgPending}}">{{dlgYesLabel}}</button></div></div></div>
+</sc-if>
+
+<sc-if value="{{monthOn}}" hint-placeholder-val="{{ false }}">
+  <div class="scrim"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="p-mo" onKeyDown="{{monthKey}}">
+    <div style="display:flex;align-items:center"><h2 id="p-mo" style="flex:1;font-size:17px">{{t.calendar}}</h2><button class="btn ico" onClick="{{closeMonth}}" aria-label="{{t.close}}"><img src="/_blob/7dd9ecc3fe69c80fa858c2138024f484" alt="" style="width:24px;height:24px"></button></div>
+    <div style="display:flex;align-items:center"><button class="btn ico" onClick="{{prevMonth}}" aria-label="{{t.prevMonth}}"><img src="/_blob/f92ebc7e4fc1422d70bdd4c2a0d8479d" alt="" style="width:24px;height:24px"></button><b style="flex:1;text-align:center" aria-live="polite">{{monthTitle}}</b><button class="btn ico" onClick="{{nextMonth}}" aria-label="{{t.nextMonth}}"><img src="/_blob/a5a39331a6c7d8ad8bb702e4f7d1188a" alt="" style="width:24px;height:24px"></button></div>
+    <div class="mgrid"><sc-for list="{{dows}}" as="w" hint-placeholder-count="7"><div class="w">{{w}}</div></sc-for><sc-for list="{{monthCells}}" as="c" hint-placeholder-count="42"><button class="mday {{c.cls}}" aria-pressed="{{c.on}}" aria-label="{{c.aria}}" onClick="{{c.pick}}"><span class="dn">{{c.d}}</span><span class="mk"><sc-if value="{{c.r}}" hint-placeholder-val="{{ false }}"><i class="mr"></i></sc-if><sc-if value="{{c.dl}}" hint-placeholder-val="{{ false }}"><i class="md"></i></sc-if><sc-if value="{{c.f}}" hint-placeholder-val="{{ false }}"><i class="mf"></i></sc-if></span></button></sc-for></div>
+    <button class="btn" onClick="{{monthToday}}">{{t.backToday}}</button>
+  </div></div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.NOW = '2026-10-07T05:51:00Z'; this.TODAY = '2026-10-07';
+    this.timers = {}; this.seq = 0;
+    this.state = {
+      lang: 'th', welcome: true, tab: 'today', view: null, remTab: 'planner', remCat: 'upcoming', sel: '2026-10-07', month: null, nbOpen: true,
+      dlFilter: 'open', dlId: null, fileId: null, libCtx: 'personal', libTab: 'files', libView: 'list', q: '', qApplied: '', searching: false,
+      load: 'ready', loadReveal: false, loadLong: false, net: 'normal', drive: 'on', ai: 'ok', rm: false,
+      toast: null, dlg: null, form: null, pend: {}, toneDraft: null, alertDraft: null, done: null,
+      data: this.fixtures(),
+    };
+  }
+  fixtures() {
+    return {
+      tone: 'polite', alerts: { days: [7, 3, 1, 0], time: '09:00' },
+      reminders: [
+        { id: 'r1', text: 'กินยา', at: '2026-10-07T12:00:00Z', repeat: 'daily' },
+        { id: 'r2', text: 'ส่งเอกสารฝ่ายบุคคล', at: '2026-10-08T03:15:00Z', repeat: 'none' },
+        { id: 'r3', text: 'จ่ายค่าเน็ต', at: '2026-10-25T02:00:00Z', repeat: 'monthly' },
+        { id: 'r4', text: 'โทรหาคลินิกทันตกรรม', at: '2026-10-07T05:45:00Z', repeat: 'none', fired: true },
+        { id: 'r5', text: 'สรุปรายจ่ายสิ้นเดือน', at: '2026-10-31T13:00:00Z', repeat: 'monthly' },
+      ],
+      deadlines: [
+        { id: 'd1', title: 'ทุนเรียนต่อ ป.โท ต่างประเทศ รุ่นที่ 12', kind: 'scholarship', org: 'มูลนิธิตัวอย่าง', deadline: '2026-10-07', note: '', summary: 'ทุนเต็มจำนวนสำหรับเรียนต่อปริญญาโท 2 ปี', elig: 'จบปริญญาตรี เกรดเฉลี่ย 3.00 ขึ้นไป', cost: 'ไม่มีค่าสมัคร', event: 'สัมภาษณ์ปลายเดือน พ.ย.', source: 'pdf' },
+        { id: 'd2', title: 'Youth Innovation Forum 2026', kind: 'application', org: 'Example Org', deadline: '2026-10-10', note: '23:59', summary: 'Forum for young innovators, 3 days on site.', elig: 'Age 18–25', cost: 'Free', event: '14–16 Nov 2026', link: true, merged: true, source: 'link' },
+        { id: 'd3', title: 'แข่งออกแบบวงจร Analog IC รอบคัดเลือก', kind: 'competition', org: 'ชมรมวงจรตัวอย่าง', deadline: '2026-10-15', note: '', summary: 'ส่งแบบวงจรและรายงาน 4 หน้า', elig: 'นิสิตนักศึกษา ทีมละ 2–3 คน', cost: '', event: '', source: 'image' },
+        { id: 'd4', title: 'คอร์สอบรม PCB Design to Comply EMC Requirement', kind: 'course', org: 'สถาบันอบรมตัวอย่าง', deadline: '2026-10-21', note: 'หรือจนกว่าจะเต็ม', summary: 'อบรม 2 วัน', elig: '', cost: '1,500 บาท', event: '24–25 ต.ค. 2569', applied: '2026-10-03T04:00:00Z', source: 'text' },
+        { id: 'd5', title: 'Community Townhall', kind: 'event', org: '', deadline: '2026-10-04', note: '', summary: '', elig: '', cost: '', event: '', source: 'text' },
+        { id: 'd6', title: 'Summer Research Fellowship (no date found)', kind: 'scholarship', org: '', deadline: '', note: '', summary: 'Poster did not show a closing date.', elig: '', cost: '', event: '', source: 'image' },
+      ],
+      files: [
+        { id: 'f1', ctx: 'personal', name: '10-21-05_ใบเสร็จร้านกาแฟ.jpg', day: '2026-10-07', cap: 'ใบเสร็จร้านกาแฟ', tags: 'ใบเสร็จ กาแฟ', kind: 'image', img: '/_blob/39b03a1325302af74996031ffe636177' },
+        { id: 'f4', ctx: 'personal', name: '14-02-33_โปสเตอร์แข่ง Analog IC.jpg', day: '2026-10-05', cap: 'โปสเตอร์แข่งออกแบบวงจร Analog IC', tags: 'deadline', kind: 'image', img: '/_blob/37781f7549052cd921554ccf63eba25c' },
+        { id: 'f2', ctx: 'personal', name: 'bookbank.pdf', day: '2026-10-03', cap: '', tags: '', kind: 'pdf', img: '/_blob/636a88652b764b8ed0c58bc789987cb1' },
+        { id: 'f3', ctx: 'personal', name: 'ใบสมัครงาน_ฉบับแก้ไขครั้งที่สาม_สุดท้ายจริงๆ_v7.docx', day: '2026-09-30', cap: '', tags: '', kind: 'doc', img: '/_blob/53823ef4f60cfab501236145ee0dda14' },
+        { id: 'g1', ctx: 'group', name: 'สไลด์นำเสนอกลุ่ม_v2.pdf', day: '2026-10-06', cap: 'สไลด์นำเสนองานกลุ่ม', tags: '', kind: 'pdf', img: '/_blob/636a88652b764b8ed0c58bc789987cb1', by: 'เพื่อน A' },
+        { id: 'g2', ctx: 'group', name: '12-40-11_กระดานสรุปงานกลุ่ม.jpg', day: '2026-10-05', cap: 'กระดานสรุปงานกลุ่ม', tags: '', kind: 'image', img: '/_blob/0333500b5e2636e519f9e08c7fcbdd4b', by: 'Jai' },
+      ],
+      links: [{ id: 'l1', ctx: 'personal', title: 'Apply | Youth Innovation Forum', host: 'example.org', day: '2026-10-06' }, { id: 'l2', ctx: 'group', title: 'Project brief (example)', host: 'example.com', day: '2026-10-04' }],
+      memories: [{ id: 'm1', ctx: 'personal', text: 'ที่จอดรถ ชั้น 3 ช่อง B12', at: '2026-10-05T10:00:00Z' }],
+      events: [{ title: 'ประชุมทีม', start: '2026-10-08T07:00:00Z', end: '2026-10-08T08:00:00Z' }],
+    };
+  }
+  componentDidMount() {
+    try { const l = window.localStorage.getItem('jj.proto.lang'); if (l === 'th' || l === 'en') this.setState({ lang: l, welcome: false }); } catch (e) {}
+    try { this.mq = window.matchMedia('(prefers-reduced-motion: reduce)'); this.onMq = () => this.setState({ rm: this.mq.matches }); this.onMq(); this.mq.addEventListener && this.mq.addEventListener('change', this.onMq); } catch (e) {}
+  }
+  componentWillUnmount() { Object.values(this.timers).forEach(clearTimeout); try { this.mq && this.mq.removeEventListener && this.mq.removeEventListener('change', this.onMq); } catch (e) {} }
+  later(key, fn, ms) { clearTimeout(this.timers[key]); this.timers[key] = setTimeout(fn, ms); }
+  persistLang(l) { try { window.localStorage.setItem('jj.proto.lang', l); } catch (e) {} }
+
+  // ── dates (Asia/Bangkok, UTC+7) ──
+  pad(n) { return String(n).padStart(2, '0'); }
+  parse(k) { const p = k.split('-').map(Number); return { y: p[0], m: p[1], d: p[2] }; }
+  key(y, m, d) { return y + '-' + this.pad(m) + '-' + this.pad(d); }
+  dow(k) { const p = this.parse(k); return new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay(); }
+  add(k, n) { const p = this.parse(k); const t = new Date(Date.UTC(p.y, p.m - 1, p.d + n)); return this.key(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()); }
+  diff(a, b) { const x = this.parse(a), y = this.parse(b); return Math.round((Date.UTC(y.y, y.m - 1, y.d) - Date.UTC(x.y, x.m - 1, x.d)) / 864e5); }
+  dim(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+  bkk(iso) { const t = new Date(new Date(iso).getTime() + 7 * 36e5); return { key: this.key(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()), hm: this.pad(t.getUTCHours()) + ':' + this.pad(t.getUTCMinutes()) }; }
+  utc(k, hm) { const p = this.parse(k); const h = hm.split(':').map(Number); return new Date(Date.UTC(p.y, p.m - 1, p.d, h[0], h[1]) - 7 * 36e5).toISOString(); }
+  fd(k, style) {
+    const en = this.state.lang === 'en'; const p = this.parse(k); const w = this.dow(k);
+    const TD = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'], TDF = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    const TM = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'], TMF = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+    const ED = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], EDF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const EM = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], EMF = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    if (style === 'dw') return en ? ED[w] : TD[w];
+    if (style === 'mon') return en ? EM[p.m - 1] : TM[p.m - 1];
+    if (style === 'my') return en ? EMF[p.m - 1] + ' ' + p.y : TMF[p.m - 1] + ' ' + (p.y + 543);
+    if (style === 'dm') return en ? p.d + ' ' + EM[p.m - 1] : p.d + ' ' + TM[p.m - 1];
+    if (style === 'full') return en ? EDF[w] + ' ' + p.d + ' ' + EMF[p.m - 1] + ' ' + p.y : 'วัน' + TDF[w] + 'ที่ ' + p.d + ' ' + TMF[p.m - 1] + ' ' + (p.y + 543);
+    return en ? ED[w] + ' ' + p.d + ' ' + EM[p.m - 1] + ' ' + p.y : TD[w] + ' ' + p.d + ' ' + TM[p.m - 1] + ' ' + (p.y + 543);
+  }
+  ft(hm) { return this.state.lang === 'en' ? hm : hm + ' น.'; }
+  fdt(iso) { const b = this.bkk(iso); return this.fd(b.key) + ' · ' + this.ft(b.hm); }
+  rel(k) { const T = this.T(); return k === this.TODAY ? T.today : k === this.add(this.TODAY, 1) ? T.tomorrow : this.fd(k, 'dm'); }
+
+  T() {
+    const th = {
+      proto: 'ต้นแบบ · ข้อมูลสมมุติ', navToday: 'วันนี้', navDl: 'Deadline', navLib: 'คลัง', navMe: 'ของฉัน', navLabel: 'เมนูหลัก', back: 'ย้อนกลับ', close: 'ปิด', today: 'วันนี้', tomorrow: 'พรุ่งนี้', retry: 'ลองอีกครั้ง', saving: 'กำลังบันทึก…',
+      obHi: 'สวัสดี เราคือ JaiJa', p1: 'เก็บให้', p2: 'หาเจอ', p3: 'เตือนทัน', obSub: 'ส่งอะไรมาในแชต JaiJa เก็บลง Google Drive ของคุณเอง จำให้ และเตือนก่อนถึงเวลา', obStart: 'เริ่มเลย', obNote: 'เลือกภาษาแล้วจำไว้ เปลี่ยนได้ที่ ของฉัน › ภาษา / Language',
+      greet: 'สวัสดีตอนบ่าย Jai', todaySub: 'วันนี้ให้ JaiJa ช่วยอะไรดี?', driveOk: 'Drive เชื่อมแล้ว', planner: 'แพลนเนอร์', allRem: 'เตือนทั้งหมด', upNext: 'ถัดไป', backToday: 'กลับวันนี้', prevWeek: 'สัปดาห์ก่อน', nextWeek: 'สัปดาห์ถัดไป',
+      lgRem: 'เตือน', lgEv: 'นัดใน Calendar', lgSaved: 'ของที่เก็บ', allDay: 'ทั้งวัน', evKind: 'นัดใน Calendar · ดูอย่างเดียว', chatEx: 'ลองพิมพ์ “พรุ่งนี้ 9 โมง เตือนส่งเอกสาร” ในแชตได้เลย',
+      remKind: 'เตือน', fired: 'เตือนแล้ว', past: 'ผ่านแล้ว', dest: 'ส่งเข้าแชตกับ JaiJa', doneNote: 'เตือนครั้งเดียวที่ส่งแล้วอยู่ตรงนี้ 24 ชม. แล้วหายไป · ประวัติย้อนหลัง', remDone: 'เสร็จแล้ว', snooze10: 'อีก 10 นาที', snooze60: 'อีก 1 ชม.', changeTime: 'เปลี่ยนเวลา', cancelRem: 'ยกเลิก',
+      cUp: 'ที่จะถึง', cRep: 'ทำซ้ำ', cDone: 'เพิ่งเตือน', eUp: 'ยังไม่มีเตือนครั้งเดียวที่จะถึง', eRep: 'ยังไม่มีเตือนที่ทำซ้ำ', eDone: '24 ชม. ที่ผ่านมายังไม่มีเตือนที่ส่งไป', fab: 'ตั้งเตือน', next: 'ครั้งถัดไป',
+      edNew: 'ตั้งเตือนใหม่', edTime: 'เปลี่ยนเวลาเตือน', edFail: 'ยังไม่ได้ตั้งเตือน', edFailB: 'บันทึกไม่สำเร็จ (เครือข่ายไม่ตอบ) ข้อมูลที่กรอกยังอยู่ กดอีกครั้งได้ ไม่ซ้ำแน่นอน', edErrSum: 'ยังบันทึกไม่ได้ เช็กช่องที่มี ! ก่อนนะ', summary: 'สรุปก่อนบันทึก', tz: 'เวลาไทย (Asia/Bangkok)', sumEmpty: 'กรอกเรื่องกับวันเวลา แล้วสรุปจะขึ้นตรงนี้',
+      nlLabel: 'พิมพ์แบบแชตก็ได้ (ลองกดตัวอย่าง)', task: '1. เตือนเรื่องอะไร', taskPh: 'เช่น ส่งเอกสารฝ่ายบุคคล', when: '2. วันและเวลา', date: 'วันที่', time: 'เวลา', freq: '3. ครั้งเดียว หรือ ทำซ้ำ', once: 'ครั้งเดียว', repeat: 'ทำซ้ำ', howOften: 'ซ้ำบ่อยแค่ไหน',
+      daily: 'ทุกวัน', weekly: 'ทุกสัปดาห์', monthly: 'ทุกเดือน', yearly: 'ทุกปี', weekdaysProp: 'เลือกหลายวันในสัปดาห์', monthEndProp: 'วันสุดท้ายของทุกเดือน', errText: 'ใส่เรื่องที่อยากให้เตือนก่อนนะ', errWhen: 'เลือกวันและเวลาให้ครบก่อนนะ', errPast: 'เวลานี้ผ่านไปแล้ว เลือกเวลาหลังจากนี้นะ', errAmb: 'ช่วยเลือกตัวเลือกด้านบนให้ชัดก่อนนะ',
+      submit: 'ตั้งเตือน', submitTime: 'บันทึกเวลาใหม่', okTitle: 'ตั้งเตือนแล้วนะ', okTime: 'เปลี่ยนเวลาแล้ว', seeRem: 'ดูรายการเตือน', another: 'ตั้งอีกอัน', nlFilled: 'เติมช่องให้แล้ว ตรวจอีกทีก่อนบันทึกนะ',
+      details: 'ดูรายละเอียด', closing: 'วันปิดรับ', eventDates: 'วันจัดงาน', notClosing: 'ไม่ใช่วันปิดรับ', appliedState: 'สมัครแล้ว · หยุดเตือนแล้ว', apply: 'สมัครแล้ว หยุดเตือน', resume: 'เตือนต่อ', itemAlerts: 'การเตือนของงานนี้', mergedH: 'รวมรายละเอียดแล้ว', splitAsk: 'ไม่ใช่งานเดียวกัน? แยกออก',
+      summaryL: 'สรุป', elig: 'คุณสมบัติ', cost: 'ค่าใช้จ่าย', source: 'ต้นฉบับ', del: 'ลบรายการนี้', notGiven: 'ไม่ระบุ', noTime: 'ไม่ระบุเวลา', orgNote: 'หมายเหตุผู้จัด: ', fOpen: 'เปิดอยู่', fApplied: 'สมัครแล้ว', fClosed: 'ปิดแล้ว', fAll: 'ทั้งหมด', view: 'ดูรายละเอียด', openLink: 'เปิดลิงก์สมัคร',
+      dlEmptyEx: 'ส่งโปสเตอร์ ลิงก์ หรือ PDF รับสมัครมาในแชต เดี๋ยวจดวันปิดรับให้', alertsTitle: 'ตั้งค่าเตือน Deadline', alertsIntro: 'ใช้กับทุกงาน ยกเว้นงานที่ตั้งเฉพาะไว้', howManyDays: 'เตือนก่อนกี่วัน', alertTime: 'เวลาที่เตือน', batchNote: 'ถ้าหลายงานเตือนนาทีเดียวกัน จะรวมเป็นข้อความเดียวแบบเลื่อนดูได้',
+      std: 'มาตรฐาน', early: 'เตือนเร็ว', light: 'เบา ๆ', off: 'ปิดการเตือน', offD: 'ไม่ส่งเตือน Deadline (เตือนอื่นยังทำงาน)', save: 'บันทึก', unchanged: 'ยังไม่ได้เปลี่ยน', saved: 'บันทึกแล้ว',
+      mine: 'ของฉัน', libCtx: 'เลือกคลัง', search: 'ค้นหาในคลัง', searchPh: 'ชื่อไฟล์ คำอธิบาย หรือแท็ก', filesTab: 'ไฟล์/รูป', linksTab: 'ลิงก์', memTab: 'สิ่งที่จำไว้', vList: 'รายการ', vGal: 'แกลเลอรี', searchingL: 'กำลังหาให้…', openDrive: 'เปิดใน Google Drive', openL: 'เปิดลิงก์', forget: 'ลืมอันนี้',
+      where: 'อยู่ที่', savedOn: 'วันที่เก็บ', kindL: 'ชนิด', caption: 'คำอธิบาย (AI)', noCap: 'ยังไม่มีคำอธิบาย', aiBusyH: 'ตอนนี้ AI ติดลิมิตชั่วคราว', aiBusyB: 'ค้นหาด้วยคำยังใช้ได้ ไฟล์ที่ส่งมายังเก็บเข้า Drive ตามปกติ แค่การอ่านรายละเอียดต้องรอ',
+      privateChat: 'แชตส่วนตัวกับ JaiJa', account: 'บัญชีที่เชื่อม', dest2: 'ที่เก็บไฟล์', counts: 'ของที่เก็บไว้', countsNote: 'นับเป็นรายการ ไม่ใช่พื้นที่ใน Drive', aiH: 'AI ที่ใช้ร่วมกัน', aiNote: 'นับคำขอของทุกคนที่ใช้บอทนี้วันนี้ ไม่ใช่พื้นที่เก็บ', aiResetWhy: 'เที่ยงคืนเวลาแปซิฟิก', prefs: 'ตั้งค่า', tone: 'โทนการคุย',
+      simH: 'ต้นแบบ: จำลองสถานการณ์', simNote: 'ใช้ทดสอบสถานะเท่านั้น ไม่มีในแอปจริง', simNet: 'เครือข่าย', simAi: 'AI ติดลิมิต', simWelcome: 'ดูหน้าแรกอีกครั้ง', conn: 'การเชื่อมต่อ', disconnect: 'ยกเลิกการเชื่อมต่อ Drive', reconnect: 'เชื่อมต่อ Google Drive อีกครั้ง', helpH: 'ข้อมูลอยู่ที่ไหน', privacyB: 'ไฟล์อยู่ใน My Drive/LineArchive ของคุณ ข้อมูลเตือน Deadline และสิ่งที่จำไว้อยู่ใน LineArchive/_data ใน Drive ของคุณเช่นกัน',
+      langIntro: 'ใช้กับเมนู ปุ่ม การ์ดในแชต การแจ้งเตือน และคำตอบพื้นฐานของบอท ชื่อไฟล์และสิ่งที่จำไว้จะไม่ถูกแปล', langNote: 'จำค่าไว้ต่อผู้ใช้ (ต้นแบบนี้จำไว้ในเบราว์เซอร์) · เมนูริชเมนูเปลี่ยนเป็นภาพภาษาเดียวกัน',
+      tonePol: 'สุภาพเป็นกันเอง', tonePolD: 'ค่าเริ่มต้น ใช้กับทุกคนและทุกกลุ่ม', toneFr: 'เพื่อนสนิท', toneFrD: 'เลือกเองเท่านั้น ใช้เฉพาะแชตส่วนตัว', preview: 'ตัวอย่างคำตอบ', samplePol: 'จดไว้แล้วนะ พรุ่งนี้ 10:15 น. เดี๋ยวเตือนส่งเอกสารฝ่ายบุคคลให้', sampleFr: 'จัดให้ละ พรุ่งนี้ 10:15 เดี๋ยวเตือนส่งเอกสาร ลุยย',
+      driveOffH: 'ยังเปิดข้อมูลไม่ได้ เพราะ Google Drive ไม่ได้เชื่อมอยู่', driveOffB: 'ข้อมูลของคุณยังอยู่ใน Drive ไม่ได้หาย เชื่อมต่อ Google Drive อีกครั้งเพื่อใช้งานต่อ', errLoad: 'โหลดไม่สำเร็จ ลองอีกครั้งได้ ข้อมูลเดิมยังอยู่', errWhy: 'เครือข่ายไม่ตอบในเวลาที่กำหนด ไม่ได้แปลว่ารายการหายไป', reopen: 'หรือเปิดจากเมนูใน LINE อีกครั้ง',
+      loading: 'กำลังโหลด…', longWait: 'ยังทำอยู่ ใช้เวลานานกว่าปกติ ไม่ต้องกดซ้ำนะ', calendar: 'ปฏิทิน', prevMonth: 'เดือนก่อน', nextMonth: 'เดือนถัดไป', cancelNo: 'เก็บไว้', cancelYes: 'ยกเลิกการเตือน', splitTitle: 'แยกเป็นรายการใหม่?', splitBody: 'ข้อมูลจากแหล่งล่าสุดจะกลายเป็น Deadline อีกรายการ รายการเดิมกลับไปเป็นแบบก่อนรวม', splitYes: 'แยกเป็นรายการใหม่',
+      discTitle: 'ยกเลิกการเชื่อมต่อ Google Drive?', discBody: 'JaiJa จะเก็บหรืออ่านไฟล์ เตือน และ Deadline ไม่ได้จนกว่าจะเชื่อมใหม่ ไฟล์ทั้งหมดยังอยู่ใน Drive ของคุณ ไม่ถูกลบ', discYes: 'ยกเลิกการเชื่อมต่อ', cancelL: 'ยกเลิก', leaveTitle: 'ออกโดยไม่บันทึก?', leaveBody: 'สิ่งที่กรอกไว้จะหายไป และยังไม่ได้ตั้งเตือน', leaveNo: 'กรอกต่อ', leaveYes: 'ออกเลย',
+      tDeleted: 'ลบรายการแล้ว', tRestored: 'เอาคืนแล้ว', undo: 'เอาคืน', tApplied: 'สมัครแล้ว หยุดเตือนให้แล้ว', tResumed: 'กลับมาเตือนต่อแล้ว', tSplit: 'แยกเป็น 2 รายการแล้ว', tCancelled: 'ยกเลิกการเตือนแล้ว', tSnoozed: 'เลื่อนไปเตือน ', tDoneRem: 'เรียบร้อย ลบออกจากรายการแล้ว', tLang: 'เปลี่ยนภาษาแล้ว', tTone: 'บันทึกโทนแล้ว', tAlerts: 'บันทึกการเตือน Deadline แล้ว', tDisc: 'ยกเลิกการเชื่อมต่อแล้ว', tRecon: 'เชื่อม Google Drive แล้ว', tDrive: 'ต้นแบบ: ในแอปจริงจะเปิดไฟล์ใน Drive ของเจ้าของ', tOpFail: 'ทำไม่สำเร็จ ยังไม่มีอะไรเปลี่ยน ลองอีกครั้งได้', tForgot: 'ลืมแล้ว',
+      nNormal: 'ปกติ', nSlow: 'ช้า 3 วิ', nVery: 'ช้ามาก 12 วิ', nFail: 'ล้มเหลว', connected: 'เชื่อมแล้ว', disconnected: 'ยังไม่เชื่อม',
+    };
+    const en = {
+      proto: 'Prototype · sample data', navToday: 'Today', navDl: 'Deadlines', navLib: 'Library', navMe: 'Me', navLabel: 'Main menu', back: 'Back', close: 'Close', today: 'Today', tomorrow: 'Tomorrow', retry: 'Try again', saving: 'Saving…',
+      obHi: "Hi, I'm JaiJa", p1: 'Saves it.', p2: 'Finds it.', p3: 'Reminds you on time.', obSub: 'Send anything in the chat. JaiJa saves it to your own Google Drive, remembers it, and reminds you before it is due.', obStart: "Let's start", obNote: 'Your choice is remembered. Change it any time in Me › ภาษา / Language.',
+      greet: 'Good afternoon, Jai', todaySub: 'What can JaiJa help with today?', driveOk: 'Drive connected', planner: 'Planner', allRem: 'All reminders', upNext: 'Up next', backToday: 'Back to today', prevWeek: 'Previous week', nextWeek: 'Next week',
+      lgRem: 'Reminders', lgEv: 'Calendar event', lgSaved: 'Saved item', allDay: 'All day', evKind: 'Calendar event · view only', chatEx: 'Try typing “remind me tomorrow 9am to send the documents” in the chat.',
+      remKind: 'Reminder', fired: 'Sent', past: 'Past', dest: 'Sent to your chat with JaiJa', doneNote: 'One-time reminders stay here for 24 hours after they are sent · full history', remDone: 'Done', snooze10: '10 min later', snooze60: '1 hour later', changeTime: 'Change time', cancelRem: 'Cancel',
+      cUp: 'Upcoming', cRep: 'Repeating', cDone: 'Just sent', eUp: 'No upcoming one-time reminders', eRep: 'No repeating reminders', eDone: 'Nothing was sent in the last 24 hours', fab: 'New reminder', next: 'Next',
+      edNew: 'New reminder', edTime: 'Change reminder time', edFail: 'Reminder not set', edFailB: "Saving failed (no response from the network). Your input is still here. Tap again; it won't create a duplicate.", edErrSum: "Can't save yet. Check the fields marked !", summary: 'Check before saving', tz: 'Thailand time (Asia/Bangkok)', sumEmpty: 'Fill in what and when, and the summary appears here.',
+      nlLabel: 'Or type it like a chat (try an example)', task: '1. What to remind you about', taskPh: 'e.g. send HR documents', when: '2. Date and time', date: 'Date', time: 'Time', freq: '3. Once or repeating', once: 'Once', repeat: 'Repeat', howOften: 'How often',
+      daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly', weekdaysProp: 'Pick several weekdays', monthEndProp: 'Last day of every month', errText: 'Add what you want to be reminded about.', errWhen: 'Pick both a date and a time.', errPast: 'That time has passed. Pick a later time.', errAmb: 'Pick one of the options above first.',
+      submit: 'Set reminder', submitTime: 'Save new time', okTitle: 'Reminder set', okTime: 'Time changed', seeRem: 'See reminders', another: 'Set another', nlFilled: 'Filled in the fields. Check them before saving.',
+      details: 'View details', closing: 'Closing date', eventDates: 'Event dates', notClosing: 'not the closing date', appliedState: 'Applied · alerts stopped', apply: 'Applied, stop alerts', resume: 'Resume alerts', itemAlerts: 'Alerts for this item', mergedH: 'Details merged', splitAsk: 'Not the same item? Split it',
+      summaryL: 'Summary', elig: 'Eligibility', cost: 'Cost', source: 'Source', del: 'Delete', notGiven: 'Not given', noTime: 'No time given', orgNote: "Organiser's note: ", fOpen: 'Open', fApplied: 'Applied', fClosed: 'Closed', fAll: 'All', view: 'View details', openLink: 'Open application link',
+      dlEmptyEx: 'Send a poster, link or PDF in the chat and JaiJa notes the closing date.', alertsTitle: 'Deadline alerts', alertsIntro: 'Applies to every item except ones with their own setting.', howManyDays: 'How many days before', alertTime: 'Alert time', batchNote: 'If several items alert in the same minute, they arrive as one swipeable message.',
+      std: 'Standard', early: 'Early', light: 'Light', off: 'Off', offD: 'No deadline alerts (other reminders still work)', save: 'Save', unchanged: 'No changes yet', saved: 'Saved',
+      mine: 'Mine', libCtx: 'Choose library', search: 'Search library', searchPh: 'File name, caption or tag', filesTab: 'Files & photos', linksTab: 'Links', memTab: 'Remembered', vList: 'List', vGal: 'Gallery', searchingL: 'Searching…', openDrive: 'Open in Google Drive', openL: 'Open link', forget: 'Forget this',
+      where: 'Location', savedOn: 'Saved on', kindL: 'Type', caption: 'Caption (AI)', noCap: 'No caption yet', aiBusyH: 'AI is at its limit for now', aiBusyB: 'Keyword search still works and files you send are still saved. Only reading details has to wait.',
+      privateChat: 'Private chat with JaiJa', account: 'Connected account', dest2: 'Files go to', counts: "What you've saved", countsNote: 'Counts of items, not Drive space', aiH: 'Shared AI usage', aiNote: 'Requests by everyone using this bot today. Not storage.', aiResetWhy: 'midnight US Pacific time', prefs: 'Preferences', tone: 'Chat tone',
+      simH: 'Prototype: simulate', simNote: 'For testing states only. Not in the real app.', simNet: 'Network', simAi: 'AI at limit', simWelcome: 'Show first-open again', conn: 'Connection', disconnect: 'Disconnect Drive', reconnect: 'Reconnect Google Drive', helpH: 'Where your data lives', privacyB: 'Files are in My Drive/LineArchive. Reminders, deadlines and remembered items are in LineArchive/_data, also in your Drive.',
+      langIntro: "Applies to menus, buttons, chat cards, notifications and the bot's standard replies. File names and things you saved are never translated.", langNote: 'Remembered per user (this prototype keeps it in the browser) · the rich menu switches to the matching image.',
+      tonePol: 'Friendly and polite', tonePolD: 'Default for everyone and every group', toneFr: 'Close friend', toneFrD: 'Opt-in, private chat only', preview: 'Sample reply', samplePol: "Got it. I'll remind you to send the HR documents tomorrow at 10:15.", sampleFr: "On it! Tomorrow 10:15, HR docs. Let's go.",
+      driveOffH: "Can't open your data because Google Drive isn't connected", driveOffB: 'Your data is still in your Drive. Reconnect Google Drive to continue.', errLoad: "Couldn't load. Try again; your data is still there.", errWhy: "The network didn't respond in time. This doesn't mean anything was lost.", reopen: 'Or reopen from the LINE menu',
+      loading: 'Loading…', longWait: 'Still working. This is taking longer than usual, no need to tap again.', calendar: 'Calendar', prevMonth: 'Previous month', nextMonth: 'Next month', cancelNo: 'Keep it', cancelYes: 'Cancel reminder', splitTitle: 'Split into a new item?', splitBody: 'Details from the latest source become a separate deadline. The original goes back to how it was before the merge.', splitYes: 'Split into new item',
+      discTitle: 'Disconnect Google Drive?', discBody: "JaiJa won't be able to save or read your files, reminders or deadlines until you reconnect. All files stay in your Drive.", discYes: 'Disconnect', cancelL: 'Cancel', leaveTitle: 'Leave without saving?', leaveBody: 'What you typed will be lost, and no reminder is set.', leaveNo: 'Keep editing', leaveYes: 'Leave',
+      tDeleted: 'Deleted', tRestored: 'Restored', undo: 'Undo', tApplied: 'Marked applied. Alerts stopped.', tResumed: 'Alerts resumed', tSplit: 'Split into 2 items', tCancelled: 'Reminder cancelled', tSnoozed: 'Snoozed until ', tDoneRem: 'Done. Removed from your list.', tLang: 'Language changed', tTone: 'Tone saved', tAlerts: 'Deadline alerts saved', tDisc: 'Disconnected', tRecon: 'Google Drive connected', tDrive: "Prototype: in the real app this opens the file in the owner's Drive.", tOpFail: "That didn't work. Nothing changed. Try again.", tForgot: 'Forgotten',
+      nNormal: 'Normal', nSlow: 'Slow 3 s', nVery: 'Very slow 12 s', nFail: 'Fails', connected: 'Connected', disconnected: 'Not connected',
+    };
+    return this.state.lang === 'en' ? en : th;
+  }
+
+  // ── simulated async (fictional; no network) ──
+  dur(kind) { const n = this.state.net; return n === 'slow' ? 3000 : n === 'very' ? 12000 : n === 'fail' ? 900 : kind === 'load' ? 300 : 900; }
+  load() {
+    const id = ++this.seq; this.loadId = id;
+    ['rev', 'long', 'done'].forEach((k) => clearTimeout(this.timers['load' + k]));
+    this.setState({ load: 'loading', loadReveal: false, loadLong: false });
+    this.later('loadrev', () => { if (this.loadId === id) this.setState({ loadReveal: true }); }, 400);
+    this.later('loadlong', () => { if (this.loadId === id && this.state.load === 'loading') this.setState({ loadLong: true }); }, 8000);
+    this.later('loaddone', () => { if (this.loadId !== id) return; this.setState({ load: this.state.net === 'fail' ? 'error' : 'ready' }); }, this.dur('load'));
+  }
+  op(key, apply, ok, fail) {
+    if (this.state.pend[key] === 'pending') return;
+    this.setState({ pend: Object.assign({}, this.state.pend, { [key]: 'pending' }) });
+    this.later('op' + key, () => {
+      if (this.state.net === 'fail') { this.setState({ pend: Object.assign({}, this.state.pend, { [key]: 'error' }) }); fail ? fail() : this.toast(this.T().tOpFail); return; }
+      const data = JSON.parse(JSON.stringify(this.state.data)); apply && apply(data);
+      this.setState({ data: data, pend: Object.assign({}, this.state.pend, { [key]: 'ok' }) }); ok && ok();
+    }, this.dur('op'));
+  }
+  toast(text, actLabel, act) { this.setState({ toast: { text: text, actLabel: actLabel, act: act } }); this.later('toast', () => this.setState({ toast: null }), act ? 8000 : 4000); }
+  goTab(tab) { if (this.guardLeave(() => this.goTab(tab))) return; this.setState({ tab: tab, view: null, dlg: null, month: null, form: null }); this.load(); }
+  guardLeave(then) { if (this.state.view === 'editor' && this.state.form && this.state.form.dirty) { this.setState({ dlg: { type: 'leave', then: then } }); return true; } return false; }
+
+  // ── domain ──
+  dlState(d) { if (!d.deadline) return { tone: 'nodate', days: null }; const days = this.diff(this.TODAY, d.deadline); return { tone: days < 0 ? 'closed' : days <= 3 ? 'urgent' : days <= 7 ? 'soon' : 'later', days: days }; }
+  bucket(d) { if (d.applied) return 'applied'; return this.dlState(d).tone === 'closed' ? 'closed' : 'open'; }
+  cd(d) { const en = this.state.lang === 'en'; const s = this.dlState(d); if (d.applied) return this.T().appliedState; if (s.tone === 'nodate') return en ? 'No closing date' : 'ไม่ระบุวันปิดรับ'; if (s.days < 0) return en ? 'Closed ' + (-s.days) + ' days ago' : 'ปิดแล้ว ' + (-s.days) + ' วันก่อน'; if (s.days === 0) return en ? 'Last day today!' : 'วันนี้วันสุดท้าย!'; if (s.days === 1) return en ? '1 day left · tomorrow' : 'อีก 1 วัน · พรุ่งนี้'; return en ? s.days + ' days left' : 'อีก ' + s.days + ' วัน'; }
+  noteText(d) { const T = this.T(); const n = (d.note || '').trim(); if (/^\d{1,2}[:.]\d{2}/.test(n)) return T.orgNote + n; return n ? T.noTime + ' · ' + n : T.noTime; }
+  kindName(k) { const en = this.state.lang === 'en'; const K = { competition: ['การแข่งขัน', 'Competition'], application: ['รับสมัคร', 'Application'], scholarship: ['ทุน', 'Scholarship'], course: ['คอร์ส/อบรม', 'Course'], event: ['กิจกรรม', 'Event'] }; return (K[k] || ['อื่น ๆ', 'Other'])[en ? 1 : 0]; }
+  occurs(r, k) { const b = this.bkk(r.at); if (k < b.key) return false; const p = this.parse(b.key), q = this.parse(k); if (r.repeat === 'none') return k === b.key; if (r.repeat === 'daily') return true; if (r.repeat === 'weekly') return this.diff(b.key, k) % 7 === 0; if (r.repeat === 'monthly') return p.d === q.d; if (r.repeat === 'yearly') return p.d === q.d && p.m === q.m; return false; }
+  nexts(r, n) { const out = []; const b = this.bkk(r.at); if (r.repeat === 'none') return r.at > this.NOW ? [{ iso: r.at }] : []; for (let i = 0; out.length < n && i < 400; i++) { let k; if (r.repeat === 'daily') k = this.add(b.key, i); else if (r.repeat === 'weekly') k = this.add(b.key, i * 7); else { const p = this.parse(b.key); let y = p.y, m = p.m; if (r.repeat === 'monthly') { const t = p.m - 1 + i; y = p.y + Math.floor(t / 12); m = t % 12 + 1; } else y = p.y + i; if (p.d > this.dim(y, m)) { out.push({ unknown: true, y: y, m: m, d: p.d }); continue; } k = this.key(y, m, p.d); } const iso = this.utc(k, b.hm); if (iso > this.NOW) out.push({ iso: iso }); } return out; }
+  repSum(r) { const en = this.state.lang === 'en'; const b = this.bkk(r.at); const p = this.parse(b.key); const tm = this.ft(b.hm); const wd = en ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] : ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    if (r.repeat === 'daily') return en ? 'Every day at ' + tm : 'ทุกวัน เวลา ' + tm; if (r.repeat === 'weekly') return en ? 'Every ' + wd[this.dow(b.key)] + ' at ' + tm : 'ทุกวัน' + wd[this.dow(b.key)] + ' เวลา ' + tm; if (r.repeat === 'monthly') return en ? 'Monthly on day ' + p.d + ' at ' + tm : 'ทุกวันที่ ' + p.d + ' ของเดือน เวลา ' + tm; if (r.repeat === 'yearly') return en ? 'Every year on ' + this.fd(b.key, 'dm') + ' at ' + tm : 'ทุกปี วันที่ ' + this.fd(b.key, 'dm') + ' เวลา ' + tm; return (en ? 'Once · ' : 'ครั้งเดียว · ') + this.fdt(r.at); }
+  nextLine(r) { const en = this.state.lang === 'en'; const ns = this.nexts(r, 3); if (!ns.length) return ''; return (en ? 'Next: ' : 'ครั้งถัดไป: ') + ns.map((n) => n.unknown ? (en ? 'no day ' + n.d + ' in ' + this.fd(this.key(n.y, n.m, 1), 'my') : this.fd(this.key(n.y, n.m, 1), 'my') + ' ไม่มีวันที่ ' + n.d) : this.fd(this.bkk(n.iso).key, 'dm') + ' ' + this.ft(this.bkk(n.iso).hm)).join(' · '); }
+  warnFor(r) { const en = this.state.lang === 'en'; const p = this.parse(this.bkk(r.at).key); if (r.repeat === 'monthly' && p.d >= 29) return en ? 'Some months have no day ' + p.d + '. What happens then is not defined yet (Proposed: last day of month).' : 'บางเดือนไม่มีวันที่ ' + p.d + ' ยังไม่ได้กำหนดว่าจะเตือนวันไหนแทน (Proposed: วันสุดท้ายของเดือน)'; return ''; }
+  dayItems(k) { const D = this.state.data; return { rems: D.reminders.filter((r) => !r.cancelled && this.occurs(r, k)), dls: D.deadlines.filter((d) => !d.deleted && d.deadline === k), evs: D.events.filter((e) => this.bkk(e.start).key === k), saved: [].concat(D.files.filter((f) => f.ctx === 'personal' && f.day === k), D.links.filter((l) => l.ctx === 'personal' && l.day === k), D.memories.filter((m) => m.ctx === 'personal' && this.bkk(m.at).key === k)) }; }
+
+  newForm(mode, r, preset) {
+    if (mode === 'time') { const n = this.nexts(r, 1)[0]; const b = this.bkk(n ? n.iso : r.at); return { mode: 'time', id: r.id, orig: r, text: r.text, day: b.key, hm: b.hm, repeat: r.repeat, isRepeat: r.repeat !== 'none', errors: {}, amb: null, dirty: false, idem: 'k' + Date.now() }; }
+    return Object.assign({ mode: 'new', text: '', day: '', hm: '', repeat: 'daily', isRepeat: false, errors: {}, amb: null, dirty: false, idem: 'k' + Date.now(), nlMsg: '' }, preset || {});
+  }
+  setForm(patch) { this.setState({ form: Object.assign({}, this.state.form, patch, { dirty: true }) }); }
+
+  renderVals() {
+    const S = this.state, T = this.T(), en = S.lang === 'en', D = S.data;
+    const v = {};
+    v.t = T; v.lang = S.lang; v.rm = S.rm ? 'rm' : '';
+    v.isWelcome = S.welcome; v.isApp = !S.welcome;
+    v.isTh = !en; v.isEn = en; v.langThOn = en ? '' : 'on'; v.langEnOn = en ? 'on' : '';
+    v.setTh = () => { this.setState({ lang: 'th' }); this.persistLang('th'); };
+    v.setEn = () => { this.setState({ lang: 'en' }); this.persistLang('en'); };
+    v.finishWelcome = () => { this.persistLang(S.lang); this.setState({ welcome: false }); this.load(); };
+
+    const tab = S.tab, view = S.view;
+    v.isToday = tab === 'today' && !view; v.isEditor = view === 'editor'; v.isDone = view === 'done';
+    v.isDeadlines = tab === 'deadlines' && !view; v.isDl = view === 'dl'; v.isAlerts = view === 'alerts';
+    v.isLibrary = tab === 'library' && !view; v.isFile = view === 'file'; v.isMe = tab === 'me' && !view; v.isLang = view === 'lang'; v.isTone = view === 'tone';
+    const needsDrive = !(tab === 'me' && (!view || view === 'lang' || view === 'tone'));
+    v.showDriveOff = S.drive === 'off' && needsDrive; v.driveOn = S.drive === 'on'; v.driveOff = S.drive === 'off';
+    v.showLoading = !v.showDriveOff && S.load === 'loading'; v.showError = !v.showDriveOff && S.load === 'error'; v.showContent = !v.showDriveOff && S.load === 'ready';
+    v.loadMo = S.loadLong ? 'longwait' : 'pending'; v.loadArtHide = S.loadReveal ? '' : 'hide'; v.loadText = S.loadLong ? T.longWait : T.loading;
+    v.retryLoad = () => this.load();
+    v.scrollFull = '';
+    v.showFab = v.showContent && v.isToday;
+    v.reconPending = S.pend.recon === 'pending'; v.reconLabel = v.reconPending ? T.saving : T.reconnect;
+    v.reconnect = () => this.op('recon', null, () => { this.setState({ drive: 'on' }); this.toast(T.tRecon); this.load(); });
+
+    // nav
+    const NAV = [['today', '/_blob/a4153b6be5eceba48d0398055f541b8b', T.navToday], ['deadlines', '/_blob/dd2cee13694052ac847584fbb4eedfab', T.navDl], ['library', '/_blob/a94c5a1070ce2a4d13a008b6499d1d6d', T.navLib], ['me', '/_blob/17c363473f9d8f80cc1a3bca146dc366', T.navMe]];
+    v.nav = NAV.map((n) => ({ icon: n[1], label: n[2], on: tab === n[0] ? 'on' : '', cur: tab === n[0] ? 'page' : 'false', pick: () => this.goTab(n[0]) }));
+    v.goMe = () => this.goTab('me'); v.goDeadlines = () => this.setState({ tab: 'deadlines', view: null }); v.goLibrary = () => this.setState({ tab: 'library', view: null });
+
+    // today
+    v.segPlanOn = S.remTab === 'planner' ? 'on' : ''; v.segRemOn = S.remTab === 'reminders' ? 'on' : ''; v.segPlanSel = S.remTab === 'planner' ? 'true' : 'false'; v.segRemSel = S.remTab === 'reminders' ? 'true' : 'false';
+    v.isPlanner = S.remTab === 'planner'; v.isRemList = S.remTab === 'reminders';
+    v.showPlanner = () => this.setState({ remTab: 'planner' });
+    v.showRemList = () => this.setState({ tab: 'today', view: null, remTab: 'reminders', form: null });
+    const sel = S.sel; v.selIsToday = sel === this.TODAY; v.notToday = sel !== this.TODAY;
+    const up = []; for (let i = 0; i < 3; i++) { const k = this.add(this.TODAY, i); const it = this.dayItems(k);
+      it.dls.filter((d) => this.bucket(d) === 'open').forEach((d) => up.push({ k: k + '0', day: this.rel(k), when: T.allDay, title: d.title, icon: '/_blob/dd2cee13694052ac847584fbb4eedfab', kind: 'Deadline · ' + this.noteText(d), cls: 'd ' + this.dlState(d).tone, cd: this.cd(d), cdCls: this.dlState(d).tone }));
+      it.rems.forEach((r) => { const hm = this.bkk(r.at).hm; if (this.utc(k, hm) > this.NOW && !r.fired) up.push({ k: k + '1' + hm, day: this.rel(k), when: hm, title: r.text, icon: '/_blob/a84939201176e91b36c1ffb3c5bd508f', kind: T.remKind + (r.repeat !== 'none' ? ' · ' + this.repSum(r).split(en ? ' at ' : ' เวลา ')[0] : ''), cls: 'r', cd: '', cdCls: '' }); });
+      it.evs.forEach((e) => { const hm = this.bkk(e.start).hm; up.push({ k: k + '1' + hm, day: this.rel(k), when: hm, title: e.title, icon: '/_blob/a4153b6be5eceba48d0398055f541b8b', kind: T.evKind, cls: 'e', cd: '', cdCls: '' }); }); }
+    v.upNext = up.sort((a, b) => (a.k < b.k ? -1 : 1)).slice(0, 3);
+    const dw = (this.dow(sel) + 6) % 7; const start = this.add(sel, -dw); const selP = this.parse(sel);
+    v.week = Array.from({ length: 7 }, (_, i) => { const k = this.add(start, i); const it = this.dayItems(k); const p = this.parse(k);
+      return { dw: this.fd(k, 'dw'), dn: p.d, on: k === sel ? 'true' : 'false', cls: (k === sel ? 'on ' : '') + (k === this.TODAY ? 'today ' : '') + (p.m !== selP.m ? 'out' : ''), r: it.rems.length > 0, dl: it.dls.length > 0, e: it.evs.length > 0, f: it.saved.length > 0,
+        aria: this.fd(k) + (k === this.TODAY ? ' (' + T.today + ')' : '') + ': ' + T.lgRem + ' ' + it.rems.length + ', Deadline ' + it.dls.length, pick: () => this.setState({ sel: k }) }; });
+    const endP = this.parse(this.add(start, 6)); const stP = this.parse(start);
+    v.weekTitle = stP.m === endP.m ? this.fd(start, 'my') : this.fd(start, 'mon') + ' ' + (en ? stP.y : stP.y + 543) + ' – ' + this.fd(this.add(start, 6), 'mon') + ' ' + (en ? endP.y : endP.y + 543);
+    v.prevWeek = () => this.setState({ sel: this.add(sel, -7) }); v.nextWeek = () => this.setState({ sel: this.add(sel, 7) }); v.backToday = () => this.setState({ sel: this.TODAY });
+    v.dayHeading = this.fd(sel, 'full') + (sel === this.TODAY ? ' (' + T.today + ')' : sel === this.add(this.TODAY, 1) ? ' (' + T.tomorrow + ')' : '');
+    const it = this.dayItems(sel);
+    v.dayDl = it.dls.map((d) => ({ title: d.title, tone: this.dlState(d).tone, kind: 'Deadline · ' + this.noteText(d), open: () => this.setState({ tab: 'deadlines', view: 'dl', dlId: d.id }) }));
+    v.dayRem = it.rems.map((r) => { const hm = this.bkk(r.at).hm; const past = this.utc(sel, hm) <= this.NOW; return { hm: hm, text: r.text, kind: T.remKind + (r.repeat !== 'none' ? ' · ' + this.repSum(r).split(en ? ' at ' : ' เวลา ')[0] : '') + (r.fired ? ' · ' + T.fired : past ? ' · ' + T.past : '') }; }).sort((a, b) => (a.hm < b.hm ? -1 : 1));
+    v.dayRemCount = it.rems.length; v.dayRemEmpty = it.rems.length === 0;
+    const whenTxt = sel === this.TODAY ? (en ? 'today' : 'วันนี้') : (en ? 'on ' + this.fd(sel, 'dm') : 'วันที่ ' + this.fd(sel, 'dm'));
+    v.dayEmptyTitle = en ? 'No reminders ' + whenTxt + ' yet' : 'ยังไม่มีรายการเตือนสำหรับ' + whenTxt;
+    v.dayCanAdd = sel >= this.TODAY; v.dayAddLabel = en ? 'Set a reminder ' + (sel === this.TODAY ? 'for today' : 'for ' + this.fd(sel, 'dm')) : 'ตั้งเตือน' + whenTxt;
+    v.addForDay = () => this.setState({ view: 'editor', form: this.newForm('new', null, { day: sel }), pend: Object.assign({}, S.pend, { saveRem: null }) });
+    v.dayEv = it.evs.map((e) => ({ hm: this.bkk(e.start).hm + '–' + this.bkk(e.end).hm, title: e.title }));
+    v.nbOpen = S.nbOpen; v.toggleNb = () => this.setState({ nbOpen: !S.nbOpen });
+    v.nbTitle = en ? 'Saved ' + whenTxt : 'เก็บไว้' + whenTxt; v.nbCount = en ? it.saved.length + ' items' : it.saved.length + ' รายการ';
+    v.daySaved = it.saved.map((x) => ({ name: x.name || x.title || x.text, icon: x.text ? '/_blob/17e1f7b45c72467f4a0d50a2e1a97c58' : x.host ? '/_blob/ecd80836901f5bc6690402dcd2052e36' : '/_blob/ef37c8d59f09327ba30e522f95a91a9a', meta: x.text ? T.memTab : x.host ? x.host : (x.cap || T.filesTab) }));
+    v.daySavedEmpty = it.saved.length === 0; v.nbEmpty = en ? 'Nothing saved ' + whenTxt : whenTxt + 'ยังไม่ได้เก็บอะไร';
+    // month overlay
+    v.monthOn = !!S.month; v.openMonth = () => this.setState({ month: { y: selP.y, m: selP.m } }); v.closeMonth = () => this.setState({ month: null });
+    if (S.month) { const y = S.month.y, m = S.month.m; v.monthTitle = this.fd(this.key(y, m, 1), 'my'); const first = this.key(y, m, 1); const lead = (this.dow(first) + 6) % 7; const gs = this.add(first, -lead);
+      v.monthCells = Array.from({ length: 42 }, (_, i) => { const k = this.add(gs, i); const p = this.parse(k); const di = this.dayItems(k); return { d: p.d, cls: (p.m !== m ? 'out ' : '') + (k === this.TODAY ? 'today ' : '') + (k === sel ? 'on' : ''), on: k === sel ? 'true' : 'false', r: di.rems.length > 0, dl: di.dls.length > 0, f: di.saved.length > 0, aria: this.fd(k) + (k === this.TODAY ? ' (' + T.today + ')' : ''), pick: () => this.setState({ sel: k, month: null }) }; });
+      v.prevMonth = () => this.setState({ month: m === 1 ? { y: y - 1, m: 12 } : { y: y, m: m - 1 } }); v.nextMonth = () => this.setState({ month: m === 12 ? { y: y + 1, m: 1 } : { y: y, m: m + 1 } });
+    } else { v.monthCells = []; v.monthTitle = ''; }
+    v.dows = [1, 2, 3, 4, 5, 6, 0].map((i) => this.fd(this.add('2026-10-04', i), 'dw'));
+    v.monthToday = () => this.setState({ sel: this.TODAY, month: null });
+
+    // reminder manager
+    const act = D.reminders.filter((r) => !r.cancelled);
+    const lists = { upcoming: act.filter((r) => r.repeat === 'none' && !r.fired && r.at > this.NOW), repeat: act.filter((r) => r.repeat !== 'none'), done: act.filter((r) => r.fired) };
+    v.remCats = [['upcoming', T.cUp], ['repeat', T.cRep], ['done', T.cDone]].map((c) => ({ label: c[1], n: lists[c[0]].length, on: S.remCat === c[0] ? 'on' : '', sel: S.remCat === c[0] ? 'true' : 'false', pick: () => this.setState({ remCat: c[0] }) }));
+    v.remCatDone = S.remCat === 'done';
+    v.remList = lists[S.remCat].map((r) => { const n = this.nexts(r, 1)[0]; const b = this.bkk(n && n.iso ? n.iso : r.at); const w = this.warnFor(r);
+      return { text: r.text, hm: b.hm, day: this.rel(b.key), summary: this.repSum(r), next: r.repeat === 'none' ? '' : this.nextLine(r), warn: !!w, warnText: w, fired: !!r.fired, notFired: !r.fired, firedLabel: (en ? 'Due now · ' : 'ถึงเวลาแล้ว · ') + this.ft(this.bkk(r.at).hm),
+        done: () => this.op('done' + r.id, (d) => { d.reminders.find((x) => x.id === r.id).cancelled = true; }, () => this.toast(T.tDoneRem)),
+        snooze10: () => this.op('sn' + r.id, (d) => { const x = d.reminders.find((y) => y.id === r.id); x.at = new Date(new Date(this.NOW).getTime() + 6e5).toISOString(); x.fired = false; }, () => this.toast(T.tSnoozed + this.ft('13:01'))),
+        snooze60: () => this.op('sn' + r.id, (d) => { const x = d.reminders.find((y) => y.id === r.id); x.at = new Date(new Date(this.NOW).getTime() + 36e5).toISOString(); x.fired = false; }, () => this.toast(T.tSnoozed + this.ft('13:51'))),
+        change: () => this.setState({ view: 'editor', form: this.newForm('time', r), pend: Object.assign({}, this.state.pend, { saveRem: null }) }),
+        cancel: () => this.setState({ dlg: { type: 'cancel', id: r.id, text: r.text, repeat: r.repeat } }) }; });
+    v.remListEmpty = v.remList.length === 0; v.remEmptyTitle = S.remCat === 'upcoming' ? T.eUp : S.remCat === 'repeat' ? T.eRep : T.eDone;
+    v.newRem = () => this.setState({ view: 'editor', form: this.newForm('new'), tab: 'today', pend: Object.assign({}, S.pend, { saveRem: null }) });
+
+    // editor
+    const f = S.form || this.newForm('new'); const E = f.errors || {};
+    v.edIsNew = f.mode === 'new'; v.edIsTime = f.mode === 'time'; v.edTitle = f.mode === 'time' ? T.edTime : T.edNew;
+    v.edText = f.text; v.edDay = f.day; v.edHm = f.hm; v.edIsRepeat = f.mode === 'new' && f.isRepeat; v.edWeekly = v.edIsRepeat && f.repeat === 'weekly'; v.edMonthly = v.edIsRepeat && f.repeat === 'monthly';
+    v.edTextErr = !!E.text; v.edTextBad = E.text ? 'bad' : ''; v.edWhenErr = !!(E.when || E.past); v.edWhenBad = v.edWhenErr ? 'bad' : ''; v.edWhenErrText = E.past ? T.errPast : T.errWhen;
+    v.edHasErr = Object.keys(E).some((k) => E[k]); v.edPending = S.pend.saveRem === 'pending'; v.edFailed = S.pend.saveRem === 'error';
+    v.edSubmit = v.edPending ? T.saving : f.mode === 'time' ? T.submitTime : T.submit; v.edNlMsg = f.nlMsg || '';
+    const rep = f.mode === 'time' ? f.repeat : (f.isRepeat ? f.repeat : 'none');
+    const draft = f.day && f.hm ? { at: this.utc(f.day, f.hm), repeat: rep } : null;
+    v.edSumText = '“' + (f.text || '…') + '”'; v.edSumWhen = draft ? this.repSum(draft) : T.sumEmpty; v.edSumNext = draft && rep !== 'none' ? this.nextLine(draft) : (f.mode === 'time' ? (en ? 'Was: ' : 'เวลาเดิม: ') + this.fdt(f.orig.at) : '');
+    v.onText = (e) => this.setForm({ text: e.target.value, errors: Object.assign({}, E, { text: false }) });
+    v.onDay = (e) => this.setForm({ day: e.target.value, errors: Object.assign({}, E, { when: false, past: false }) });
+    v.onHm = (e) => this.setForm({ hm: e.target.value, errors: Object.assign({}, E, { when: false, past: false }) });
+    v.edDayChips = [[this.TODAY, T.today], [this.add(this.TODAY, 1), T.tomorrow]].map((c) => ({ label: c[1], on: f.day === c[0] ? 'on' : '', sel: f.day === c[0] ? 'true' : 'false', pick: () => this.setForm({ day: c[0], errors: Object.assign({}, E, { when: false, past: false }) }) }));
+    v.edHmChips = ['09:00', '12:00', '18:00', '20:00'].map((h) => ({ label: this.ft(h), on: f.hm === h ? 'on' : '', sel: f.hm === h ? 'true' : 'false', pick: () => this.setForm({ hm: h, errors: Object.assign({}, E, { when: false, past: false }) }) }));
+    v.edOnceOn = f.isRepeat ? '' : 'on'; v.edRepOn = f.isRepeat ? 'on' : ''; v.edOnceSel = f.isRepeat ? 'false' : 'true'; v.edRepSel = f.isRepeat ? 'true' : 'false';
+    v.setOnce = () => this.setForm({ isRepeat: false }); v.setRepeat = () => this.setForm({ isRepeat: true });
+    const wdN = f.day ? this.fd(f.day, 'full').split(en ? ' ' : 'ที่')[0].replace('วัน', '') : '—'; const dN = f.day ? this.parse(f.day).d : '—';
+    v.edFreqs = [['daily', T.daily, en ? 'Same time every day' : 'เวลาเดิมทุกวัน'], ['weekly', T.weekly, f.day ? (en ? 'Every ' + wdN : 'ทุกวัน' + wdN + ' ตามวันที่เลือก') : '—'], ['monthly', T.monthly, f.day ? (en ? 'Day ' + dN + ' of every month' : 'ทุกวันที่ ' + dN + ' ของเดือน') : '—'], ['yearly', T.yearly, f.day ? (en ? 'Every year on ' + this.fd(f.day, 'dm') : 'ทุกวันที่ ' + this.fd(f.day, 'dm') + ' ของทุกปี') : '—']]
+      .map((x) => ({ label: x[1], sub: x[2], on: f.repeat === x[0] ? 'on' : '', sel: f.repeat === x[0], pick: () => this.setForm({ repeat: x[0] }) }));
+    v.nlEx = [
+      { text: en ? 'tomorrow 9am send the documents' : 'พรุ่งนี้ 9 โมง เตือนส่งเอกสาร', pick: () => this.setForm({ text: en ? 'send the documents' : 'ส่งเอกสาร', day: this.add(this.TODAY, 1), hm: '09:00', isRepeat: false, amb: null, nlMsg: T.nlFilled, errors: {} }) },
+      { text: en ? 'remind me to call mom at 2' : 'เตือนโทรหาแม่ 2 โมง', pick: () => this.setForm({ text: en ? 'call mom' : 'โทรหาแม่', day: this.add(this.TODAY, 1), hm: '', isRepeat: false, amb: { word: en ? 'at 2' : '2 โมง', opts: [['08:00', en ? 'morning' : 'สองโมงเช้า'], ['14:00', en ? 'afternoon' : 'บ่ายสองโมง']], chosen: null }, nlMsg: T.nlFilled, errors: {} }) },
+      { text: en ? 'every day 9pm take medicine' : 'กินยา ทุกวัน 3 ทุ่ม', pick: () => this.setForm({ text: en ? 'take medicine' : 'กินยา', day: this.TODAY, hm: '21:00', isRepeat: true, repeat: 'daily', amb: null, nlMsg: T.nlFilled, errors: {} }) },
+    ];
+    v.edAmb = !!f.amb; v.edAmbQ = f.amb ? (en ? 'When is “' + f.amb.word + '”?' : '“' + f.amb.word + '” หมายถึงตอนไหน') : ''; v.edAmbErr = !!E.amb;
+    v.edAmbOpts = f.amb ? f.amb.opts.map((o) => ({ label: this.ft(o[0]), sub: o[1], on: f.amb.chosen === o[0] ? 'on' : '', sel: f.amb.chosen === o[0], pick: () => this.setForm({ hm: o[0], amb: Object.assign({}, f.amb, { chosen: o[0] }), errors: Object.assign({}, E, { amb: false, when: false }) }) })) : [];
+    v.leaveEditor = () => { const back = () => this.setState({ view: null, form: null, tab: 'today', remTab: 'reminders' }); if (f.dirty) this.setState({ dlg: { type: 'leave', then: back } }); else back(); };
+    v.saveRem = () => { const er = {}; if (!f.text.trim()) er.text = true; if (!f.day || !f.hm) er.when = true; else if (this.utc(f.day, f.hm) <= this.NOW) er.past = true; if (f.amb && !f.amb.chosen) er.amb = true;
+      if (Object.keys(er).length) { this.setState({ form: Object.assign({}, f, { errors: er }) }); return; }
+      const idem = f.idem; const at = this.utc(f.day, f.hm);
+      this.op('saveRem', (d) => { if ((this.saved || {})[idem]) return; this.saved = Object.assign({}, this.saved, { [idem]: true }); if (f.mode === 'time') { const x = d.reminders.find((y) => y.id === f.id); x.at = at; x.fired = false; } else d.reminders.push({ id: 'n' + Date.now(), text: f.text.trim(), at: at, repeat: rep }); },
+        () => this.setState({ view: 'done', done: { mode: f.mode, text: f.text.trim(), at: at, repeat: rep }, form: null, pend: Object.assign({}, this.state.pend, { saveRem: null }) }), () => {}); };
+    const dn = S.done || { mode: 'new', text: '', at: this.NOW, repeat: 'none' };
+    v.doneTitle = dn.mode === 'time' ? T.okTime : T.okTitle; v.doneBody = en ? 'I\'ll remind you “' + dn.text + '” ' + this.fdt(dn.at) + ' in your chat with JaiJa.' : 'จะเตือน “' + dn.text + '” ' + this.fdt(dn.at) + ' ในแชตกับ JaiJa'; v.doneSummary = this.repSum(dn);
+
+    // deadlines
+    const dls = D.deadlines.filter((d) => !d.deleted); const cnt = { open: 0, applied: 0, closed: 0, all: dls.length }; dls.forEach((d) => cnt[this.bucket(d)]++);
+    v.dlFilters = [['open', T.fOpen], ['applied', T.fApplied], ['closed', T.fClosed], ['all', T.fAll]].map((c) => ({ label: c[1], n: cnt[c[0]], on: S.dlFilter === c[0] ? 'on' : '', sel: S.dlFilter === c[0] ? 'true' : 'false', pick: () => this.setState({ dlFilter: c[0] }) }));
+    const ord = { urgent: 0, soon: 1, later: 2, nodate: 3, closed: 4 }; const bo = { open: 0, applied: 1, closed: 2 };
+    const stubOf = (d) => { const s = this.dlState(d); const tone = d.applied ? 'applied' : s.tone; if (!d.deadline) return { stone: 'nodate', mark: '?', dd: '?', mm: en ? 'no date' : 'ไม่มีวัน' }; const p = this.parse(d.deadline); return { stone: tone, mark: tone === 'urgent' ? '!' : tone === 'soon' ? '!' : tone === 'applied' ? '✓' : tone === 'closed' ? '×' : '', dd: p.d, mm: this.fd(d.deadline, 'mon') + ' ' + String(en ? p.y : p.y + 543).slice(-2) }; };
+    v.dlList = dls.filter((d) => S.dlFilter === 'all' || this.bucket(d) === S.dlFilter).sort((a, b) => { const x = bo[this.bucket(a)] - bo[this.bucket(b)]; if (x) return x; const y = ord[this.dlState(a).tone] - ord[this.dlState(b).tone]; if (y) return y; return (a.deadline || '9') < (b.deadline || '9') ? -1 : 1; })
+      .map((d) => { const st = stubOf(d); const b = this.bucket(d); return Object.assign({}, st, { title: d.title, kind: this.kindName(d.kind), merged: !!d.merged, mergedLabel: en ? '2 sources merged' : 'รวม 2 แหล่ง', cd: this.cd(d), tone: d.applied ? 'later' : this.dlState(d).tone, flat: b !== 'open' ? 'flat' : '', close: d.deadline ? (en ? 'Closes ' : 'ปิดรับ ') + this.fd(d.deadline) + ' · ' + this.noteText(d) : (en ? 'Send the date in the chat' : 'ส่งวันที่มาในแชตได้'),
+        open: () => this.setState({ view: 'dl', dlId: d.id }), priLabel: d.link && b === 'open' ? T.openLink : T.view, priCls: d.link && b === 'open' ? 'pri' : '', primary: d.link && b === 'open' ? () => this.toast(en ? 'Prototype: opens example.org/apply' : 'ต้นแบบ: จะเปิด example.org/apply') : () => this.setState({ view: 'dl', dlId: d.id }) }); });
+    v.dlEmpty = v.dlList.length === 0; v.dlEmptyTitle = en ? 'Nothing here yet' : 'ยังไม่มีรายการในแท็บนี้';
+    const al = D.alerts; v.alertChip = al.days.length ? (en ? 'Alerts ' + al.days.filter((x) => x > 0).join('·') + ' days + closing day · ' + al.time : 'เตือนก่อน ' + al.days.filter((x) => x > 0).join('·') + ' วัน + วันปิด · ' + this.ft(al.time)) : (en ? 'Deadline alerts are off' : 'ปิดการเตือน Deadline อยู่');
+    v.goAlerts = () => this.setState({ tab: 'deadlines', view: 'alerts', alertDraft: { days: D.alerts.days.join(','), time: D.alerts.time } });
+    const dd = D.deadlines.find((x) => x.id === S.dlId) || D.deadlines[0]; const st = stubOf(dd); const dst = this.dlState(dd);
+    const sched = dd.deadline && !dd.applied ? (dd.alertDays || al.days).map((n) => { const iso = this.utc(this.add(dd.deadline, -n), al.time); return { n: n, iso: iso, past: iso <= this.NOW }; }).sort((a, b) => (a.iso < b.iso ? -1 : 1)) : [];
+    v.dd = Object.assign({}, st, { title: dd.title, kind: this.kindName(dd.kind), org: dd.org, date: dd.deadline ? this.fd(dd.deadline) : T.notGiven, note: dd.deadline ? this.noteText(dd) : (en ? 'No closing date was found. Send it in the chat.' : 'ไม่เจอวันปิดรับในต้นฉบับ ส่งวันที่มาในแชตได้'), cd: this.cd(dd), tone: dd.applied ? 'later' : dst.tone, hasEvent: !!dd.event, event: dd.event,
+      applied: !!dd.applied, canApply: !dd.applied && this.bucket(dd) === 'open', appliedWhen: dd.applied ? (en ? 'Applied ' : 'สมัครเมื่อ ') + this.fdt(dd.applied) : '', merged: !!dd.merged, mergeBody: en ? 'This was already saved, so I merged in the new details: link, eligibility' : 'งานนี้จดไว้แล้วนะ เลยรวมรายละเอียดใหม่ให้: ลิงก์, คุณสมบัติ',
+      alertMode: dd.applied ? (en ? 'Stopped' : 'หยุดแล้ว') : (en ? 'Using default' : 'ใช้ค่าเริ่มต้น'), alerts: sched.map((a) => ({ cls: a.past ? 'muted' : '', text: this.fdt(a.iso) + ' · ' + (a.n === 0 ? (en ? 'closing day' : 'วันปิดรับ') : (en ? a.n + ' days before' : a.n + ' วันก่อน')) + (a.past ? (en ? ' · past' : ' · ผ่านแล้ว') : '') })),
+      alertNote: dd.applied ? (en ? 'Alerts stopped because you marked it applied.' : 'หยุดเตือนแล้ว เพราะกดสมัครแล้ว') : !dd.deadline ? '' : sched.every((a) => a.past) ? (en ? 'No alerts left.' : 'ไม่มีการเตือนที่เหลือแล้ว') : '', timeNote: en ? 'Alert time ' + al.time + ' is shared by all items.' : 'เวลาเตือน ' + this.ft(al.time) + ' ใช้ค่ารวมของทุกงาน',
+      summary: dd.summary || T.notGiven, elig: dd.elig || T.notGiven, cost: dd.cost || T.notGiven, source: { pdf: en ? 'PDF in Drive' : 'ไฟล์ PDF ใน Drive', image: en ? 'Poster image in Drive' : 'รูปโปสเตอร์ใน Drive', link: en ? 'Link + poster image' : 'ลิงก์ + รูปโปสเตอร์', text: en ? 'Chat message' : 'ข้อความในแชต' }[dd.source] });
+    v.dlPend = S.pend['app' + dd.id] === 'pending';
+    v.dlApplyLabel = v.dlPend ? T.saving : T.apply; v.dlResumeLabel = v.dlPend ? T.saving : T.resume;
+    const resume = (id) => this.op('app' + id, (d) => { delete d.deadlines.find((x) => x.id === id).applied; }, () => this.toast(T.tResumed));
+    v.dlApply = () => { const id = dd.id; this.op('app' + id, (d) => { d.deadlines.find((x) => x.id === id).applied = this.NOW; }, () => this.toast(T.tApplied, T.resume, () => resume(id))); };
+    v.dlResume = () => resume(dd.id);
+    v.dlDelete = () => { const id = dd.id; this.op('del' + id, (d) => { d.deadlines.find((x) => x.id === id).deleted = true; }, () => { this.setState({ view: null }); this.toast(T.tDeleted, T.undo, () => this.op('rs' + id, (d) => { delete d.deadlines.find((x) => x.id === id).deleted; }, () => this.toast(T.tRestored))); }); };
+    v.askSplit = () => this.setState({ dlg: { type: 'split', id: dd.id } });
+
+    // alert settings
+    const ad = S.alertDraft || { days: al.days.join(','), time: al.time };
+    const PR = [['std', '7,3,1,0', T.std, en ? '7, 3, 1 days before + closing day' : '7, 3, 1 วันก่อน + วันปิดรับ'], ['early', '14,7,3,1,0', T.early, en ? '14, 7, 3, 1 days before + closing day' : '14, 7, 3, 1 วันก่อน + วันปิดรับ'], ['light', '3,1,0', T.light, en ? '3, 1 days before + closing day' : '3, 1 วันก่อน + วันปิดรับ'], ['off', '', T.off, T.offD]];
+    v.alPresets = PR.map((p) => ({ label: p[2], sub: p[3], on: ad.days === p[1] ? 'on' : '', sel: ad.days === p[1], pick: () => this.setState({ alertDraft: Object.assign({}, ad, { days: p[1] }) }) }));
+    v.alTimes = ['08:00', '09:00', '12:00', '20:00'].map((h) => ({ label: this.ft(h), on: ad.time === h ? 'on' : '', sel: ad.time === h ? 'true' : 'false', pick: () => this.setState({ alertDraft: Object.assign({}, ad, { time: h }) }) }));
+    const pdays = ad.days ? ad.days.split(',').map(Number) : [];
+    v.alPrevTitle = (en ? 'Example: an item closing ' : 'ตัวอย่าง: งานที่ปิด ') + this.fd('2026-10-21');
+    v.alPrev = pdays.length ? pdays.map((n) => this.fd(this.add('2026-10-21', -n)) + ' · ' + this.ft(ad.time) + ' · ' + (n === 0 ? (en ? 'closing day' : 'วันปิดรับ') : (en ? n + ' days before' : n + ' วันก่อน'))) : [en ? 'No alerts' : 'ไม่มีการเตือน'];
+    const alChanged = ad.days !== al.days.join(',') || ad.time !== al.time; const alPend = S.pend.alerts === 'pending';
+    v.alDisabled = !alChanged || alPend; v.alSaveLabel = alPend ? T.saving : alChanged ? T.save : T.unchanged;
+    v.saveAlerts = () => this.op('alerts', (d) => { d.alerts = { days: pdays, time: ad.time }; }, () => { this.toast(T.tAlerts); this.setState({ view: null, tab: 'deadlines' }); });
+
+    // library
+    const ctx = S.libCtx; v.ctxMeOn = ctx === 'personal' ? 'on' : ''; v.ctxGrOn = ctx === 'group' ? 'on' : ''; v.ctxMeSel = ctx === 'personal' ? 'true' : 'false'; v.ctxGrSel = ctx === 'group' ? 'true' : 'false';
+    v.ctxMe = () => this.setState({ libCtx: 'personal' }); v.ctxGr = () => this.setState({ libCtx: 'group' });
+    v.ownerLine = ctx === 'personal' ? (en ? 'Stored in your Google Drive · j***@gmail.com › My Drive › LineArchive' : 'เก็บใน Google Drive ของคุณ · j***@gmail.com › My Drive › LineArchive') : (en ? "This group's files live in the host's Drive (Jai) · LineArchive › Groups › กลุ่ม 5 ซิปๆ · personal items never appear here" : 'ไฟล์กลุ่มนี้เก็บใน Drive ของผู้ดูแลกลุ่ม (Jai) · LineArchive › Groups › กลุ่ม 5 ซิปๆ · ไม่เอาของส่วนตัวมาปน');
+    v.aiBusy = S.ai === 'busy'; v.q = S.q;
+    v.onQ = (e) => { const q = e.target.value; this.setState({ q: q }); clearTimeout(this.timers.q); clearTimeout(this.timers.qdone); const id = ++this.seq; this.qId = id;
+      if (!q.trim()) { this.setState({ qApplied: '', searching: false }); return; }
+      this.timers.q = setTimeout(() => { this.setState({ searching: true }); this.timers.qdone = setTimeout(() => { if (this.qId !== id) return; if (this.state.net === 'fail') { this.setState({ searching: false }); this.toast(T.errLoad); return; } this.setState({ searching: false, qApplied: q.trim() }); }, this.dur('op')); }, 350); };
+    const qa = S.qApplied.toLowerCase(); const m = (s) => !qa || s.toLowerCase().indexOf(qa) >= 0;
+    const files = D.files.filter((x) => x.ctx === ctx), links = D.links.filter((x) => x.ctx === ctx), mems = D.memories.filter((x) => x.ctx === ctx);
+    v.libTabs = [['files', T.filesTab, files.length], ['links', T.linksTab, links.length], ['memory', T.memTab, mems.length]].map((c) => ({ label: c[1], n: c[2], on: S.libTab === c[0] ? 'on' : '', sel: S.libTab === c[0] ? 'true' : 'false', pick: () => this.setState({ libTab: c[0] }) }));
+    v.libIsFiles = S.libTab === 'files'; v.viewListOn = S.libView === 'list' ? 'on' : ''; v.viewGalOn = S.libView === 'gallery' ? 'on' : ''; v.viewListSel = S.libView === 'list' ? 'true' : 'false'; v.viewGalSel = S.libView === 'gallery' ? 'true' : 'false';
+    v.viewList = () => this.setState({ libView: 'list' }); v.viewGal = () => this.setState({ libView: 'gallery' });
+    const KN = { image: en ? 'Image' : 'รูปภาพ', pdf: 'PDF', doc: en ? 'Word document' : 'เอกสาร Word' }; const KI = { image: '/_blob/ef37c8d59f09327ba30e522f95a91a9a', pdf: '/_blob/2b25d57670af88c76cace1c5478c6ae2', doc: '/_blob/c379d0a95699934f80cf638c997d055d' };
+    let items = [];
+    if (S.libTab === 'files') items = files.filter((x) => m(x.name + ' ' + x.cap + ' ' + x.tags)).map((x) => ({ name: x.name, icon: x.kind === 'image' ? x.img : KI[x.kind], icoCls: x.kind === 'image' ? 'ib' : 'is', meta: KN[x.kind] + ' · ' + (en ? 'Saved ' : 'เก็บเมื่อ ') + this.fd(x.day, 'dm') + (x.by ? ' · ' + (en ? 'sent by ' : 'ส่งโดย ') + x.by : ''), big: x.img, cap: x.cap || x.name, day: this.fd(x.day, 'dm'), btnCls: 'pri', actLabel: T.openDrive, act: () => this.toast(T.tDrive), open: () => this.setState({ view: 'file', fileId: x.id }) }));
+    if (S.libTab === 'links') items = links.filter((x) => m(x.title + ' ' + x.host)).map((x) => ({ name: x.title, icon: '/_blob/ecd80836901f5bc6690402dcd2052e36', icoCls: 'is', meta: x.host + ' · ' + (en ? 'Saved ' : 'เก็บเมื่อ ') + this.fd(x.day, 'dm'), btnCls: 'pri', actLabel: T.openL, act: () => this.toast(en ? 'Prototype: opens ' + x.host : 'ต้นแบบ: จะเปิด ' + x.host), open: () => this.toast(en ? 'Prototype: opens ' + x.host : 'ต้นแบบ: จะเปิด ' + x.host), big: '', cap: '', day: '' }));
+    if (S.libTab === 'memory') items = mems.filter((x) => m(x.text)).map((x) => ({ name: x.text, icon: '/_blob/17e1f7b45c72467f4a0d50a2e1a97c58', icoCls: 'is', meta: (en ? 'Remembered ' : 'จำไว้เมื่อ ') + this.fdt(x.at), btnCls: 'dan', actLabel: T.forget, act: () => this.op('fg' + x.id, (d) => { d.memories = d.memories.filter((y) => y.id !== x.id); }, () => this.toast(T.tForgot)), open: () => {}, big: '', cap: '', day: '' }));
+    v.libItems = items; v.showList = !S.searching && items.length > 0 && !(S.libTab === 'files' && S.libView === 'gallery'); v.showGal = !S.searching && items.length > 0 && S.libTab === 'files' && S.libView === 'gallery';
+    v.searching = S.searching; v.qResultLine = !!S.qApplied && !S.searching; v.qResultText = en ? items.length + ' results for “' + S.qApplied + '”' : 'เจอ ' + items.length + ' รายการสำหรับ “' + S.qApplied + '”';
+    v.libEmpty = !S.searching && items.length === 0; v.libEmptyTitle = S.qApplied ? (en ? 'No match. Try another word or date.' : 'ยังไม่เจอ ลองเปลี่ยนคำค้นหรือวันที่นะ') : (en ? 'Nothing here yet' : 'ยังไม่มีอะไรในคลังนี้'); v.libEmptyEx = !S.qApplied; v.libEmptyExText = en ? 'Send photos, files or links in the chat. JaiJa saves them to Drive.' : 'ส่งรูป ไฟล์ หรือลิงก์มาในแชต JaiJa เก็บลง Drive ให้';
+    const fl = D.files.find((x) => x.id === S.fileId) || D.files[0];
+    v.fd = { name: fl.name, big: fl.img, where: (fl.ctx === 'group' ? 'Jai › My Drive › LineArchive › Groups › กลุ่ม 5 ซิปๆ › ' : 'j***@gmail.com › My Drive › LineArchive › ') + fl.day, day: this.fd(fl.day), kind: KN[fl.kind], cap: fl.cap || T.noCap };
+    v.openDrive = () => this.toast(T.tDrive);
+
+    // me
+    v.driveTag = S.drive === 'on' ? T.connected : T.disconnected; v.driveTagCls = S.drive === 'on' ? '' : 'u';
+    const c2 = { f: D.files.filter((x) => x.ctx === 'personal').length, l: D.links.filter((x) => x.ctx === 'personal').length, m: D.memories.filter((x) => x.ctx === 'personal').length, r: D.reminders.filter((x) => !x.cancelled && !x.fired).length };
+    v.stats = [[c2.f, T.filesTab], [c2.l, T.linksTab], [c2.m, T.memTab], [c2.r, en ? 'Active reminders' : 'เตือนที่ทำงานอยู่'], [cnt.open, (en ? 'Open deadlines · ' : 'Deadline เปิดอยู่ · ') + (en ? cnt.applied + ' applied, ' + cnt.closed + ' closed' : 'สมัครแล้ว ' + cnt.applied + ' · ปิดแล้ว ' + cnt.closed)]].map((s) => ({ n: s[0], label: s[1] }));
+    const busy = S.ai === 'busy'; v.aiBar = busy ? 'w100' : 'w70'; v.aiLeft = busy ? (en ? 'Used up today' : 'เต็มแล้ววันนี้') : (en ? '6 left' : 'เหลือ 6'); v.aiUsedText = busy ? (en ? '20 of 20 used' : 'ใช้ไป 20 จาก 20') : (en ? '14 of 20 used' : 'ใช้ไป 14 จาก 20');
+    v.aiLiteText = busy ? (en ? 'Used up today' : 'เต็มแล้ววันนี้') : (en ? '3 used · limit not known yet' : 'ใช้ไป 3 · ยังไม่รู้ลิมิต'); v.aiReset = en ? 'Resets today 14:00' : 'รีเซ็ตวันนี้ 14:00 น.';
+    v.langName = en ? 'English' : 'ไทย'; v.toneName = D.tone === 'friend' ? T.toneFr : T.tonePol;
+    v.goLang = () => this.setState({ view: 'lang' }); v.goTone = () => this.setState({ view: 'tone', toneDraft: D.tone });
+    v.simNets = [['normal', T.nNormal], ['slow', T.nSlow], ['very', T.nVery], ['fail', T.nFail]].map((c) => ({ label: c[1], on: S.net === c[0] ? 'on' : '', sel: S.net === c[0] ? 'true' : 'false', pick: () => this.setState({ net: c[0] }) }));
+    v.aiChipOn = busy ? 'on' : ''; v.toggleAi = () => this.setState({ ai: busy ? 'ok' : 'busy' }); v.replayWelcome = () => this.setState({ welcome: true });
+    v.askDisconnect = () => this.setState({ dlg: { type: 'disconnect' } });
+    v.langPending = S.pend.lang === 'pending';
+    const saveLang = (l) => { if (l === S.lang) return; this.op('lang', null, () => { this.setState({ lang: l }); this.persistLang(l); this.later('tl', () => this.toast(this.T().tLang), 0); }); };
+    v.saveTh = () => saveLang('th'); v.saveEn = () => saveLang('en');
+    const td = S.toneDraft || D.tone; v.tonePolOn = td === 'polite' ? 'on' : ''; v.toneFrOn = td === 'friend' ? 'on' : ''; v.tonePolSel = td === 'polite'; v.toneFrSel = td === 'friend';
+    v.pickPolite = () => this.setState({ toneDraft: 'polite' }); v.pickFriend = () => this.setState({ toneDraft: 'friend' });
+    v.toneSample = td === 'friend' ? T.sampleFr : T.samplePol; const tChanged = td !== D.tone; const tPend = S.pend.tone === 'pending';
+    v.toneDisabled = !tChanged || tPend; v.toneSaveLabel = tPend ? T.saving : tChanged ? T.save : T.unchanged;
+    v.saveTone = () => this.op('tone', (d) => { d.tone = td; }, () => this.toast(T.tTone));
+
+    // toast + dialog
+    v.toastOn = !!S.toast; v.toastText = S.toast ? S.toast.text : ''; v.toastHasAct = !!(S.toast && S.toast.act); v.toastActLabel = S.toast ? S.toast.actLabel : '';
+    v.toastAct = () => { const a = S.toast && S.toast.act; this.setState({ toast: null }); a && a(); };
+    const g = S.dlg; v.dlgOn = !!g; v.dlgPending = false; v.dlgYesCls = 'dan';
+    v.dlgNo = () => this.setState({ dlg: null });
+    v.dlgKey = (e) => { if (e.key === 'Escape') this.setState({ dlg: null }); };
+    v.monthKey = (e) => { if (e.key === 'Escape') this.setState({ month: null }); };
+    if (g && g.type === 'cancel') { v.dlgTitle = en ? 'Cancel “' + g.text + '”?' : 'ยกเลิกการเตือน “' + g.text + '”?'; v.dlgBody = g.repeat === 'none' ? (en ? "You won't be reminded about this." : 'จะไม่เตือนเรื่องนี้อีก') : (en ? 'All future repeats will stop.' : 'การเตือนที่ทำซ้ำจะหยุดทุกครั้งต่อจากนี้'); v.dlgNoLabel = T.cancelNo; v.dlgYesLabel = T.cancelYes; v.dlgPending = S.pend['c' + g.id] === 'pending';
+      v.dlgYes = () => this.op('c' + g.id, (d) => { d.reminders.find((x) => x.id === g.id).cancelled = true; }, () => { this.setState({ dlg: null }); this.toast(T.tCancelled); }); }
+    if (g && g.type === 'split') { v.dlgTitle = T.splitTitle; v.dlgBody = T.splitBody; v.dlgNoLabel = T.cancelL; v.dlgYesLabel = T.splitYes; v.dlgYesCls = 'pri'; v.dlgPending = S.pend.split === 'pending';
+      v.dlgYes = () => this.op('split', (d) => { const x = d.deadlines.find((y) => y.id === g.id); x.merged = false; d.deadlines.push(Object.assign({}, x, { id: x.id + 's', title: x.title + (en ? ' (split)' : ' (แยกออกมา)'), merged: false, source: 'image' })); }, () => { this.setState({ dlg: null }); this.toast(T.tSplit, en ? 'View' : 'ดู', () => this.setState({ view: 'dl', dlId: g.id + 's' })); }); }
+    if (g && g.type === 'disconnect') { v.dlgTitle = T.discTitle; v.dlgBody = T.discBody; v.dlgNoLabel = T.cancelL; v.dlgYesLabel = T.discYes; v.dlgPending = S.pend.disc === 'pending';
+      v.dlgYes = () => this.op('disc', null, () => { this.setState({ dlg: null, drive: 'off' }); this.toast(T.tDisc); }); }
+    if (g && g.type === 'leave') { v.dlgTitle = T.leaveTitle; v.dlgBody = T.leaveBody; v.dlgNoLabel = T.leaveNo; v.dlgYesLabel = T.leaveYes; v.dlgYes = () => { const th = g.then; this.setState({ dlg: null, form: null, view: null }); th && setTimeout(th, 0); }; }
+    if (!g) { v.dlgTitle = ''; v.dlgBody = ''; v.dlgNoLabel = ''; v.dlgYesLabel = ''; v.dlgYes = () => {}; }
+    return v;
+  }
+}
+</script>
+</body>
+</html>

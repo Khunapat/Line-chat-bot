@@ -23,8 +23,17 @@ A LINE Official Account that works like a friend-plus-secretary in one chat:
 | menu **ไฟล์/รูป** | recent files plus a link to the **gallery**: a private calendar page served by the bot, one tap per day to see that day's photos and files as thumbnails, with search. Links expire after 24 hours |
 | anything else | chats back in casual Thai (or English if you write English) |
 
-A rich menu at the bottom of the chat gives one-tap access to
-**แจ้งเตือน · Deadline · ไฟล์/รูป · ตั้งค่า**, plus a mascot banner that shows the help text.
+A rich menu at the bottom of the chat (Thai, or English for people who
+choose English) leads with **ตั้งเตือน**, then **สิ่งที่จำไว้ · แกลเลอรี** and
+**แจ้งเตือน · Deadline · ไฟล์/รูป · ของฉัน**.
+
+**JaiJa web app** (`/app`, opened as a LIFF app inside LINE): วันนี้ (planner
+with week strip and month view, reminders, deadlines, Calendar events, what
+was saved each day), the reminder manager and editor, Deadlines (detail,
+applied, alerts, split, delete/undo), คลัง (files, links and remembered
+facts, personal or a group you belong to) and ของฉัน (account, counts, shared
+AI usage, language ไทย/English, chat tone). Sign-in is checked with LINE on
+the server. See `docs/canvas-implementation-handoff.md`.
 
 Everything lives in **your own Google Drive**, nothing expires, and only your
 LINE user ID is allowed to talk to the bot.
@@ -71,7 +80,12 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `src/tenants.js`, `src/oauth.js` – one Drive per person or group; the "connect your Drive" flow.
 * `src/flex.js` – the beige cards with olive buttons.
 * `scripts/get-refresh-token.js` – one-time Google OAuth (Drive + Calendar scopes).
-* `scripts/setup-rich-menu.js` + `assets/richmenu.png` – the bottom menu.
+* `src/appApi.js`, `src/appAuth.js`, `src/webApp.js`, `web/app/` – the web app: LINE-verified sessions, the JSON API, the static page.
+* `web/shared/` – `i18n.js` (every Thai/English string for app and bot), `dates.js`, `recurrence.js`; used by server and browser alike.
+* `src/lang.js`, `src/prefs.js` – the language of the chat being handled; per-person language and tone.
+* `scripts/setup-rich-menu.js` + `assets/richmenu.{th,en}.png` + `assets/richmenu-areas.{th,en}.json` – the bottom menus (source: `assets/richmenu-src/richmenu.html`, `npm run richmenu-image`).
+* `scripts/preview-app.mjs`, `scripts/verify-app.mjs` – local preview of the web app with fictional data, and browser checks against it.
+* `design/` – the Claude Design canvas source (31 boards) and its assets.
 
 The chat brain needs one API key. **Gemini** is free for personal use: get a
 key at <https://aistudio.google.com/apikey> and set `GEMINI_API_KEY`. Or set
@@ -231,8 +245,21 @@ every other reply the bot sends uses free reply tokens.
 LINE_CHANNEL_ACCESS_TOKEN=... npm run rich-menu
 ```
 
-Uploads `assets/richmenu.png` and sets it as the default menu. To change the
-artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
+Uploads the Thai and English menus, names them with the aliases the bot uses
+to switch a person's menu when they pick a language (`jaija-th`, `jaija-en`)
+and makes Thai the default. With `LIFF_ID` set, **ของฉัน** opens the web app.
+To change the artwork edit `assets/richmenu-src/richmenu.html`, run
+`npm run richmenu-image`, then upload again.
+
+### H. Web app (LIFF), optional
+
+1. In the LINE Developers Console, in the **same provider** as the Messaging
+   API channel (so user IDs match), create a **LINE Login** channel and add a
+   LIFF app: size Full, endpoint `https://<service>/app`, scopes `openid` and
+   `profile`.
+2. Set `LIFF_ID` on Cloud Run (the LINE Login channel id is its first part;
+   or set `LINE_LOGIN_CHANNEL_ID`). Optionally `APP_SESSION_SECRET`.
+3. Re-run `npm run rich-menu` so **ของฉัน** opens the app.
 
 ## Configuration
 
@@ -256,6 +283,10 @@ artwork, replace that file (2500×843 PNG, four equal columns) and re-run.
 | `AUTO_SCAN` | `always` (default): read every poster and link and record deadlines; `ask`: offer a button first; `off` |
 | `BOT_NAME` / `USER_NAME` | How the bot refers to itself and to you |
 | `CRON_SECRET` | Shared secret for `/cron/reminders` |
+| `LIFF_ID` | LIFF app id for the web app (`/app`). Optional; without it the app shows "not set up" |
+| `LINE_LOGIN_CHANNEL_ID` | LINE Login channel that issues LIFF ID tokens. Default: the first part of `LIFF_ID` |
+| `APP_SESSION_SECRET` | Signs web-app sessions. Optional; falls back to `GALLERY_SECRET` / `CRON_SECRET` |
+| `RICH_MENU_ALIAS_TH` / `RICH_MENU_ALIAS_EN` | Rich menu aliases (default `jaija-th` / `jaija-en`) |
 | `PORT` | Set by Cloud Run automatically |
 
 ## Running locally
@@ -266,6 +297,10 @@ npm install
 npm test
 node --env-file=.env src/index.js
 ```
+
+Preview the web app with fictional data and no external calls:
+`npm run preview` → <http://127.0.0.1:8090/app> (browser checks:
+`node scripts/verify-app.mjs`).
 
 Expose the port with a tunnel (`ngrok http 8080`) and point the LINE webhook
 URL at `https://<tunnel>/webhook`. Fire reminders by hand with
@@ -280,5 +315,6 @@ URL at `https://<tunnel>/webhook`. Fire reminders by hand with
 ## Not built yet
 
 * Group chats (reminders that tag friends, fetching files sent in a group).
-* Reminders from a photo of a schedule.
+* Reminders from a photo of a schedule (designed as a draft-and-confirm flow, not built).
+* Weekday multi-select repeats; editing a reminder's text from the web app.
 * To-do list view.

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Deadlines desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 14px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;font:600 14px/1.3 "Bai Jamjuree",sans-serif;white-space:nowrap;color:#3B3B3B}
+.sn{display:flex;gap:12px;align-items:center;min-height:48px;padding:6px 12px;border-radius:12px;text-decoration:none;color:#3B3B3B;font-weight:600}
+.sn img{width:26px;height:26px}
+.row{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding:12px;border:2px solid #3B3B3B;border-radius:14px;background:#FBF8F1;text-decoration:none;color:#3B3B3B}
+.stub{border:2px solid #3B3B3B;border-radius:12px;overflow:hidden;background:#FBF8F1;text-align:center}
+.stub .b{height:20px;border-bottom:2px solid #3B3B3B;display:flex;align-items:center;justify-content:center}
+.stub .d{font-size:20px;font-weight:700;line-height:1.2;padding-top:2px}
+.stub .m{font-size:12px;padding-bottom:4px}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px solid #3B3B3B;background:#DFE1D2;white-space:nowrap}
+dt{color:#686458;font-size:14px}dd{margin:0}
+p,h1,h2,h3,dl{margin:0}
+</style>
+</helmet>
+<div style="width:1280px;height:960px;box-sizing:border-box;display:grid;grid-template-columns:248px 1fr;background:#F4EFE4;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6">
+  <nav aria-label="เมนูหลัก" style="display:flex;flex-direction:column;gap:6px;padding:20px 14px;border-right:2px solid #3B3B3B;background:#FBF8F1">
+    <div style="display:flex;gap:10px;align-items:center;padding:4px 8px 16px;font-weight:700;font-size:22px"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:44px;height:44px;border-radius:50%;border:2px solid #3B3B3B">Jai<span style="color:#8B9270;margin-left:-10px">Ja</span></div>
+    <a class="sn" href="TodayDesktop.dc.html"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">วันนี้</a>
+    <a class="sn" href="DeadlinesDesktop.dc.html" aria-current="page" style="background:#DFE1D2;box-shadow:inset 4px 0 0 #62694D"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadline</a>
+    <a class="sn" href="Library.dc.html"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">คลัง</a>
+    <a class="sn" href="Me.dc.html"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">ของฉัน</a>
+    <p style="margin-top:auto;font-size:12.5px;color:#686458;padding:8px">ต้นแบบ · ข้อมูลสมมุติ</p>
+  </nav>
+  <main style="padding:20px 32px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start;min-width:0">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <h1 style="font-size:24px">Deadline</h1>
+      <a class="btn" href="AlertSettings.dc.html" style="justify-content:flex-start;font-size:14px"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">เตือนก่อน 7·3·1 วัน + วันปิด · 09:00 น.</a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D">เปิดอยู่ 4</span><span class="chip">สมัครแล้ว 1</span><span class="chip">ปิดแล้ว 1</span><span class="chip">ทั้งหมด 6</span></div>
+      <a class="row" href="#" aria-current="true" style="box-shadow:0 0 0 3px #62694D"><div class="stub"><div class="b" style="background:#B5482F"><svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1.8 15 14H1z M8 6.2v3.6M8 11.9v.1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path></svg></div><div class="d">7</div><div class="m">ต.ค. 69</div></div><div><b>ทุนเรียนต่อ ป.โท ต่างประเทศ รุ่นที่ 12</b><p style="font-size:14px;color:#B5482F;font-weight:700">วันนี้วันสุดท้าย! <span style="color:#686458;font-weight:400">· ไม่ระบุเวลา</span></p></div><span class="tag">ทุน</span></a>
+      <a class="row" href="#"><div class="stub"><div class="b" style="background:#B5482F"><svg width="13" height="13" viewBox="0 0 16 16"><path d="M8 1.8 15 14H1z M8 6.2v3.6M8 11.9v.1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path></svg></div><div class="d">10</div><div class="m">ต.ค. 69</div></div><div><b>Youth Innovation Forum 2026</b><p style="font-size:14px;color:#B5482F;font-weight:700">อีก 3 วัน <span style="color:#3B3B3B;font-weight:400">· หมายเหตุผู้จัด: 23:59</span></p></div><span class="tag">รับสมัคร</span></a>
+      <a class="row" href="#"><div class="stub"><div class="b" style="background:#8B9270"><svg width="13" height="13" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2" fill="none" stroke="#3B3B3B" stroke-width="2"></rect></svg></div><div class="d">15</div><div class="m">ต.ค. 69</div></div><div><b>แข่งออกแบบวงจร Analog IC รอบคัดเลือก</b><p style="font-size:14px;font-weight:700">อีก 8 วัน <span style="color:#686458;font-weight:400">· ไม่ระบุเวลา</span></p></div><span class="tag">การแข่งขัน</span></a>
+      <a class="row" href="#"><div class="stub"><div class="b" style="background:#EFE8D8"><svg width="13" height="13" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#686458" stroke-width="2"></circle></svg></div><div class="d">?</div><div class="m">ไม่มีวัน</div></div><div><b>Summer Research Fellowship (no date found)</b><p style="font-size:14px;color:#686458;font-weight:700">ไม่ระบุวันปิดรับ</p></div><span class="tag">ทุน</span></a>
+    </div>
+    <aside aria-label="รายละเอียด" style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div><span class="tag">ทุน</span><h2 style="font-size:22px;line-height:1.4;margin-top:4px">ทุนเรียนต่อ ป.โท ต่างประเทศ รุ่นที่ 12</h2><p style="font-size:14px;color:#686458">มูลนิธิตัวอย่าง</p></div>
+      <section style="border:2px solid #3B3B3B;border-radius:14px;padding:12px 14px;background:#F4EFE4">
+        <p style="font-size:14px;color:#686458">วันปิดรับ</p>
+        <p style="font-size:22px;font-weight:700">พ. 7 ต.ค. 2569</p>
+        <p style="color:#686458">ไม่ระบุเวลา</p>
+        <p style="color:#B5482F;font-weight:700;font-size:14px">วันนี้วันสุดท้าย!</p>
+        <p style="font-size:14px">วันจัดงาน: <b>สัมภาษณ์ปลายเดือน พ.ย.</b> <span style="color:#686458">(ไม่ใช่วันปิดรับ)</span></p>
+      </section>
+      <div style="display:flex;gap:8px"><a class="btn pri" href="#">สมัครแล้ว หยุดเตือน</a><a class="btn" href="#"><img src="/_blob/2b25d57670af88c76cace1c5478c6ae2" alt="" style="width:18px;height:18px">เปิด PDF ต้นฉบับ</a></div>
+      <section style="display:flex;flex-direction:column;gap:4px">
+        <h3 style="font-size:16px">การเตือนของงานนี้ <span class="tag">ใช้ค่าเริ่มต้น</span></h3>
+        <p style="font-size:14px;color:#686458"><s>30 ก.ย. · 4 ต.ค. · 6 ต.ค. · 7 ต.ค. 09:00 น.</s> ผ่านแล้วทั้งหมด</p>
+        <p style="font-size:14px"><b>ไม่มีการเตือนที่เหลือแล้ว</b> · การ์ดยังอยู่จนกว่าจะกดสมัครแล้วหรือลบ</p>
+      </section>
+      <dl style="display:grid;grid-template-columns:110px 1fr;gap:6px 12px">
+        <dt>สรุป</dt><dd>ทุนเต็มจำนวนสำหรับเรียนต่อปริญญาโท 2 ปี</dd>
+        <dt>คุณสมบัติ</dt><dd>จบปริญญาตรี เกรดเฉลี่ย 3.00 ขึ้นไป</dd>
+        <dt>ค่าใช้จ่าย</dt><dd>ไม่มีค่าสมัคร</dd>
+        <dt>ต้นฉบับ</dt><dd>ไฟล์ PDF ใน Drive</dd>
+      </dl>
+      <a class="btn" href="#" style="align-self:flex-start;color:#B5482F;border-color:#B5482F"><img src="/_blob/c7c5f60a8bfb980a1f8efde7cab766c4" alt="" style="width:18px;height:18px">ลบรายการนี้</a>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

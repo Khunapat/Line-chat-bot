@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Deadline alert settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 14px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;font:600 14px/1.3 "Bai Jamjuree",sans-serif;white-space:nowrap;color:#3B3B3B;flex:none}
+.rc{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px 14px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1;box-sizing:border-box}
+.rc input{width:20px;height:20px;margin:3px 0 0;accent-color:#62694D;flex:none}
+.rc b{display:block;font-weight:600}
+.rc small{display:block;font-size:14px;color:#686458}
+p,h1,fieldset,legend,ul{margin:0}
+fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<div style="width:390px;height:1150px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <p style="font-size:11px;color:#686458;text-align:right;padding:6px 16px 0">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <header style="display:flex;align-items:center;gap:8px;padding:0 16px 8px"><a class="btn ico" href="Deadlines.dc.html" aria-label="ย้อนกลับ"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></a><h1 style="font-size:22px;line-height:1.35;flex:1">ตั้งค่าเตือน Deadline</h1></header>
+  <form style="padding:0 16px 120px;display:flex;flex-direction:column;gap:16px">
+    <p>ใช้กับทุกงาน ยกเว้นงานที่ตั้งเฉพาะไว้</p>
+    <p style="font-size:14px;color:#686458">1 งานตั้งเฉพาะไว้ ไม่เปลี่ยนตามนี้</p>
+    <fieldset><legend style="font-weight:600">เตือนก่อนกี่วัน</legend>
+      <label class="rc" style="background:#DFE1D2;box-shadow:inset 4px 0 0 #62694D"><input type="radio" name="p" checked=""><span><b>มาตรฐาน</b><small>7, 3, 1 วันก่อน + วันปิดรับ</small></span></label>
+      <label class="rc"><input type="radio" name="p"><span><b>เตือนเร็ว</b><small>14, 7, 3, 1 วันก่อน + วันปิดรับ</small></span></label>
+      <label class="rc"><input type="radio" name="p"><span><b>เบา ๆ</b><small>3, 1 วันก่อน + วันปิดรับ</small></span></label>
+      <label class="rc"><input type="radio" name="p"><span><b>ปิดการเตือน</b><small>ไม่ส่งเตือน Deadline เลย (เตือนอื่นยังทำงาน)</small></span></label>
+    </fieldset>
+    <fieldset><legend style="font-weight:600">เวลาที่เตือน</legend>
+      <div role="radiogroup" aria-label="เวลาที่เตือน" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" role="radio" aria-checked="false" class="chip">08:00 น.</button><button type="button" role="radio" aria-checked="false" class="chip">12:00 น.</button><button type="button" role="radio" aria-checked="false" class="chip">20:00 น.</button><button type="button" role="radio" aria-checked="true" class="chip" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D">เวลาอื่น</button></div>
+      <label style="display:flex;flex-direction:column;gap:4px;max-width:200px;font-size:14px;font-weight:600">เวลาอื่น<input type="text" value="09:00" style="min-height:48px;padding:10px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#FFFFFF;font:400 16px 'Bai Jamjuree',sans-serif"></label>
+    </fieldset>
+    <section style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:14px;display:flex;flex-direction:column;gap:4px">
+      <p style="font-size:14px;color:#686458">ตัวอย่าง: งานที่ปิด พ. 21 ต.ค. 2569</p>
+      <ul style="padding-left:18px;font-size:14px"><li>พ. 14 ต.ค. 2569 · 09:00 น. · 7 วันก่อน</li><li>อา. 18 ต.ค. 2569 · 09:00 น. · 3 วันก่อน</li><li>อ. 20 ต.ค. 2569 · 09:00 น. · 1 วันก่อน</li><li>พ. 21 ต.ค. 2569 · 09:00 น. · วันปิดรับ</li></ul>
+    </section>
+    <p style="font-size:14px;display:flex;gap:8px"><img src="/_blob/9dc4dfc579a5693312ff65359d944bfb" alt="" style="width:18px;height:18px;flex:none;margin-top:3px"><span>ถ้าหลายงานเตือนนาทีเดียวกัน จะรวมเป็นข้อความเดียวแบบเลื่อนดูได้ ไม่ส่งรัว ๆ</span></p>
+    <p style="font-size:12.5px;color:#686458">พิมพ์ในแชตได้ด้วย: “เตือน deadline ก่อน 10 5 2 1 วัน 20:00” · Applied items stop their alerts automatically.</p>
+  </form>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:16px 16px 26px;background:linear-gradient(to top,#F4EFE4 75%,rgba(244,239,228,0))">
+    <a class="btn" href="#" aria-disabled="true" style="width:100%;min-height:52px;background:#62694D;color:#FFFFFF;opacity:.55">บันทึก</a>
+    <p style="font-size:12.5px;color:#686458;text-align:center;margin-top:4px">ยังไม่ได้เปลี่ยน · ปุ่มจะกดได้เมื่อเปลี่ยนค่า</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1150}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

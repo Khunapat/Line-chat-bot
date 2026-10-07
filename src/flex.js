@@ -3,10 +3,12 @@
  * buttons, dark rounded text - a friendly "notebook" look.
  */
 import { describeWhen, describeRepeat } from './reminders.js';
-import { daysUntil, KIND_THAI, THAI_MONTHS, todayIso } from './opportunities.js';
+import { daysUntil, todayIso } from './opportunities.js';
 import {
   ALERT_PRESETS, ALERT_TIMES, normalizeAlerts, alertsFor, describeAlerts, groupForList,
 } from './deadlines.js';
+import { L, currentLang } from './lang.js';
+import { formatDay, formatTime } from '../web/shared/dates.js';
 
 const C = {
   card: '#F4EFE4',
@@ -198,7 +200,7 @@ function heroImage(url) {
 function fileHero(file) {
   const url = file.thumbUrl || iconUrl(`ph-${fileIconName(file)}`);
   if (!url) return null;
-  return { ...heroImage(url), action: file.webViewLink ? uriAction('เปิด', file.webViewLink) : undefined };
+  return { ...heroImage(url), action: file.webViewLink ? uriAction(L('b_open'), file.webViewLink) : undefined };
 }
 
 export function fileBubble(file, { title, uniform = false } = {}) {
@@ -211,7 +213,7 @@ export function fileBubble(file, { title, uniform = false } = {}) {
   if (file.caption && file.caption !== file.name) contents.push({ ...muted(file.name), ...(uniform ? { maxLines: 1 } : {}) });
   const sub = fileSubtitle(file);
   if (sub) contents.push(muted(sub));
-  const open = file.isLink ? 'เปิดลิงก์' : 'เปิดไฟล์';
+  const open = file.isLink ? L('b_openLink') : L('b_openFile');
   return bubble({
     contents,
     footer: [button(open, uriAction(open, file.webViewLink))],
@@ -241,13 +243,13 @@ export function fileCard(file, opts) {
 export function filesCarousel(files, { title } = {}) {
   // Same layout in every bubble (no heading, clamped text) so the row lines up.
   const bubbles = files.slice(0, 10).map((f) => fileBubble(f, { uniform: true }));
-  const alt = `${title || 'ไฟล์'}: ${files.map((f) => f.name).join(', ')}`;
+  const alt = `${title || L('b_files')}: ${files.map((f) => f.name).join(', ')}`;
   return flexMessage(alt, bubbles.length === 1 ? bubbles[0] : { type: 'carousel', contents: bubbles });
 }
 
 // ---------------------------------------------------------- reminders
 
-export function reminderCard(reminder, { timeZone, now, title = '⏰ ตั้งเตือนให้แล้ว' } = {}) {
+export function reminderCard(reminder, { timeZone, now, title = L('b_reminderSet') } = {}) {
   const when = describeWhen(reminder.at, timeZone, now);
   const repeat = describeRepeat(reminder.repeat);
   const contents = [
@@ -261,19 +263,19 @@ export function reminderCard(reminder, { timeZone, now, title = '⏰ ตั้�
       layout: 'horizontal',
       spacing: 'sm',
       contents: [
-        button('เปลี่ยนเวลา', postbackAction('เปลี่ยนเวลา', `action=reschedule&id=${reminder.id}`, 'เปลี่ยนเวลาเตือน')),
-        button('ยกเลิก', postbackAction('ยกเลิก', `action=cancel&id=${reminder.id}`, 'ยกเลิกการเตือน')),
+        button(L('b_changeTime'), postbackAction(L('b_changeTime'), `action=reschedule&id=${reminder.id}`, L('b_changeTimeSaid'))),
+        button(L('b_cancel'), postbackAction(L('b_cancel'), `action=cancel&id=${reminder.id}`, L('b_cancelSaid'))),
       ],
     },
     {
       type: 'text',
-      text: 'เปิดดูการเตือนทั้งหมด',
+      text: L('b_seeAllRem'),
       size: 'sm',
       color: C.link,
       align: 'center',
       decoration: 'underline',
       margin: 'md',
-      action: postbackAction('ดูการเตือนทั้งหมด', 'action=list_reminders', 'ดูการเตือนทั้งหมด'),
+      action: postbackAction(L('b_seeAllRemSaid').slice(0, 20), 'action=list_reminders', L('b_seeAllRemSaid')),
     },
   ];
   return flexMessage(`${title}: ${reminder.text} ${repeat ? repeat + ' ' : ''}${when}`, bubble({ contents, footer }));
@@ -289,7 +291,7 @@ function urgencyColor(atIso, now = new Date()) {
 
 export function reminderListCard(reminders, { timeZone, now = new Date(), deadlineAlerts = 0 } = {}) {
   const rows = reminders.length === 0
-    ? [muted('ยังไม่มีการเตือนเลย บอกได้เลยว่าให้เตือนอะไรตอนไหน')]
+    ? [muted(L('b_noReminders'))]
     : reminders.slice(0, 12).map((r) => {
       const color = urgencyColor(r.at, now);
       return {
@@ -315,40 +317,40 @@ export function reminderListCard(reminders, { timeZone, now = new Date(), deadli
           },
           {
             type: 'text',
-            text: 'ยกเลิก',
+            text: L('b_cancel'),
             size: 'xs',
             color: C.link,
             align: 'end',
             gravity: 'center',
             decoration: 'underline',
             flex: 2,
-            action: postbackAction('ยกเลิก', `action=cancel&id=${r.id}`, `ยกเลิกเตือน: ${r.text}`.slice(0, 300)),
+            action: postbackAction(L('b_cancel'), `action=cancel&id=${r.id}`, L('b_cancelNamed', { text: r.text }).slice(0, 300)),
           },
         ],
       };
     });
-  const contents = [heading('⏰ การเตือนทั้งหมด'), ...rows];
-  if (reminders.length > 12) contents.push(muted(`และอีก ${reminders.length - 12} รายการ`));
+  const contents = [heading(L('b_allReminders')), ...rows];
+  if (reminders.length > 12) contents.push(muted(L('b_andMore', { n: reminders.length - 12 })));
   if (deadlineAlerts > 0) {
     // Deadline alerts live with their deadline, not in this list.
     contents.push({
-      type: 'text', text: `+ เตือน deadline อีก ${deadlineAlerts} ครั้ง ดูที่เมนู Deadline`, size: 'xs', color: C.link,
+      type: 'text', text: L('b_dlAlertsMore', { n: deadlineAlerts }), size: 'xs', color: C.link,
       decoration: 'underline', wrap: true, margin: 'lg',
-      action: postbackAction('ดู deadline', 'action=opp_list', 'ดู deadline ทั้งหมด'),
+      action: postbackAction(L('b_seeDl'), 'action=opp_list', L('b_seeAllDlSaid')),
     });
   }
-  return flexMessage(`การเตือนทั้งหมด ${reminders.length} รายการ`, bubble({ contents, size: 'mega' }));
+  return flexMessage(L('b_remCount', { n: reminders.length }), bubble({ contents, size: 'mega' }));
 }
 
 /** The message pushed when a reminder fires: snooze / done buttons. */
 export function dueReminderCard(reminder, { userName, timeZone, now } = {}) {
-  const who = userName ? `${userName} ` : '';
+  const line = userName ? L('b_dueNamed', { name: userName, text: reminder.text }) : L('b_duePlain', { text: reminder.text });
   const repeat = describeRepeat(reminder.repeat);
   const contents = [
-    heading('⏰ ถึงเวลาแล้ว'),
-    body(`${who}ถึงเวลา${reminder.text}แล้วนะ`, { extra: { margin: 'md' } }),
+    heading(L('b_due')),
+    body(line, { extra: { margin: 'md' } }),
   ];
-  if (repeat) contents.push(muted(`${repeat} · ครั้งต่อไป ${describeWhen(reminder.at, timeZone, now)}`));
+  if (repeat) contents.push(muted(L('b_nextTime', { repeat, when: describeWhen(reminder.at, timeZone, now) })));
   const data = (min) => `action=snooze&min=${min}&id=${reminder.id}`;
   const footer = [
     {
@@ -356,22 +358,22 @@ export function dueReminderCard(reminder, { userName, timeZone, now } = {}) {
       layout: 'horizontal',
       spacing: 'sm',
       contents: [
-        button('เลื่อน 10 นาที', postbackAction('เลื่อน 10 นาที', data(10), 'เลื่อน 10 นาที')),
-        button('เลื่อน 1 ชม.', postbackAction('เลื่อน 1 ชม.', data(60), 'เลื่อน 1 ชั่วโมง')),
+        button(L('b_snooze10'), postbackAction(L('b_snooze10'), data(10), L('b_snooze10'))),
+        button(L('b_snooze60'), postbackAction(L('b_snooze60'), data(60), L('b_snooze60Said'))),
       ],
     },
     {
       type: 'text',
-      text: 'เสร็จแล้ว ✓',
+      text: L('b_doneCheck'),
       size: 'sm',
       color: C.link,
       align: 'center',
       decoration: 'underline',
       margin: 'md',
-      action: postbackAction('เสร็จแล้ว', `action=done&id=${reminder.id}`, 'เสร็จแล้ว'),
+      action: postbackAction(L('b_done'), `action=done&id=${reminder.id}`, L('b_done')),
     },
   ];
-  return flexMessage(`⏰ ${who}ถึงเวลา${reminder.text}แล้วนะ`, bubble({ contents, footer }));
+  return flexMessage(`⏰ ${line}`, bubble({ contents, footer }));
 }
 
 // ------------------------------------------------------ opportunities
@@ -379,7 +381,6 @@ export function dueReminderCard(reminder, { userName, timeZone, now } = {}) {
 const TONE = {
   red: '#B5482F', orange: '#C98A2B', olive: '#6F7658', applied: '#8B9270', past: '#A39E90', none: '#8A8A8A',
 };
-const THAI_DAYS_SHORT = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'];
 
 /**
  * How a deadline reads at a glance: badge colour, big day number, month, and
@@ -387,28 +388,28 @@ const THAI_DAYS_SHORT = ['อาทิตย์', 'จันทร์', 'อั�
  */
 export function deadlineView(o, timeZone, now = new Date()) {
   if (!o.deadline) {
-    return { color: o.status === 'applied' ? TONE.applied : TONE.none, day: '?', month: 'ไม่ระบุ', countdown: o.status === 'applied' ? '✓ สมัครแล้ว' : 'ไม่ระบุวันปิดรับ', days: null };
+    return { color: o.status === 'applied' ? TONE.applied : TONE.none, day: '?', month: L('b_noDateMonth'), countdown: o.status === 'applied' ? L('b_applied') : L('b_noClosing'), days: null };
   }
   const [y, m, d] = o.deadline.split('-').map(Number);
   const days = daysUntil(o.deadline, timeZone, now);
   const thisYear = Number(todayIso(now, timeZone).slice(0, 4));
-  const month = THAI_MONTHS[m - 1] + (y !== thisYear ? ` ${String(y + 543).slice(-2)}` : '');
+  const lang = currentLang();
+  const month = formatDay(o.deadline, lang, 'mon') + (y !== thisYear ? ` ${String(lang === 'en' ? y : y + 543).slice(-2)}` : '');
   const view = { day: String(d), month, days };
-  if (o.status === 'applied') return { ...view, color: TONE.applied, countdown: '✓ สมัครแล้ว' };
-  if (days < 0) return { ...view, color: TONE.past, countdown: 'หมดเขตแล้ว' };
-  if (days === 0) return { ...view, color: TONE.red, countdown: 'วันนี้วันสุดท้าย!' };
-  if (days === 1) return { ...view, color: TONE.red, countdown: 'พรุ่งนี้วันสุดท้าย' };
-  if (days <= 3) return { ...view, color: TONE.red, countdown: `อีก ${days} วัน` };
-  if (days <= 7) return { ...view, color: TONE.orange, countdown: `อีก ${days} วัน` };
-  return { ...view, color: TONE.olive, countdown: `อีก ${days} วัน` };
+  if (o.status === 'applied') return { ...view, color: TONE.applied, countdown: L('b_applied') };
+  if (days < 0) return { ...view, color: TONE.past, countdown: L('b_closed') };
+  if (days === 0) return { ...view, color: TONE.red, countdown: L('b_lastDayToday') };
+  if (days === 1) return { ...view, color: TONE.red, countdown: L('b_lastDayTomorrow') };
+  if (days <= 3) return { ...view, color: TONE.red, countdown: L('b_daysLeft', { n: days }) };
+  if (days <= 7) return { ...view, color: TONE.orange, countdown: L('b_daysLeft', { n: days }) };
+  return { ...view, color: TONE.olive, countdown: L('b_daysLeft', { n: days }) };
 }
 
-/** "อังคาร 7 ต.ค. 2569" */
+/** "อังคาร 7 ต.ค. 2569" / "Tuesday 7 Oct 2026" in the chat's language. */
 export function thaiFullDate(dateIso) {
   if (!dateIso) return '';
-  const [y, m, d] = dateIso.split('-').map(Number);
-  const wd = THAI_DAYS_SHORT[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
-  return `${wd} ${d} ${THAI_MONTHS[m - 1]} ${y + 543}`;
+  const lang = currentLang();
+  return `${formatDay(dateIso, lang, 'dwFull').replace('พฤหัสบดี', 'พฤหัส')} ${formatDay(dateIso, lang, 'dm')} ${formatDay(dateIso, lang, 'my').split(' ').pop()}`;
 }
 
 /** Calendar-page badge: big day number over the month, filled with the urgency colour. */
@@ -451,12 +452,14 @@ function chip(label, action, { filled = false } = {}) {
 /** "เตือนล่วงหน้า 7 · 3 · 1 วัน + วันสุดท้าย เวลา 09:00 น." or "ไม่เตือน" when switched off. */
 export function alertsPhrase(alerts) {
   const a = normalizeAlerts(alerts);
-  if (a.days.length === 0) return 'ไม่เตือน';
-  return `เตือน${describeAlerts(a).replace(/^ก่อน/, 'ล่วงหน้า')}`;
+  if (a.days.length === 0) return L('b_noAlerts');
+  const desc = describeAlerts(a);
+  if (currentLang() === 'th') return /^ก่อน /.test(desc) ? L('b_alertsPhrase', { desc: desc.replace(/^ก่อน /, '') }) : `เตือน${desc}`;
+  return L('b_alertsPhrase', { desc });
 }
 
 const shortTitle = (t, n = 40) => (String(t).length > n ? String(t).slice(0, n - 1) + '…' : String(t));
-const kindLine = (o) => [KIND_THAI[o.kind] || KIND_THAI.other, o.organizer].filter(Boolean).join(' · ');
+const kindLine = (o) => [L(`kind_${o.kind || 'other'}`), o.organizer].filter(Boolean).join(' · ');
 
 /** "label  value" with the label muted and bold. */
 function fact(label, value) {
@@ -489,7 +492,7 @@ function deadlineRow(o, { timeZone, now }) {
     borderWidth: '2px',
     borderColor: C.stroke,
     cornerRadius: '14px',
-    action: postbackAction('ดูรายละเอียด', `action=opp_view&id=${o.id}`, `ดู ${shortTitle(o.title, 24)}`),
+    action: postbackAction(L('b_view'), `action=opp_view&id=${o.id}`, L('b_viewNamed', { title: shortTitle(o.title, 24) })),
     contents: [
       dateBadge(v),
       {
@@ -509,7 +512,7 @@ function deadlineRow(o, { timeZone, now }) {
             alignItems: 'center',
             contents: [
               { type: 'text', text: shortTitle(kindLine(o), 36), size: 'xxs', color: C.muted, flex: 1, wrap: false },
-              chip('ลบ', postbackAction('ลบ', `action=opp_delete&id=${o.id}`, `ลบ ${shortTitle(o.title, 24)}`)),
+              chip(L('b_delete'), postbackAction(L('b_delete'), `action=opp_delete&id=${o.id}`, L('b_deleteNamed', { title: shortTitle(o.title, 24) }))),
             ],
           },
         ],
@@ -531,16 +534,16 @@ const MAX_LIST_ROWS = 10;
  */
 export function opportunityListCard(list, { timeZone, now = new Date(), alerts } = {}) {
   const g = groupForList(list, timeZone, now);
-  const contents = [heading('🎯 Deadline ทั้งหมด')];
+  const contents = [heading(L('b_allDl'))];
   const open = g.upcoming.length + g.undated.length;
   if (list.length === 0) {
-    contents.push(muted('ยังไม่มีรายการเลย ส่งโปสเตอร์หรือลิงก์รับสมัครมาได้เลย เดี๋ยวจดให้'));
+    contents.push(muted(L('b_noDl')));
   } else {
-    contents.push(muted(`เปิดรับอยู่ ${open} รายการ · ${alertsPhrase(alerts)}`));
+    contents.push(muted(L('b_openCount', { n: open, alerts: alertsPhrase(alerts) })));
   }
   let shown = 0;
   const sections = [
-    ['', g.upcoming], ['ยังไม่ระบุวันปิดรับ', g.undated], ['สมัครแล้ว', g.applied], ['หมดเขตแล้ว', g.past],
+    ['', g.upcoming], [L('b_secUndated'), g.undated], [L('b_secApplied'), g.applied], [L('b_secPast'), g.past],
   ];
   for (const [label, items] of sections) {
     const room = MAX_LIST_ROWS - shown;
@@ -551,21 +554,21 @@ export function opportunityListCard(list, { timeZone, now = new Date(), alerts }
   }
   const total = g.upcoming.length + g.undated.length + g.applied.length + g.past.length;
   const hidden = total - shown + g.hiddenPast;
-  if (hidden > 0) contents.push({ ...muted(`และอีก ${hidden} รายการ (ดูทั้งหมดใน Opportunities.md)`), margin: 'md' });
-  const footer = [button('ตั้งเวลาเตือน', postbackAction('ตั้งเวลาเตือน', 'action=alerts_menu', 'ตั้งเวลาเตือน deadline'), 'secondary')];
-  return flexMessage(`Deadline ทั้งหมด ${list.length} รายการ`, bubble({ contents, footer, size: 'mega' }));
+  if (hidden > 0) contents.push({ ...muted(L('b_moreInDoc', { n: hidden })), margin: 'md' });
+  const footer = [button(L('b_alertSettings'), postbackAction(L('b_alertSettings'), 'action=alerts_menu', L('b_alertSettingsSaid')), 'secondary')];
+  return flexMessage(L('b_dlCount', { n: list.length }), bubble({ contents, footer, size: 'mega' }));
 }
 
 /**
  * Details of one deadline. `merged` adds "not the same? split" and
  * `suggestion` ({ id, title }) adds "same as this one? merge".
  */
-export function opportunityBubble(o, { timeZone, now = new Date(), title = '🎯 บันทึกไว้แล้ว', alerts, merged = false, suggestion = null } = {}) {
+export function opportunityBubble(o, { timeZone, now = new Date(), title = L('b_saved'), alerts, merged = false, suggestion = null } = {}) {
   const v = deadlineView(o, timeZone, now);
-  const when = o.deadline ? `หมดเขต ${thaiFullDate(o.deadline)}${o.deadline_note ? ' · ' + o.deadline_note : ''}` : 'ยังไม่รู้วันปิดรับ';
+  const when = o.deadline ? `${L('b_closesOn', { date: thaiFullDate(o.deadline) })}${o.deadline_note ? ' · ' + o.deadline_note : ''}` : L('b_unknownClosing');
   const alertLine = o.deadline && o.status !== 'applied' && v.days >= 0 ? alertsPhrase(alertsFor(o, alerts)) : '';
   const contents = [heading(title)];
-  if (o.thumbUrl) contents.push({ ...heroImage(o.thumbUrl), action: uriAction('เปิด', o.link || o.source?.webViewLink || o.thumbUrl) });
+  if (o.thumbUrl) contents.push({ ...heroImage(o.thumbUrl), action: uriAction(L('b_open'), o.link || o.source?.webViewLink || o.thumbUrl) });
   contents.push({
     type: 'box',
     layout: 'horizontal',
@@ -590,21 +593,21 @@ export function opportunityBubble(o, { timeZone, now = new Date(), title = '🎯
   contents.push(body(o.title, { extra: { weight: 'bold', margin: 'lg' } }));
   contents.push(muted(kindLine(o)));
   const facts = [
-    ['วันจัด', o.event_dates], ['ใครสมัครได้', o.eligibility], ['ค่าใช้จ่าย/รางวัล', o.cost], ['ติดต่อ', o.contact],
+    [L('b_fEvent'), o.event_dates], [L('b_fElig'), o.eligibility], [L('b_fCost'), o.cost], [L('b_fContact'), o.contact],
   ].filter(([, val]) => val);
   if (facts.length) contents.push({ type: 'box', layout: 'vertical', spacing: 'xs', margin: 'md', contents: facts.map(([k, val]) => fact(k, val)) });
   if (o.summary) contents.push({ ...muted(o.summary), margin: 'md' });
 
   const openUri = o.link || o.source?.webViewLink;
   const row = [];
-  if (openUri) row.push(button(o.link ? 'เปิดลิงก์' : 'เปิดโปสเตอร์', uriAction('เปิด', openUri)));
-  if (o.link && o.source?.webViewLink) row.push(button('โปสเตอร์', uriAction('โปสเตอร์', o.source.webViewLink), 'secondary'));
+  if (openUri) row.push(button(o.link ? L('b_openLink') : L('b_openPoster'), uriAction(L('b_open'), openUri)));
+  if (o.link && o.source?.webViewLink) row.push(button(L('b_poster'), uriAction(L('b_poster'), o.source.webViewLink), 'secondary'));
   const footer = [];
   if (row.length) footer.push({ type: 'box', layout: 'horizontal', spacing: 'sm', contents: row });
   if (o.deadline && v.days !== null && v.days >= 0) {
     footer.push(o.status === 'applied'
-      ? button('ยังไม่ได้สมัคร เตือนต่อ', postbackAction('เตือนต่อ', `action=opp_unapplied&id=${o.id}`, 'ยังไม่ได้สมัคร เตือนต่อด้วย'), 'secondary')
-      : button('สมัครแล้ว หยุดเตือน', postbackAction('สมัครแล้ว', `action=opp_applied&id=${o.id}`, `สมัคร ${shortTitle(o.title)} แล้ว`), 'secondary'));
+      ? button(L('b_resumeLong'), postbackAction(L('b_resume'), `action=opp_unapplied&id=${o.id}`, L('b_resumeSaid')), 'secondary')
+      : button(L('b_appliedStop'), postbackAction(L('b_appliedShort'), `action=opp_applied&id=${o.id}`, L('b_appliedSaid', { title: shortTitle(o.title) })), 'secondary'));
   }
   footer.push({
     type: 'box',
@@ -612,15 +615,15 @@ export function opportunityBubble(o, { timeZone, now = new Date(), title = '🎯
     margin: 'md',
     spacing: 'md',
     contents: [
-      textLink('ดูทั้งหมด', postbackAction('ดูทั้งหมด', 'action=opp_list', 'ดู deadline ทั้งหมด'), { flex: 0 }),
-      textLink('ตั้งเตือนอันนี้', postbackAction('ตั้งเตือน', `action=alerts_menu&id=${o.id}`, 'ตั้งเตือนรายการนี้'), { flex: 1, align: 'center' }),
-      textLink('ลบ', postbackAction('ลบ', `action=opp_delete&id=${o.id}`, `ลบ ${shortTitle(o.title)}`), { flex: 0, align: 'end' }),
+      textLink(L('b_seeAll'), postbackAction(L('b_seeAll'), 'action=opp_list', L('b_seeAllDlSaid')), { flex: 0 }),
+      textLink(L('b_alertThis'), postbackAction(L('b_alertThisShort'), `action=alerts_menu&id=${o.id}`, L('b_alertThisSaid')), { flex: 1, align: 'center' }),
+      textLink(L('b_delete'), postbackAction(L('b_delete'), `action=opp_delete&id=${o.id}`, L('b_deleteNamed', { title: shortTitle(o.title) })), { flex: 0, align: 'end' }),
     ],
   });
   if (merged) {
-    footer.push(textLink('ไม่ใช่งานเดียวกัน? แยกเป็นอันใหม่', postbackAction('แยก', `action=opp_split&id=${o.id}`, 'ไม่ใช่งานเดียวกัน แยกเป็นอันใหม่'), { margin: 'md', align: 'center', size: 'xs', wrap: true }));
+    footer.push(textLink(L('b_splitLink'), postbackAction(L('b_split'), `action=opp_split&id=${o.id}`, L('b_splitSaid')), { margin: 'md', align: 'center', size: 'xs', wrap: true }));
   } else if (suggestion?.id) {
-    footer.push(textLink(`เป็นงานเดียวกับ "${shortTitle(suggestion.title, 28)}"? รวมเลย`, postbackAction('รวม', `action=opp_merge&id=${suggestion.id}&src=${o.id}`, 'รวมเป็นรายการเดียวกัน'), { margin: 'md', align: 'center', size: 'xs', wrap: true }));
+    footer.push(textLink(L('b_mergeLink', { title: shortTitle(suggestion.title, 28) }), postbackAction(L('b_merge'), `action=opp_merge&id=${suggestion.id}&src=${o.id}`, L('b_mergeSaid')), { margin: 'md', align: 'center', size: 'xs', wrap: true }));
   }
   return bubble({ contents, footer });
 }
@@ -635,20 +638,20 @@ export function deadlineAlertBubble(o, { timeZone, now = new Date() } = {}) {
   const v = deadlineView(o, timeZone, now);
   const openUri = o.link || o.source?.webViewLink;
   const footer = [];
-  if (openUri) footer.push(button(o.link ? 'เปิดลิงก์สมัคร' : 'เปิดโปสเตอร์', uriAction('เปิด', openUri)));
-  footer.push(button('สมัครแล้ว หยุดเตือน', postbackAction('สมัครแล้ว', `action=opp_applied&id=${o.id}`, `สมัคร ${shortTitle(o.title)} แล้ว`), 'secondary'));
+  if (openUri) footer.push(button(o.link ? L('b_openApply') : L('b_openPoster'), uriAction(L('b_open'), openUri)));
+  footer.push(button(L('b_appliedStop'), postbackAction(L('b_appliedShort'), `action=opp_applied&id=${o.id}`, L('b_appliedSaid', { title: shortTitle(o.title) })), 'secondary'));
   footer.push({
     type: 'box',
     layout: 'horizontal',
     margin: 'md',
     contents: [
-      textLink('รายละเอียด', postbackAction('รายละเอียด', `action=opp_view&id=${o.id}`, `ดู ${shortTitle(o.title)}`), { flex: 1 }),
-      textLink('ดูทั้งหมด', postbackAction('ดูทั้งหมด', 'action=opp_list', 'ดู deadline ทั้งหมด'), { flex: 1, align: 'end' }),
+      textLink(L('b_details'), postbackAction(L('b_details'), `action=opp_view&id=${o.id}`, L('b_viewNamed', { title: shortTitle(o.title) })), { flex: 1 }),
+      textLink(L('b_seeAll'), postbackAction(L('b_seeAll'), 'action=opp_list', L('b_seeAllDlSaid')), { flex: 1, align: 'end' }),
     ],
   });
   return bubble({
     contents: [
-      heading('⏰ ใกล้หมดเขตแล้ว'),
+      heading(L('b_closingSoon')),
       {
         type: 'box',
         layout: 'horizontal',
@@ -664,7 +667,7 @@ export function deadlineAlertBubble(o, { timeZone, now = new Date() } = {}) {
             spacing: 'xs',
             contents: [
               { type: 'text', text: v.countdown, size: 'xl', weight: 'bold', color: v.color, wrap: true },
-              { type: 'text', text: o.deadline ? `หมดเขต ${thaiFullDate(o.deadline)}${o.deadline_note ? ' · ' + o.deadline_note : ''}` : '', size: 'xs', color: C.text, wrap: true },
+              { type: 'text', text: o.deadline ? `${L('b_closesOn', { date: thaiFullDate(o.deadline) })}${o.deadline_note ? ' · ' + o.deadline_note : ''}` : '', size: 'xs', color: C.text, wrap: true },
             ].filter((c) => c.text),
           },
         ],
@@ -683,7 +686,7 @@ export function deadlineAlertsMessage(opps, { timeZone, now = new Date() } = {})
   return flexMessage(`⏰ ${alt}`, bubbles.length === 1 ? bubbles[0] : { type: 'carousel', contents: bubbles });
 }
 
-const PRESET_LABEL = { std: 'ก่อน 7 · 3 · 1 วัน + วันสุดท้าย', early: 'ก่อน 14 · 7 · 3 · 1 วัน + วันสุดท้าย', light: 'ก่อน 3 · 1 วัน + วันสุดท้าย' };
+const presetLabel = (key) => L(`b_preset_${key}`);
 
 /**
  * Pick when deadline alerts go out. For the whole chat (presets + time of
@@ -695,16 +698,14 @@ export function alertSettingsCard(alerts, { opp = null } = {}) {
   const same = (days) => days.length === current.days.length && days.every((d, i) => d === current.days[i]);
   const idPart = opp ? `&id=${opp.id}` : '';
   const contents = [
-    heading(opp ? '⏰ เตือนรายการนี้' : '⏰ ตั้งเวลาเตือน deadline'),
+    heading(opp ? L('b_alertsThis') : L('b_alertsAll')),
     ...(opp ? [body(opp.title, { size: 'sm', extra: { weight: 'bold', margin: 'md' } })] : []),
-    body(`ตอนนี้: ${describeAlerts(current)}`, { size: 'sm', extra: { margin: 'md' } }),
-    muted(opp
-      ? 'เลือกแบบด้านล่าง ใช้กับรายการนี้รายการเดียว'
-      : 'เลือกแบบด้านล่าง หรือพิมพ์เอง เช่น "เตือน deadline ก่อน 10 5 2 1 วัน 20:00"'),
+    body(L('b_now', { desc: describeAlerts(current) }), { size: 'sm', extra: { margin: 'md' } }),
+    muted(opp ? L('b_pickItem') : L('b_pickAll')),
   ];
   const footer = ALERT_PRESETS.map((p) => button(
-    PRESET_LABEL[p.key],
-    postbackAction(PRESET_LABEL[p.key].slice(0, 20), `action=alerts_set&p=${p.key}${idPart}`, `เตือน ${PRESET_LABEL[p.key]}`),
+    presetLabel(p.key),
+    postbackAction(presetLabel(p.key).slice(0, 20), `action=alerts_set&p=${p.key}${idPart}`, L('b_alertPresetSaid', { label: presetLabel(p.key) })),
     same(p.days) ? 'primary' : 'secondary',
   ));
   if (opp) {
@@ -713,45 +714,45 @@ export function alertSettingsCard(alerts, { opp = null } = {}) {
       layout: 'horizontal',
       margin: 'md',
       contents: [
-        textLink('ใช้แบบเดียวกับทั้งหมด', postbackAction('แบบปกติ', `action=alerts_reset${idPart}`, 'ใช้การเตือนแบบปกติ'), { flex: 1 }),
-        textLink('ไม่ต้องเตือน', postbackAction('ไม่ต้องเตือน', `action=alerts_off${idPart}`, 'ไม่ต้องเตือนรายการนี้'), { flex: 0, align: 'end' }),
+        textLink(L('b_useDefault'), postbackAction(L('b_useDefaultShort'), `action=alerts_reset${idPart}`, L('b_useDefaultSaid')), { flex: 1 }),
+        textLink(L('b_noAlertThis'), postbackAction(L('b_noAlertThis'), `action=alerts_off${idPart}`, L('b_noAlertThisSaid')), { flex: 0, align: 'end' }),
       ],
     });
   } else {
-    footer.push({ type: 'text', text: 'เวลาที่เตือน', size: 'xs', weight: 'bold', color: C.muted, margin: 'lg' });
+    footer.push({ type: 'text', text: L('b_alertTime'), size: 'xs', weight: 'bold', color: C.muted, margin: 'lg' });
     footer.push({
       type: 'box',
       layout: 'horizontal',
       spacing: 'sm',
-      contents: ALERT_TIMES.map((t) => button(t, postbackAction(t, `action=alerts_time&t=${t.replace(':', '')}`, `เตือนเวลา ${t}`), t === current.time ? 'primary' : 'secondary')),
+      contents: ALERT_TIMES.map((t) => button(t, postbackAction(t, `action=alerts_time&t=${t.replace(':', '')}`, L('b_alertAtSaid', { t })), t === current.time ? 'primary' : 'secondary')),
     });
-    footer.push(textLink(current.days.length ? 'ปิดการเตือน deadline' : 'เปิดการเตือนแบบปกติ',
-      postbackAction('ปิด/เปิด', current.days.length ? 'action=alerts_off' : 'action=alerts_set&p=std', current.days.length ? 'ปิดการเตือน deadline' : 'เปิดการเตือน deadline'),
+    footer.push(textLink(current.days.length ? L('b_alertsOffLink') : L('b_alertsOnLink'),
+      postbackAction(L('b_onOff'), current.days.length ? 'action=alerts_off' : 'action=alerts_set&p=std', current.days.length ? L('b_alertsOffLink') : L('b_alertsOnSaid')),
       { margin: 'md', align: 'center', size: 'xs' }));
   }
-  return flexMessage(`ตั้งเวลาเตือน: ${describeAlerts(current)}`, bubble({ contents, footer }));
+  return flexMessage(L('b_alertSettingsAlt', { desc: describeAlerts(current) }), bubble({ contents, footer }));
 }
 
 /** After "applied": confirmation with a way back. */
 export function appliedCard(o) {
-  return flexMessage(`สมัคร ${o.title} แล้ว หยุดเตือนให้แล้ว`, bubble({
-    contents: [heading('✅ สมัครแล้ว'), body(o.title, { size: 'sm', extra: { weight: 'bold', margin: 'md' } }), muted('หยุดเตือนรายการนี้แล้ว เก่งมาก!')],
-    footer: [button('ยังไม่ได้สมัคร เตือนต่อ', postbackAction('เตือนต่อ', `action=opp_unapplied&id=${o.id}`, 'ยังไม่ได้สมัคร เตือนต่อด้วย'), 'secondary')],
+  return flexMessage(L('b_appliedAlt', { title: o.title }), bubble({
+    contents: [heading(L('b_appliedTitle')), body(o.title, { size: 'sm', extra: { weight: 'bold', margin: 'md' } }), muted(L('b_appliedBody'))],
+    footer: [button(L('b_resumeLong'), postbackAction(L('b_resume'), `action=opp_unapplied&id=${o.id}`, L('b_resumeSaid')), 'secondary')],
   }));
 }
 
 /** After a delete: what went, and undo. */
 export function deletedCard(o) {
-  return flexMessage(`ลบ ${o.title} แล้ว`, bubble({
-    contents: [heading('🗑️ ลบแล้ว'), body(o.title, { size: 'sm', extra: { weight: 'bold', margin: 'md' } }), muted('ยกเลิกการเตือนและลบจากปฏิทินให้แล้ว')],
-    footer: [button('เอาคืน', postbackAction('เอาคืน', `action=opp_restore&id=${o.id}`, `เอา ${shortTitle(o.title)} คืน`), 'secondary')],
+  return flexMessage(L('b_deletedAlt', { title: o.title }), bubble({
+    contents: [heading(L('b_deletedTitle')), body(o.title, { size: 'sm', extra: { weight: 'bold', margin: 'md' } }), muted(L('b_deletedBody'))],
+    footer: [button(L('b_undo'), postbackAction(L('b_undo'), `action=opp_restore&id=${o.id}`, L('b_undoSaid', { title: shortTitle(o.title) })), 'secondary')],
   }));
 }
 
 export function scanOfferCard(fileId) {
-  return flexMessage('อยากให้เช็ค deadline ในนี้ไหม', bubble({
-    contents: [heading('🎯 ดูเหมือนโปสเตอร์รับสมัคร'), muted('ให้อ่านแล้วจด deadline กับรายละเอียดไว้ไหม (ใช้ AI 1 ครั้ง)')],
-    footer: [button('อ่านและจดให้', postbackAction('อ่านและจดให้', `action=scan&file=${fileId}`, 'อ่านและจด deadline ให้หน่อย'))],
+  return flexMessage(L('b_scanAlt'), bubble({
+    contents: [heading(L('b_scanTitle')), muted(L('b_scanBody'))],
+    footer: [button(L('b_scanBtn'), postbackAction(L('b_scanBtn'), `action=scan&file=${fileId}`, L('b_scanSaid')))],
   }));
 }
 
@@ -759,11 +760,11 @@ export function scanOfferCard(fileId) {
 
 export function eventCard(event, { timeZone } = {}) {
   const when = event.allDay
-    ? `${event.start} (ทั้งวัน)`
+    ? `${event.start} ${L('b_allDayParen')}`
     : `${describeWhen(event.start, timeZone)}${event.end ? ' - ' + timeOnly(event.end, timeZone) : ''}`;
-  const contents = [heading('📅 ลงปฏิทินให้แล้ว'), body(event.title, { extra: { margin: 'md' } }), muted(when)];
-  const footer = event.link ? [button('เปิดปฏิทิน', uriAction('เปิดปฏิทิน', event.link))] : [];
-  return flexMessage(`ลงปฏิทิน: ${event.title} ${when}`, bubble({ contents, footer }));
+  const contents = [heading(L('b_eventAdded')), body(event.title, { extra: { margin: 'md' } }), muted(when)];
+  const footer = event.link ? [button(L('b_openCalendar'), uriAction(L('b_openCalendar'), event.link))] : [];
+  return flexMessage(L('b_eventAlt', { title: event.title, when }), bubble({ contents, footer }));
 }
 
 // ------------------------------------------------------------ generic
@@ -784,7 +785,7 @@ export function postbackButton(label, data, displayText) {
 // ------------------------------------------------------------- utils
 
 function timeOnly(iso, timeZone) {
-  return new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso)) + ' น.';
+  return formatTime(new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso)), currentLang());
 }
 
 function humanSize(bytes) {

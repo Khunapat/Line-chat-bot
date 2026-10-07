@@ -14,10 +14,11 @@
     "rich-menu": "node scripts/setup-rich-menu.js",
     "set-webhook": "node scripts/set-webhook.js",
     "setup": "bash scripts/setup.sh",
-    "check": "for f in src/*.js scripts/*.js; do node --check $f || exit 1; done",
+    "check": "for f in src/*.js scripts/*.js scripts/*.mjs web/shared/*.js web/app/js/*.js web/app/js/views/*.js; do node --check $f || exit 1; done",
     "test": "node --test",
     "icons": "node scripts/render-icons.mjs",
-    "richmenu-image": "node scripts/render-richmenu.mjs"
+    "richmenu-image": "node scripts/render-richmenu.mjs",
+    "preview": "node scripts/preview-app.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

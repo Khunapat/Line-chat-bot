@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Onboarding three steps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.ph{width:390px;height:844px;box-sizing:border-box;border:2px solid #3B3B3B;border-radius:28px;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);padding:14px 18px 30px;display:flex;flex-direction:column;gap:14px;line-height:1.6;font-size:16px;overflow:hidden}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:6px 18px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 16px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.q{background:transparent;border-color:transparent;text-decoration:underline;min-height:44px;padding:4px 8px;font-size:14px}
+.rc{display:flex;gap:12px;align-items:center;min-height:48px;padding:10px 14px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1;box-sizing:border-box;font-weight:600}
+.rc input{width:20px;height:20px;margin:0;accent-color:#62694D}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:4px 12px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;font:600 13.5px/1.3 "Bai Jamjuree",sans-serif;white-space:nowrap;color:#3B3B3B}
+.line{background:#A9BFD6;border:2px solid #3B3B3B;border-radius:22px;padding:12px;display:flex;flex-direction:column;gap:8px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14.5px;line-height:1.5}
+.me{align-self:flex-end;max-width:82%;background:#B9E28C;color:#111111;border-radius:16px 16px 4px 16px;padding:8px 12px}
+.bot{align-self:flex-start;max-width:86%;background:#FFFFFF;color:#111111;border-radius:16px 16px 16px 4px;padding:8px 12px}
+.mini{background:#FBF8F1;border:1px solid #3B3B3B;border-radius:10px;padding:8px 10px;margin-top:6px;font-size:13.5px}
+.st{display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:start}
+.st b{width:32px;height:32px;border-radius:50%;border:2px solid #3B3B3B;background:#DFE1D2;display:flex;align-items:center;justify-content:center}
+p,h1,h2,fieldset,legend{margin:0}
+fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:8px}
+</style>
+</helmet>
+<div style="width:1330px;height:920px;box-sizing:border-box;padding:38px 35px;display:flex;gap:40px;background:#EFE8D8;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B">
+  <div class="ph">
+    <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding-top:30px">
+      <div style="position:relative"><img src="/_blob/96588bdfec5b2a1fc416880aca42affb" alt="JaiJa mascot waving" style="width:150px;height:150px;border-radius:50%;border:3px solid #3B3B3B;box-shadow:0 5px 0 #8B9270"><img src="/_blob/5d71eecd64d3958ea60f0543c75d63f4" alt="" style="position:absolute;right:-18px;top:6px;width:48px;height:48px"></div>
+      <h1 style="font-size:28px;line-height:1.35">สวัสดี เราคือ JaiJa</h1>
+      <p style="font-size:13px;color:#686458">First open only: a 2 × 0.7 s wave, then still. Reduced motion: still pose.</p>
+    </div>
+    <fieldset style="margin-top:10px"><legend style="font-weight:600">ภาษา / Language</legend>
+      <label class="rc" style="background:#DFE1D2;box-shadow:inset 4px 0 0 #62694D"><input type="radio" name="l" checked=""><span lang="th">ไทย</span></label>
+      <label class="rc"><input type="radio" name="l"><span lang="en">English</span></label>
+    </fieldset>
+    <a class="btn pri" href="#" style="margin-top:auto">เริ่มเลย</a>
+  </div>
+
+  <div class="ph">
+    <div style="display:flex;align-items:center"><a class="btn q" href="#">ย้อนกลับ</a><span style="flex:1"></span><span style="font-size:11px;color:#686458">ต้นแบบ · ข้อมูลสมมุติ</span><a class="btn q" href="#">ข้าม</a></div>
+    <h1 style="font-size:28px;line-height:1.35">เก็บให้ <span style="color:#62694D">หาเจอ</span> เตือนทัน</h1>
+    <p style="font-size:15px">ส่งอะไรมาในแชต JaiJa เก็บลง Google Drive ของคุณเอง จำให้ และเตือนก่อนถึงเวลา</p>
+    <div role="tablist" aria-label="ดูตัวอย่าง" style="display:flex;gap:6px;flex-wrap:wrap"><button class="chip" role="tab" aria-selected="false">เก็บและหาไฟล์</button><button class="chip" role="tab" aria-selected="false">ช่วยจำ</button><button class="chip" role="tab" aria-selected="true" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D">จด Deadline</button></div>
+    <div class="line" role="tabpanel" aria-label="แชตตัวอย่างสมมุติ">
+      <span style="align-self:center;font-size:12px;background:rgba(255,255,255,.8);border-radius:999px;padding:0 10px;color:#333333">แชตตัวอย่างสมมุติ</span>
+      <div class="me" style="display:flex;gap:8px;align-items:center"><img src="/_blob/ef37c8d59f09327ba30e522f95a91a9a" alt="" style="width:26px;height:26px">โปสเตอร์แข่ง Analog IC.jpg</div>
+      <div class="bot">อ่านโปสเตอร์แล้ว ช่วยตรวจหน่อย<div class="mini"><b>แข่งออกแบบวงจร Analog IC</b><br>ปิดรับ พฤ. 15 ต.ค. 2569 · ไม่ระบุเวลา</div></div>
+      <div class="me">ถูกแล้ว</div>
+      <div class="bot">จดไว้แล้ว เดี๋ยวเตือนก่อน 7, 3, 1 วัน และวันปิด เวลา 09:00 น.</div>
+    </div>
+    <p style="font-size:12.5px;color:#686458">P01/P02 adapted: one task → one outcome, switchable demos, fictional data, system font (it's LINE).</p>
+    <a class="btn pri" href="#" style="margin-top:auto">ถัดไป</a>
+  </div>
+
+  <div class="ph">
+    <div style="display:flex;align-items:center"><a class="btn q" href="#">ย้อนกลับ</a><span style="flex:1"></span><span style="font-size:11px;color:#686458">ต้นแบบ · ข้อมูลสมมุติ</span><a class="btn q" href="#">ข้าม</a></div>
+    <h1 style="font-size:24px;line-height:1.35">เริ่มใช้ 3 ขั้น</h1>
+    <div class="st"><b>1</b><p>เชื่อม Google Drive ของคุณ ไฟล์จะอยู่ในโฟลเดอร์ LineArchive</p></div>
+    <div class="st"><b>2</b><p>ส่งรูป ไฟล์ ลิงก์ หรือโปสเตอร์รับสมัครมาในแชต</p></div>
+    <div class="st"><b>3</b><p>พิมพ์ “เตือน…” หรือ “ช่วยจำ…” ได้เลย</p></div>
+    <a class="btn pri" href="#" style="margin-top:8px"><img src="/_blob/e85e595816db7f8bdfaf71b77e2df637" alt="" style="width:20px;height:20px;filter:brightness(0) invert(1)">เชื่อม Google Drive</a>
+    <p style="font-size:12.5px;color:#686458">Opens Google's consent page (/connect). The app never says “connected” until the callback confirms.</p>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#DFE1D2"><img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt="" style="width:24px;height:24px"><b>เชื่อม Drive แล้ว: j***@gmail.com</b></div>
+    <a class="btn" href="Today.dc.html" style="margin-top:auto">ไปหน้าวันนี้</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1330,"height":920}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

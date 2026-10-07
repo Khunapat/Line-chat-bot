@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Library gallery calendar and search</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;padding:3px;background:#EFE8D8;border:2px solid #3B3B3B;border-radius:999px}
+.seg button{min-height:40px;border:0;border-radius:999px;background:transparent;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B}
+.seg .on{background:#FBF8F1;box-shadow:0 0 0 2px #3B3B3B}
+.g{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:#3B3B3B;background:#FBF8F1;border:2px solid #3B3B3B;border-radius:10px;padding:6px;min-width:0}
+.g img{width:100%;aspect-ratio:4 / 3;object-fit:cover;border-radius:8px;background:#EFE8D8}
+.g span{font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.m{min-height:44px;border:2px solid transparent;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font:600 14px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B}
+.o{color:#9A968A;font-weight:400}
+.f{display:inline-flex;align-items:center;gap:2px;font-size:11px;height:10px}
+.f i{width:7px;height:7px;border:1.5px solid #62694D;background:#DFE1D2;border-radius:2px}
+.w{text-align:center;font-size:12px;color:#686458}
+.lbl{font-size:12.5px;font-weight:700;color:#686458}
+p,h1{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:1250px;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px;padding:6px 16px;display:flex;flex-direction:column;gap:12px">
+  <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <p class="lbl">GALLERY VIEW</p>
+  <div class="seg" role="radiogroup" aria-label="มุมมอง"><button role="radio" aria-checked="false">รายการ</button><button role="radio" aria-checked="true" class="on">แกลเลอรี</button><button role="radio" aria-checked="false">ปฏิทิน</button></div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+    <a class="g" href="FileDetail.dc.html"><img src="/_blob/39b03a1325302af74996031ffe636177" alt=""><span>ใบเสร็จร้านกาแฟ</span><span style="font-size:12.5px;color:#686458">7 ต.ค. 69</span></a>
+    <a class="g" href="FileDetail.dc.html"><img src="/_blob/37781f7549052cd921554ccf63eba25c" alt=""><span>โปสเตอร์แข่งออกแบบวงจร Analog IC</span><span style="font-size:12.5px;color:#686458">5 ต.ค. 69</span></a>
+    <a class="g" href="FileDetail.dc.html"><img src="/_blob/636a88652b764b8ed0c58bc789987cb1" alt=""><span>bookbank.pdf</span><span style="font-size:12.5px;color:#686458">3 ต.ค. 69</span></a>
+    <a class="g" href="FileDetail.dc.html"><img src="/_blob/53823ef4f60cfab501236145ee0dda14" alt=""><span>ใบสมัครงาน_ฉบับแก้ไขครั้งที่สาม_สุดท้ายจริงๆ_v7.docx</span><span style="font-size:12.5px;color:#686458">30 ก.ย. 69</span></a>
+  </div>
+  <p style="font-size:12.5px;color:#686458">Caption shown when the AI wrote one; otherwise the exact filename.</p>
+
+  <p class="lbl" style="margin-top:6px">CALENDAR VIEW · the existing /gallery month, redrawn</p>
+  <section style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:10px">
+    <p style="text-align:center;font-weight:700">ตุลาคม 2569</p>
+    <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px">
+      <div class="w">จ.</div><div class="w">อ.</div><div class="w">พ.</div><div class="w">พฤ.</div><div class="w">ศ.</div><div class="w">ส.</div><div class="w">อา.</div>
+      <button class="m o">28<span class="f"></span></button><button class="m o">29<span class="f"></span></button><button class="m o" aria-label="30 ก.ย. 2569 · 1 รายการ">30<span class="f"><i></i></span></button><button class="m">1<span class="f"></span></button><button class="m">2<span class="f"></span></button><button class="m" aria-label="3 ต.ค. 2569 · 1 รายการ">3<span class="f"><i></i></span></button><button class="m">4<span class="f"></span></button>
+      <button class="m" aria-pressed="true" aria-label="5 ต.ค. 2569 · 1 รายการ" style="background:#DFE1D2;border-color:#3B3B3B">5<span class="f"><i></i></span></button><button class="m" aria-label="6 ต.ค. 2569 · 1 รายการ">6<span class="f"><i></i></span></button><button class="m" aria-label="7 ต.ค. 2569 · 1 รายการ" style="text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:#8B9270">7<span class="f"><i></i></span></button><button class="m">8<span class="f"></span></button><button class="m">9<span class="f"></span></button><button class="m">10<span class="f"></span></button><button class="m">11<span class="f"></span></button>
+    </div>
+    <p style="font-size:12.5px;color:#686458;text-align:center">… เดือนเต็ม 6 แถว</p>
+  </section>
+  <p style="font-size:14px"><b>จ. 5 ต.ค. 2569 · 1 รายการ</b></p>
+  <div style="display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center;padding:10px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B"><img src="/_blob/37781f7549052cd921554ccf63eba25c" alt="" style="width:52px;height:52px;border-radius:10px;border:1.5px solid #3B3B3B;object-fit:cover"><a href="FileDetail.dc.html" style="font-weight:600;color:#3B3B3B;overflow-wrap:anywhere">14-02-33_โปสเตอร์แข่ง Analog IC.jpg</a></div>
+
+  <p class="lbl" style="margin-top:6px">SEARCH · result vs empty search vs empty archive</p>
+  <p role="status" style="font-size:14px">เจอ 1 รายการสำหรับ “กาแฟ”</p>
+  <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:16px;border:2px dashed #CFC6B2;border-radius:16px">
+    <img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:48px;height:48px;border-radius:50%;border:2px solid #3B3B3B">
+    <p><b>ยังไม่เจอ ลองเปลี่ยนคำค้นหรือวันที่นะ</b></p>
+    <p style="font-size:12.5px;color:#686458">Empty search keeps the query and tab. An empty archive instead says “ยังไม่มีไฟล์หรือรูปในคลังนี้” with a chat example.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

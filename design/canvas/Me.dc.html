@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Me profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.card{background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:14px;display:flex;flex-direction:column;gap:8px}
+.h{font-size:17px;display:flex;gap:8px;align-items:center}
+.h img{width:20px;height:20px}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px solid #3B3B3B;background:#DFE1D2;white-space:nowrap}
+.prop{background:#F6E7CB;border-style:dashed}
+.st{background:#F4EFE4;border:1.5px solid #CFC6B2;border-radius:12px;padding:10px 12px;min-width:0}
+.st b{display:block;font-size:22px;line-height:1.25}
+.st span{display:block;font-size:14px;color:#686458;line-height:1.4}
+.mt{height:10px;border-radius:999px;border:1.5px solid #3B3B3B;background:#FBF8F1;overflow:hidden}
+.li{display:flex;gap:10px;align-items:center;min-height:52px;padding:6px 14px;border:2px solid #3B3B3B;border-radius:999px;text-decoration:none;color:#3B3B3B;font-weight:600}
+.li img{width:20px;height:20px}
+dt{color:#686458;font-size:14px}dd{margin:0;overflow-wrap:anywhere}
+p,h1,h2,dl{margin:0}
+.nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12.5px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;text-decoration:none;border-radius:14px}
+.nav img{width:26px;height:26px}
+</style>
+</helmet>
+<div style="width:390px;height:2250px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <p style="font-size:11px;color:#686458;text-align:right;padding:6px 16px 0">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <div style="padding:0 16px 150px;display:flex;flex-direction:column;gap:14px">
+    <h1 style="font-size:22px;line-height:1.35">ของฉัน</h1>
+    <section class="card" style="flex-direction:row;align-items:center;gap:12px"><div aria-hidden="true" style="width:52px;height:52px;flex:none;border-radius:50%;border:2px solid #3B3B3B;background:#DFE1D2;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px">J</div><div><b style="font-size:18px">Jai</b><p style="font-size:14px;color:#686458">แชตส่วนตัวกับ JaiJa</p></div></section>
+
+    <section class="card" aria-labelledby="ac"><h2 id="ac" class="h"><img src="/_blob/e85e595816db7f8bdfaf71b77e2df637" alt="">บัญชีที่เชื่อม</h2>
+      <dl style="display:grid;grid-template-columns:110px 1fr;gap:6px 12px">
+        <dt>บัญชี Google</dt><dd>j***@gmail.com <span class="tag">เชื่อมแล้ว</span></dd>
+        <dt>ที่เก็บไฟล์</dt><dd style="font-size:14px">My Drive › <b>LineArchive</b> › YYYY-MM-DD</dd>
+        <dt>Google Calendar</dt><dd><span class="tag">เชื่อมแล้ว</span></dd>
+      </dl></section>
+
+    <section class="card" aria-labelledby="ct"><h2 id="ct" class="h">ของที่เก็บไว้</h2><p style="font-size:12.5px;color:#686458">นับเป็นรายการ ไม่ใช่พื้นที่ใน Drive</p>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+        <div class="st"><b>4</b><span>ไฟล์/รูป</span></div><div class="st"><b>1</b><span>ลิงก์</span></div>
+        <div class="st"><b>1</b><span>สิ่งที่จำไว้</span></div><div class="st"><b>4</b><span>เตือนที่ทำงานอยู่</span></div>
+        <div class="st"><b>4</b><span>Deadline เปิดอยู่</span><span style="font-size:12.5px">สมัครแล้ว 1 · ปิดแล้ว 1</span></div>
+      </div>
+      <p style="font-size:12.5px;color:#686458">พื้นที่ Drive ยังไม่แสดง เพราะ JaiJa ยังไม่ได้อ่านโควตา Drive <span class="tag prop">Proposed</span></p></section>
+
+    <section class="card" aria-labelledby="ai"><h2 id="ai" class="h"><img src="/_blob/6aa173fcbb5268c09ff29acbc91e4f43" alt="">AI ที่ใช้ร่วมกัน</h2>
+      <p style="font-size:12.5px;color:#686458">นับคำขอของทุกคนที่ใช้บอทนี้วันนี้ ไม่ใช่พื้นที่เก็บ และไม่ใช่จำนวนไฟล์</p>
+      <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex"><b style="flex:1">gemini-flash</b><span style="font-size:14px">เหลือ 6</span></div><div class="mt" role="img" aria-label="ใช้ไป 14 จาก 20"><div style="width:70%;height:100%;background:#62694D"></div></div><p style="font-size:12.5px">ใช้ไป 14 จาก 20</p></div>
+      <div style="display:flex;flex-direction:column;gap:2px"><b>gemini-flash-lite</b><p style="font-size:12.5px">ใช้ไป 3 · ยังไม่รู้ลิมิต</p></div>
+      <p style="font-size:14px"><b>รีเซ็ตวันนี้ 14:00 น.</b> · เที่ยงคืนเวลาแปซิฟิก (สหรัฐฯ)</p>
+      <p style="font-size:12.5px;color:#686458">ลิมิตจะรู้หลังจากโมเดลปฏิเสธครั้งแรก · หลัง 1 พ.ย. 2569 เวลารีเซ็ตเป็น 15:00 น.</p></section>
+
+    <section class="card" aria-labelledby="pf"><h2 id="pf" class="h"><img src="/_blob/665876a9be90122141f3813e2635ae2a" alt="">ตั้งค่า</h2>
+      <a class="li" href="LanguageTone.dc.html"><img src="/_blob/987b3ff2ae93dcabb56f19e8b2420a43" alt=""><span style="flex:1">ภาษา / Language</span><span style="font-size:14px;color:#686458;font-weight:400">ไทย</span><img src="/_blob/a5a39331a6c7d8ad8bb702e4f7d1188a" alt=""></a>
+      <a class="li" href="LanguageTone.dc.html"><img src="/_blob/9dc4dfc579a5693312ff65359d944bfb" alt=""><span style="flex:1">โทนการคุย <span class="tag prop">Proposed</span></span><span style="font-size:14px;color:#686458;font-weight:400">สุภาพเป็นกันเอง</span></a>
+      <a class="li" href="AlertSettings.dc.html"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt=""><span style="flex:1">การเตือน Deadline</span><span style="font-size:14px;color:#686458;font-weight:400">7·3·1 · 09:00</span></a></section>
+
+    <section class="card" aria-labelledby="gp"><h2 id="gp" class="h"><img src="/_blob/71d94ba304fe64fb2f465ad0361d3ee7" alt="">กลุ่ม</h2>
+      <p><b>กลุ่ม 5 ซิปๆ</b></p><p style="font-size:14px">คุณเป็นผู้ดูแล ไฟล์กลุ่มเก็บใน Drive ของคุณ</p><p style="font-size:14px;color:#686458">My Drive › LineArchive › Groups › กลุ่ม 5 ซิปๆ</p>
+      <a class="btn" href="#" style="align-self:flex-start;font-size:14px">แชร์โฟลเดอร์กลุ่ม</a>
+      <p style="font-size:12.5px;color:#686458">Sharing opens a warning first: “ผู้ที่มีลิงก์อาจเปิดดูโฟลเดอร์นี้ได้ ตรวจสิทธิ์ก่อนแชร์นะ” (group_share).</p></section>
+
+    <section class="card" aria-labelledby="cn"><h2 id="cn" class="h"><img src="/_blob/6be3b39a1202762955a3a5fe68f3b275" alt="">การเชื่อมต่อ</h2>
+      <a class="btn" href="#">เชื่อมต่อ Google Drive อีกครั้ง</a>
+      <a class="btn" href="Recovery.dc.html" style="color:#B5482F;border-color:#B5482F">ยกเลิกการเชื่อมต่อ Drive</a>
+      <p style="font-size:12.5px;color:#686458">Disconnect asks first: JaiJa จะเก็บหรืออ่านไฟล์ เตือน และ Deadline ไม่ได้จนกว่าจะเชื่อมใหม่ ไฟล์ทั้งหมดยังอยู่ใน Drive ของคุณ ไม่ถูกลบ</p></section>
+
+    <section class="card" aria-labelledby="hp"><h2 id="hp" class="h"><img src="/_blob/820b705bcd324b1730cfdde4293775f8" alt="">ช่วยเหลือและความเป็นส่วนตัว</h2>
+      <a class="btn" href="Onboarding.dc.html" style="align-self:flex-start">วิธีใช้ JaiJa</a>
+      <p style="font-size:14px"><b>ข้อมูลอยู่ที่ไหน</b></p>
+      <p style="font-size:14px">ไฟล์อยู่ใน My Drive/LineArchive ของคุณ ข้อมูลเตือน Deadline และสิ่งที่จำไว้อยู่ใน LineArchive/_data ใน Drive ของคุณเช่นกัน</p></section>
+  </div>
+  <nav class="nav" aria-label="เมนูหลัก" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 8px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">
+    <a href="Today.dc.html"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">วันนี้</a>
+    <a href="Deadlines.dc.html"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadline</a>
+    <a href="Library.dc.html"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">คลัง</a>
+    <a href="Me.dc.html" aria-current="page" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">ของฉัน</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

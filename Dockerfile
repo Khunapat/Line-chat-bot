@@ -7,6 +7,8 @@ RUN npm ci --omit=dev
 
 COPY src ./src
 COPY assets/public ./assets/public
+COPY assets/richmenu-src/fonts ./assets/richmenu-src/fonts
+COPY web ./web
 
 ENV NODE_ENV=production
 ENV PORT=8080

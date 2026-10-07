@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Group library and remembered facts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.pri img{filter:brightness(0) invert(1)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;padding:3px;background:#EFE8D8;border:2px solid #3B3B3B;border-radius:999px}
+.seg button{min-height:40px;border:0;border-radius:999px;background:transparent;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B;display:flex;gap:6px;align-items:center;justify-content:center}
+.seg .on{background:#FBF8F1;box-shadow:0 0 0 2px #3B3B3B}
+.it{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start;padding:12px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B}
+.nm{font-weight:600;line-height:1.45;overflow-wrap:anywhere;color:#3B3B3B}
+.mt{font-size:12.5px;color:#686458}
+.lbl{font-size:12.5px;font-weight:700;color:#686458}
+p,h1{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:1000px;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px;padding:6px 16px;display:flex;flex-direction:column;gap:12px">
+  <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <h1 style="font-size:22px;line-height:1.35">คลัง</h1>
+  <div class="seg" role="radiogroup" aria-label="เลือกคลัง"><button role="radio" aria-checked="false"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="" style="width:18px;height:18px">ของฉัน</button><button role="radio" aria-checked="true" class="on"><img src="/_blob/71d94ba304fe64fb2f465ad0361d3ee7" alt="" style="width:18px;height:18px">กลุ่ม 5 ซิปๆ</button></div>
+  <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#DFE1D2"><img src="/_blob/71d94ba304fe64fb2f465ad0361d3ee7" alt="" style="width:24px;height:24px"><div><b>ไฟล์กลุ่มนี้เก็บใน Drive ของผู้ดูแลกลุ่ม (Jai)</b><p style="font-size:14px;overflow-wrap:anywhere">My Drive › LineArchive › Groups › กลุ่ม 5 ซิปๆ</p></div></div>
+  <p style="font-size:12.5px;color:#686458">คลังกลุ่มแสดงเฉพาะของที่ส่งในกลุ่ม ไม่เอาของส่วนตัวมาปน</p>
+  <div class="it"><div style="width:52px;height:52px;border-radius:10px;border:1.5px solid #3B3B3B;background:#EFE8D8;display:flex;align-items:center;justify-content:center"><img src="/_blob/2b25d57670af88c76cace1c5478c6ae2" alt="" style="width:28px;height:28px"></div><div style="min-width:0"><a class="nm" href="FileDetail.dc.html">สไลด์นำเสนอกลุ่ม_v2.pdf</a><p class="mt">PDF · เก็บเมื่อ 6 ต.ค. 69 · ส่งโดย เพื่อน A</p></div><div style="grid-column:2"><a class="btn pri" href="#" style="font-size:14px"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดใน Google Drive</a></div></div>
+  <div class="it"><img src="/_blob/0333500b5e2636e519f9e08c7fcbdd4b" alt="" style="width:52px;height:52px;border-radius:10px;border:1.5px solid #3B3B3B;object-fit:cover"><div style="min-width:0"><a class="nm" href="FileDetail.dc.html">12-40-11_กระดานสรุปงานกลุ่ม.jpg</a><p class="mt">รูปภาพ · เก็บเมื่อ 5 ต.ค. 69 · ส่งโดย Jai</p></div><div style="grid-column:2"><a class="btn pri" href="#" style="font-size:14px"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดใน Google Drive</a></div></div>
+
+  <p class="lbl" style="margin-top:8px">สิ่งที่จำไว้ · ของฉัน · exact text, never rewritten</p>
+  <div class="it"><img src="/_blob/17e1f7b45c72467f4a0d50a2e1a97c58" alt="" style="width:36px;height:36px"><div style="min-width:0"><p style="font-weight:600;overflow-wrap:anywhere">ที่จอดรถ ชั้น 3 ช่อง B12</p><p class="mt">จำไว้เมื่อ 5 ต.ค. 69 · 17:00 น.</p></div><div style="grid-column:2"><a class="btn" href="#" style="font-size:14px;color:#B5482F;border-color:#B5482F">ลืมอันนี้</a></div></div>
+  <p class="lbl" style="margin-top:8px">ลิงก์ · ของฉัน</p>
+  <div class="it"><img src="/_blob/ecd80836901f5bc6690402dcd2052e36" alt="" style="width:36px;height:36px"><div style="min-width:0"><p class="nm">Apply | Youth Innovation Forum</p><p class="mt">example.org · เก็บเมื่อ 6 ต.ค. 69</p></div><div style="grid-column:2"><a class="btn pri" href="#" style="font-size:14px"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดลิงก์</a></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

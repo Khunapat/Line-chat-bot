@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>English at 320 pixels</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.ph{width:320px;height:1520px;position:relative;overflow:hidden;box-sizing:border-box;border:2px solid #3B3B3B;border-radius:24px;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);line-height:1.6;font-size:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 14px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.ag{display:grid;grid-template-columns:58px 1fr;gap:8px;padding:10px;border-radius:10px;background:#FBF8F1;border:2px solid #3B3B3B}
+.k{font-size:13px;color:#686458;display:flex;gap:6px;align-items:center;line-height:1.4}
+.k img{width:16px;height:16px}
+.day{min-height:60px;border-radius:12px;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Bai Jamjuree",sans-serif;color:#3B3B3B;background:transparent;padding:0}
+.day small{font-size:11.5px;color:#686458}.day b{font-size:17px;line-height:1.3}
+.nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;text-decoration:none;border-radius:14px}
+.nav img{width:24px;height:24px}
+dt{color:#686458;font-size:13px}dd{margin:0 0 6px;overflow-wrap:anywhere}
+p,h1,h2,dl{margin:0}
+</style>
+</helmet>
+<div style="width:760px;height:1600px;box-sizing:border-box;padding:40px;display:flex;gap:40px;background:#EFE8D8;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B">
+  <div class="ph">
+    <div style="padding:6px 12px 110px;display:flex;flex-direction:column;gap:12px">
+      <p style="font-size:11px;color:#686458;text-align:right">Prototype · sample data</p>
+      <div style="display:flex;gap:8px;align-items:center"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:40px;height:40px;border-radius:50%;border:2px solid #3B3B3B"><div style="min-width:0"><h1 style="font-size:20px;line-height:1.3">Good afternoon, Jai</h1><p style="font-size:13px;color:#686458">What can JaiJa help with today?</p></div></div>
+      <a class="btn" href="#" style="align-self:flex-end;font-size:13px"><img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt="" style="width:16px;height:16px">Drive connected</a>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#EFE8D8;border:2px solid #3B3B3B;border-radius:999px"><span style="min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:#FBF8F1;box-shadow:0 0 0 2px #3B3B3B;font-weight:600;font-size:13px">Planner</span><span style="min-height:40px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;text-align:center">All reminders</span></div>
+      <p style="font-size:12px;color:#686458">Selected day: Mon 5 Oct. “Up next” only shows on today, so it is hidden here.</p>
+      <div style="display:flex;align-items:center;flex-wrap:wrap"><b style="font-size:16px;flex:1">October 2026</b><a class="btn" href="#" style="font-size:13px;padding:4px 10px">Back to today</a><a class="btn ico" href="#" aria-label="Previous week"><img src="/_blob/f92ebc7e4fc1422d70bdd4c2a0d8479d" alt="" style="width:22px;height:22px"></a><a class="btn ico" href="#" aria-label="Next week"><img src="/_blob/a5a39331a6c7d8ad8bb702e4f7d1188a" alt="" style="width:22px;height:22px"></a></div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin:0 -6px">
+        <button class="day" aria-pressed="true" style="background:#FBF8F1;border-color:#3B3B3B"><small>Mon</small><b>5</b></button><button class="day"><small>Tue</small><b>6</b></button><button class="day" aria-label="Wed 7 Oct 2026 (today)"><small>Wed</small><b style="text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:#8B9270">7</b></button><button class="day"><small>Thu</small><b>8</b></button><button class="day"><small>Fri</small><b>9</b></button><button class="day"><small>Sat</small><b>10</b></button><button class="day"><small>Sun</small><b>11</b></button>
+      </div>
+      <p style="font-size:12px;color:#686458">At 320 px each day cell is 44 px wide: the strip bleeds 6 px into the gutter instead of shrinking targets.</p>
+      <h2 style="font-size:17px;line-height:1.4">Monday 5 October 2026</h2>
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:14px;border:2px dashed #CFC6B2;border-radius:14px"><p><b>No reminders on 5 Oct yet</b></p><p style="font-size:13px;background:#FBF8F1;border:1px solid #CFC6B2;border-radius:14px 14px 14px 4px;padding:8px 12px;text-align:left">Try typing “remind me tomorrow 9am to send the documents” in the chat.</p><p style="font-size:12px;color:#686458">5 Oct has passed, so there is no “set a reminder for this day” button. On a future day the button reads “Set a reminder for 9 Oct” and wraps before it clips.</p></div>
+    </div>
+    <a class="btn pri" href="#" style="position:absolute;right:12px;bottom:100px;min-height:52px;color:#FFFFFF"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"></path></svg>New reminder</a>
+    <nav class="nav" aria-label="Main menu" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 6px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px">
+      <a href="#" aria-current="page" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">Today</a><a href="#"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadlines</a><a href="#"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">Library</a><a href="#"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">Me</a>
+    </nav>
+  </div>
+
+  <div class="ph">
+    <div style="padding:6px 12px 110px;display:flex;flex-direction:column;gap:12px">
+      <p style="font-size:11px;color:#686458;text-align:right">Prototype · sample data</p>
+      <div style="display:flex;align-items:center;gap:4px"><a class="btn ico" href="#" aria-label="Back"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:22px;height:22px"></a><p style="font-size:20px;font-weight:700">View details</p></div>
+      <div><span style="font:600 12px/1.5 'Bai Jamjuree',sans-serif;padding:1px 8px;border-radius:999px;border:1px solid #3B3B3B;background:#DFE1D2">Application</span><h1 style="font-size:20px;line-height:1.4;margin-top:4px">Youth Innovation Forum 2026</h1><p style="font-size:13px;color:#686458">Example Org</p></div>
+      <section style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:14px;box-shadow:0 3px 0 #3B3B3B;padding:12px">
+        <p style="font-size:13px;color:#686458">Closing date</p><p style="font-size:20px;font-weight:700">Sat 10 Oct 2026</p><p>Organiser's note: 23:59</p><p style="color:#B5482F;font-weight:700;font-size:13px">3 days left</p><p style="font-size:13px;margin-top:4px">Event dates: <b>14–16 Nov 2026</b> <span style="color:#686458">(not the closing date)</span></p>
+      </section>
+      <div style="display:flex;flex-direction:column;gap:8px"><a class="btn pri" href="#">Applied, stop alerts</a><a class="btn" href="#"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:16px;height:16px">Open application link</a></div>
+      <p style="font-size:12px;color:#686458">Below 360 px the two actions stack full-width.</p>
+      <h2 style="font-size:16px">Alerts for this item</h2>
+      <p style="font-size:13px"><b>Fri 9 Oct 2026 · 09:00</b> · 1 day before</p>
+      <p style="font-size:13px"><b>Sat 10 Oct 2026 · 09:00</b> · Closing day</p>
+      <section style="background:#EFE8D8;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px"><b>Details merged</b><p style="font-size:14px">This was already saved, so I merged in the new details: link, eligibility</p><a class="btn" href="#" style="font-size:13px">Not the same item? Split it</a></section>
+      <h2 style="font-size:16px;margin-top:6px">Long filename · Library</h2>
+      <div style="display:grid;grid-template-columns:44px 1fr;gap:10px;padding:10px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1"><img src="/_blob/c379d0a95699934f80cf638c997d055d" alt="" style="width:36px;height:36px"><div style="min-width:0"><p style="font-weight:600;overflow-wrap:anywhere;line-height:1.45">ใบสมัครงาน_ฉบับแก้ไขครั้งที่สาม_สุดท้ายจริงๆ_v7.docx</p><p style="font-size:12px;color:#686458">Word document · Saved 30 Sep 2026</p></div></div>
+      <p style="font-size:12px;color:#686458">Thai filenames and fixture titles stay in Thai inside the English UI. Gregorian years in English; Buddhist years in Thai.</p>
+    </div>
+    <nav class="nav" aria-label="Main menu" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 6px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px">
+      <a href="#"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">Today</a><a href="#" aria-current="page" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadlines</a><a href="#"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">Library</a><a href="#"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">Me</a>
+    </nav>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":1600}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

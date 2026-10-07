@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Deadline actions applied undo split</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.dan{color:#B5482F;border-color:#B5482F}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.lbl{font-size:12.5px;font-weight:700;color:#686458;letter-spacing:.04em}
+.sheet{background:#F4EFE4;border:2px solid #3B3B3B;border-radius:22px;padding:12px 14px 16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 3px 0 #3B3B3B}
+.toast{display:flex;gap:10px;align-items:center;background:#3B3B3B;color:#FFFFFF;border-radius:14px;padding:8px 8px 8px 16px}
+.toast a{background:transparent;color:#FFFFFF;border-color:#FFFFFF}
+.rc{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:10px 14px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1;box-sizing:border-box}
+.rc input{width:20px;height:20px;margin:3px 0 0;accent-color:#62694D;flex:none}
+.rc b{display:block;font-weight:600}
+.rc small{display:block;font-size:13px;color:#686458}
+p,h2,fieldset,legend{margin:0}
+fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:6px}
+</style>
+</helmet>
+<div style="width:390px;height:1500px;box-sizing:border-box;background:#EFE8D8;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+  <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+
+  <p class="lbl">APPLIED · opp_applied → resume with opp_unapplied</p>
+  <section style="background:#F4EFE4;border:2px solid #3B3B3B;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px">
+    <p style="font-weight:700;line-height:1.45">คอร์สอบรม PCB Design to Comply EMC Requirement</p>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#DFE1D2"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="#3B3B3B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg><div><b>สมัครแล้ว · หยุดเตือนแล้ว</b><p style="font-size:14px">สมัครเมื่อ 3 ต.ค. 69 · 11:00 น.</p></div></div>
+    <p style="font-size:14px">การเตือนของงานนี้: หยุดเตือนแล้ว เพราะกดสมัครแล้ว</p>
+    <a class="btn pri" href="#">เตือนต่อ</a>
+    <p style="font-size:12.5px;color:#686458">Source poster, links and history stay attached.</p>
+  </section>
+  <div class="toast" role="status"><span style="flex:1">สมัครแล้ว หยุดเตือนให้แล้ว</span><a class="btn" href="#">เตือนต่อ</a></div>
+
+  <p class="lbl">OVERFLOW ⋯ · extra actions stay off the compact card</p>
+  <section class="sheet" role="dialog" aria-labelledby="ov">
+    <div style="display:flex;align-items:center"><h2 id="ov" style="flex:1;font-size:16px;line-height:1.45">แข่งออกแบบวงจร Analog IC รอบคัดเลือก</h2><a class="btn ico" href="#" aria-label="ปิด"><img src="/_blob/7dd9ecc3fe69c80fa858c2138024f484" alt="" style="width:24px;height:24px"></a></div>
+    <a class="btn" href="#">สมัครแล้ว หยุดเตือน</a>
+    <a class="btn" href="#"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">ตั้งการเตือนของงานนี้</a>
+    <a class="btn" href="DeadlineDetail.dc.html">ดูรายละเอียด</a>
+    <a class="btn dan" href="#"><img src="/_blob/c7c5f60a8bfb980a1f8efde7cab766c4" alt="" style="width:18px;height:18px">ลบรายการนี้</a>
+  </section>
+  <div class="toast" role="status"><span style="flex:1">ลบรายการแล้ว</span><a class="btn" href="#">เอาคืน</a></div>
+  <p style="font-size:12.5px;color:#686458">Undo uses opp_restore; the last 5 deleted items can come back. The toast stays 8 s and is keyboard reachable.</p>
+
+  <p class="lbl">PER-ITEM ALERTS · alerts_set&amp;p=&amp;id= · alerts_off&amp;id= · alerts_reset&amp;id=</p>
+  <section class="sheet" role="dialog" aria-labelledby="ia">
+    <h2 id="ia" style="font-size:16px">ตั้งการเตือนของงานนี้</h2>
+    <fieldset><legend style="position:absolute;width:1px;height:1px;overflow:hidden">ชุดการเตือน</legend>
+      <label class="rc"><input type="radio" name="ia" checked=""><span><b>ใช้ค่าเริ่มต้น</b><small>7, 3, 1 วันก่อน + วันปิด</small></span></label>
+      <label class="rc"><input type="radio" name="ia"><span><b>เตือนเร็ว</b><small>14, 7, 3, 1 วันก่อน + วันปิด</small></span></label>
+      <label class="rc"><input type="radio" name="ia"><span><b>เบา ๆ</b><small>3, 1 วันก่อน + วันปิด</small></span></label>
+      <label class="rc"><input type="radio" name="ia"><span><b>ปิดการเตือนงานนี้</b></span></label>
+    </fieldset>
+    <p style="font-size:12.5px;color:#686458">เวลาเตือน 09:00 น. ใช้ค่ารวม เปลี่ยนเฉพาะงานไม่ได้</p>
+    <a class="btn pri" href="#">บันทึก</a>
+  </section>
+
+  <p class="lbl">SPLIT · opp_split&amp;id= (correction for an automatic merge)</p>
+  <section class="sheet" role="dialog" aria-labelledby="sp">
+    <h2 id="sp" style="font-size:16px">แยกเป็นรายการใหม่?</h2>
+    <p style="font-size:15px">ข้อมูลจากแหล่งล่าสุด (รูปโปสเตอร์) จะกลายเป็น Deadline อีกรายการ รายการเดิมกลับไปเป็นแบบก่อนรวม</p>
+    <div style="display:flex;gap:8px"><a class="btn" href="#" style="flex:1">ยกเลิก</a><a class="btn pri" href="#" style="flex:1">แยกเป็นรายการใหม่</a></div>
+  </section>
+  <div class="toast" role="status"><span style="flex:1">แยกเป็น 2 รายการแล้ว</span><a class="btn" href="#">ดูรายการใหม่</a></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

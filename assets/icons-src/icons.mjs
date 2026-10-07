@@ -54,6 +54,16 @@ export const ICONS = {
     <rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(0 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(45 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(90 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(135 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(180 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(225 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(270 50 52)"/><rect x="39" y="9" width="22" height="24" rx="8" fill="${C.cream}" ${S} transform="rotate(315 50 52)"/>
     <circle cx="50" cy="52" r="28" fill="${C.cream}" ${S}/>
     <circle cx="50" cy="52" r="11" fill="${C.olive}" ${S}/>`,
+  // person (ของฉัน / Me)
+  me: `
+    <circle cx="50" cy="34" r="16" fill="${C.cream}" ${S}/>
+    <path d="M18 84 q2 -30 32 -30 q30 0 32 30 z" fill="${C.olive}" ${S}/>
+    <rect x="58" y="66" width="14" height="9" rx="2" fill="${C.white}" ${S}/>`,
+  // question mark in a circle (help)
+  help: `
+    <circle cx="50" cy="50" r="32" fill="${C.cream}" ${S}/>
+    <path d="M39 40 a11 11 0 1 1 15 10 c-3 1 -4 3 -4 6 v3" ${S}/>
+    <circle cx="50" cy="70" r="3" fill="${C.stroke}"/>`,
   // little robot head (AI)
   ai: `
     <rect x="18" y="30" width="64" height="50" rx="14" fill="${C.cream}" ${S}/>

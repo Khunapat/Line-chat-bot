@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Planner with another day selected</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/2cb68634004ed475055ceb4051ac14e6) format("truetype");font-weight:500}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.day{min-height:64px;border-radius:14px;border:2px solid transparent;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Bai Jamjuree",sans-serif;color:#3B3B3B;padding:4px 0}
+.day small{font-size:12.5px;color:#686458;line-height:1.4}
+.day b{font-size:18px;line-height:1.3}
+.mk{display:flex;gap:3px;height:9px;align-items:center}
+.r{width:7px;height:7px;border-radius:50%;background:#3B3B3B}
+.d{width:7px;height:7px;transform:rotate(45deg);background:#B5482F}
+.e{width:10px;height:4px;border:1.5px solid #3B3B3B;border-radius:2px}
+.f{width:7px;height:7px;border:1.5px solid #62694D;background:#DFE1D2;border-radius:2px}
+.nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12.5px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;text-decoration:none;border-radius:14px}
+.nav img{width:26px;height:26px}
+h2,h3,p{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:900px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <div style="padding:6px 16px 120px;display:flex;flex-direction:column;gap:14px">
+    <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+    <div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">
+      <a class="btn" href="MonthOverlay.dc.html" style="border-color:transparent;background:transparent;padding:0 6px;font-size:18px;font-weight:700">ตุลาคม 2569<img src="/_blob/08c104cd17bb3e0338672c15926bb3c2" alt="" style="width:18px;height:18px"></a>
+      <span style="flex:1"></span>
+      <a class="btn" href="Today.dc.html" style="font-size:14px">กลับวันนี้</a>
+      <a class="btn ico" href="#" aria-label="สัปดาห์ก่อน"><img src="/_blob/f92ebc7e4fc1422d70bdd4c2a0d8479d" alt="" style="width:24px;height:24px"></a>
+      <a class="btn ico" href="#" aria-label="สัปดาห์ถัดไป"><img src="/_blob/a5a39331a6c7d8ad8bb702e4f7d1188a" alt="" style="width:24px;height:24px"></a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 -10px">
+      <button class="day" aria-pressed="true" aria-label="จ. 5 ต.ค. 2569 วันที่เลือก: ของที่เก็บ 2" style="background:#FBF8F1;border-color:#3B3B3B;box-shadow:0 2px 0 #3B3B3B"><small>จ.</small><b>5</b><span class="mk"><i class="f"></i></span></button>
+      <button class="day"><small>อ.</small><b>6</b><span class="mk"><i class="f"></i></span></button>
+      <button class="day" aria-label="พ. 7 ต.ค. 2569 วันนี้"><small>พ.</small><b style="text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px;text-decoration-color:#8B9270">7</b><span class="mk"><i class="r"></i><i class="d"></i><i class="f"></i></span></button>
+      <button class="day"><small>พฤ.</small><b>8</b><span class="mk"><i class="r"></i><i class="e"></i></span></button>
+      <button class="day"><small>ศ.</small><b>9</b><span class="mk"><i class="r"></i></span></button>
+      <button class="day"><small>ส.</small><b>10</b><span class="mk"><i class="r"></i><i class="d"></i></span></button>
+      <button class="day"><small>อา.</small><b>11</b><span class="mk"><i class="r"></i></span></button>
+    </div>
+    <h2 style="font-size:18px;line-height:1.4">วันจันทร์ที่ 5 ตุลาคม 2569</h2>
+    <h3 style="font-size:14px;display:flex;gap:6px;align-items:center"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">เตือน <span style="font-weight:500;color:#686458">0</span></h3>
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:22px 12px;border:2px dashed #CFC6B2;border-radius:16px">
+      <img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:64px;height:64px;border-radius:50%;border:2px solid #3B3B3B">
+      <p><b>ยังไม่มีรายการเตือนสำหรับวันที่ 5 ต.ค.</b></p>
+      <p style="background:#FBF8F1;border:1px solid #CFC6B2;border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:14px;text-align:left">ลองพิมพ์ “พรุ่งนี้ 9 โมง เตือนส่งเอกสาร” ในแชตได้เลย</p>
+      <p style="font-size:13px;color:#686458">วันนี้ผ่านไปแล้ว เลยไม่มีปุ่มตั้งเตือนย้อนหลัง</p>
+    </div>
+    <section style="background:#EFE8D8;border-radius:16px;padding:6px 14px">
+      <button aria-expanded="false" style="display:flex;align-items:center;gap:8px;min-height:44px;width:100%;background:none;border:0;padding:0;font:700 16px 'Bai Jamjuree',sans-serif;color:#3B3B3B;text-align:left"><img src="/_blob/17e1f7b45c72467f4a0d50a2e1a97c58" alt="" style="width:18px;height:18px"><span style="flex:1">เก็บไว้วันที่ 5 ต.ค. <span style="font-weight:500;font-size:14px;color:#686458">2 รายการ</span></span><img src="/_blob/a5a39331a6c7d8ad8bb702e4f7d1188a" alt="" style="width:18px;height:18px"></button>
+    </section>
+    <p style="font-size:12.5px;color:#686458">A05 fix: every heading and empty message follows the selected date; “วันนี้” only appears on today. The collapsed panel keeps its count (A04).</p>
+    <div style="border-top:2px dashed #CFC6B2;padding-top:12px;display:flex;flex-direction:column;gap:6px">
+      <p style="font-size:12.5px;font-weight:700;color:#686458">ROLLOVER · week across a year</p>
+      <p style="font-size:16px;font-weight:700">ธ.ค. 2569 – ม.ค. 2570</p>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;font-size:13px;text-align:center;color:#686458"><span>จ. 28</span><span>อ. 29</span><span>พ. 30</span><span style="color:#3B3B3B;font-weight:700">พฤ. 31</span><span style="color:#3B3B3B;font-weight:700">ศ. 1</span><span>ส. 2</span><span>อา. 3</span></div>
+      <p style="font-size:12.5px;color:#686458">Header shows both months and both Buddhist years. English: “Dec 2026 – Jan 2027”.</p>
+    </div>
+  </div>
+  <nav class="nav" aria-label="เมนูหลัก" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 8px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">
+    <a href="Today.dc.html" aria-current="page" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">วันนี้</a>
+    <a href="Deadlines.dc.html"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadline</a>
+    <a href="Library.dc.html"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">คลัง</a>
+    <a href="Me.dc.html"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">ของฉัน</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

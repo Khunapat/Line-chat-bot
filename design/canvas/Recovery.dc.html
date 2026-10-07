@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Recovery states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.s{background:#F4EFE4;border:2px solid #3B3B3B;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0;height:570px;box-sizing:border-box}
+.k{font-size:12px;font-weight:700;letter-spacing:.06em;color:#686458}
+.c{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;flex:1;justify-content:center}
+.c h2{font-size:18px;line-height:1.45;margin:0}
+.c p{margin:0;font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box;width:100%}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.sk{background:#EFE8D8;border-radius:10px}
+.n{font-size:12px;color:#686458;margin:0}
+.mas{width:64px;height:64px;border-radius:50%;border:2px solid #3B3B3B}
+p{margin:0}
+</style>
+</helmet>
+<div style="width:1280px;height:1300px;box-sizing:border-box;padding:40px;background:#EFE8D8;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.55;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;align-content:start">
+  <section class="s"><p class="k">EMPTY · nothing saved yet</p>
+    <div class="c" style="border:2px dashed #CFC6B2;border-radius:16px;padding:16px"><img class="mas" src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt=""><h2>ยังไม่มี Deadline ที่เปิดอยู่</h2><p style="background:#FBF8F1;border:1px solid #CFC6B2;border-radius:14px 14px 14px 4px;padding:8px 12px;text-align:left">ส่งโปสเตอร์ ลิงก์ หรือ PDF รับสมัครมาในแชต เดี๋ยวจดวันปิดรับให้</p></div>
+    <p class="n">Only shown after a successful load returns zero items. One next step, a chat example (A06).</p></section>
+
+  <section class="s" aria-busy="true"><p class="k">LOADING · skeleton first, JaiJa after 400 ms</p>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0">
+      <div style="display:flex;gap:10px;align-items:flex-end" aria-hidden="true"><img src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:44px;height:44px;border-radius:50%;border:2px solid #3B3B3B"><span style="width:12px;height:12px;border-radius:50%;background:#8B9270;border:1.5px solid #3B3B3B"></span><span style="width:12px;height:12px;border-radius:50%;background:#8B9270;border:1.5px solid #3B3B3B"></span><span style="width:12px;height:12px;border-radius:50%;background:#8B9270;border:1.5px solid #3B3B3B"></span></div>
+      <p role="status" style="font-size:14px">กำลังโหลด…</p></div>
+    <div class="sk" style="height:84px"></div><div class="sk" style="height:84px"></div><div class="sk" style="height:84px"></div>
+    <p class="n">Counts show “…”, never 0, while loading (A19). After 8 s: static clock + “ยังทำอยู่ ใช้เวลานานกว่าปกติ ไม่ต้องกดซ้ำนะ”.</p></section>
+
+  <section class="s" role="alert"><p class="k">FAILED LOAD · not an empty list</p>
+    <div class="c"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt="" style="width:48px;height:48px"><h2>โหลดไม่สำเร็จ ลองอีกครั้งได้ ข้อมูลเดิมยังอยู่</h2><p style="color:#686458">เครือข่ายไม่ตอบในเวลาที่กำหนด ไม่ได้แปลว่ารายการหายไป</p><a class="btn pri" href="#">ลองอีกครั้ง</a><p style="font-size:13px">หรือเปิดจากเมนูใน LINE อีกครั้ง</p></div>
+    <p class="n">Retry is bounded and duplicate-safe (P06 levels: retry → reopen from LINE → admin).</p></section>
+
+  <section class="s" role="alert"><p class="k">DRIVE DISCONNECTED / REVOKED</p>
+    <div class="c"><img src="/_blob/e85e595816db7f8bdfaf71b77e2df637" alt="" style="width:48px;height:48px"><h2>ยังเปิดข้อมูลไม่ได้ เพราะ Google Drive ไม่ได้เชื่อมอยู่</h2><p style="color:#686458">ข้อมูลของคุณยังอยู่ใน Drive ไม่ได้หาย เชื่อมต่อ Google Drive อีกครั้งเพื่อใช้งานต่อ</p><a class="btn pri" href="#">เชื่อมต่อ Google Drive อีกครั้ง</a></div>
+    <p class="n">Never claims data loss. ของฉัน stays reachable to show account status.</p></section>
+
+  <section class="s"><p class="k">EXPIRED LINK · the 24 h /gallery link</p>
+    <div class="c"><img class="mas" src="/_blob/110913d01c305a34bc2e39ab926d1fc4" alt="" style="width:88px;height:88px"><h2>ลิงก์นี้หมดอายุแล้ว</h2><p>ลิงก์แกลเลอรีเปิดได้ 24 ชั่วโมง เปิดไฟล์/รูปจากเมนูใน LINE อีกครั้งนะ</p><a class="btn pri" href="#">กลับไปที่แชต</a></div>
+    <p class="n">Full page, no nav: nothing behind it can load.</p></section>
+
+  <section class="s" role="alert"><p class="k">UNAUTHORISED · LIFF login failed</p>
+    <div class="c"><img src="/_blob/6be3b39a1202762955a3a5fe68f3b275" alt="" style="width:48px;height:48px"><h2>เปิดหน้านี้ไม่ได้</h2><p>หน้านี้เปิดได้เฉพาะเจ้าของบัญชีที่ล็อกอิน LINE อยู่ ลองอีกครั้ง หรือเปิดจากเมนูใน LINE</p><a class="btn pri" href="#">ลองอีกครั้ง</a><a class="btn" href="#">เปิดจากเมนูใน LINE</a><p style="font-size:13px">ยังไม่ได้? แจ้งผู้ดูแล JaiJa</p></div>
+    <p class="n">P07: a retry that navigates is not assumed to have worked; the state only clears on a verified session.</p></section>
+
+  <section class="s"><p class="k">AI UNAVAILABLE · shared quota used up</p>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#F6E7CB"><img src="/_blob/6aa173fcbb5268c09ff29acbc91e4f43" alt="" style="width:24px;height:24px"><div><b>ตอนนี้ AI ติดลิมิตชั่วคราว</b><p style="font-size:14px">ค้นหาด้วยคำยังใช้ได้ ไฟล์ที่ส่งมายังเก็บเข้า Drive ตามปกติ แค่การอ่านรายละเอียดต้องรอ วันนี้ 14:00 น.</p></div></div>
+    <div class="sk" style="height:60px"></div><div class="sk" style="height:60px"></div>
+    <p class="n">A banner, not a blocker: lists still load from Drive; only AI reading waits. Chat reply keeps the current line: “ตอนนี้ AI ติดลิมิตชั่วคราว ลองใหม่อีกสักครู่นะ (ไฟล์ที่ส่งมายังเก็บเข้า Drive ให้ตามปกติ)”.</p></section>
+
+  <section class="s"><p class="k">PARTIAL SUCCESS · saved, extraction failed</p>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0" aria-hidden="true"><div style="position:relative;width:110px;height:70px"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="" style="position:absolute;left:24px;top:6px;width:64px;height:64px"><img src="/_blob/3a3137cb26a5009ac3671fe3098bec46" alt="" style="position:absolute;left:74px;top:0;width:30px;height:30px"></div></div>
+    <div role="alert" style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#F6E7CB"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt="" style="width:24px;height:24px"><div><b>เก็บไฟล์แล้ว แต่อ่านรายละเอียดไม่สำเร็จ</b><p style="font-size:14px">ลองอีกครั้งหรือกรอกเองได้</p></div></div>
+    <div style="display:flex;gap:8px"><a class="btn" href="#">ลองอีกครั้ง</a><a class="btn pri" href="#">กรอกเอง</a></div>
+    <p class="n">Says exactly which half worked. Library variant: “โหลดลิงก์ไม่สำเร็จ ไฟล์/รูปแสดงครบแล้ว” with its own retry; that tab's count shows “–”.</p></section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

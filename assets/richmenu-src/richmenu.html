@@ -2,82 +2,114 @@
 <html>
 <head>
 <meta charset="utf-8">
+<!--
+  Source of assets/richmenu.th.png and assets/richmenu.en.png (2500x1686),
+  from the Claude Design RichMenu / RichMenuMap boards. Open with ?lang=en
+  for English. Tap areas are the [data-action] boxes (render script measures
+  them), so image and action map never drift apart.
+    data-action  postback action name        data-text  what the chat shows
+    data-input   LINE inputOption (openKeyboard)   data-fill  prefilled text
+    data-liff    web-app path used instead of the postback when LIFF_ID is set
+-->
 <style>
   @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-Regular.ttf'); font-weight: 400; }
-  @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-Medium.ttf'); font-weight: 500; }
   @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-SemiBold.ttf'); font-weight: 600; }
   @font-face { font-family: 'Bai Jamjuree'; src: url('fonts/BaiJamjuree-Bold.ttf'); font-weight: 700; }
   html, body { margin: 0; padding: 0; }
   body {
-    width: 2500px; height: 1686px; overflow: hidden;
+    width: 2500px; height: 1686px; overflow: hidden; position: relative;
     background: #F4EFE4;
     background-image: linear-gradient(#E9E2D2 1px, transparent 1px), linear-gradient(90deg, #E9E2D2 1px, transparent 1px);
     background-size: 60px 60px;
     font-family: 'Bai Jamjuree', sans-serif; color: #3B3B3B;
   }
-  .banner { height: 843px; box-sizing: border-box; padding: 64px 60px 40px; }
-  .card {
-    height: 100%; background: #FBF8F1; border: 8px solid #3B3B3B; border-radius: 48px; box-shadow: 0 16px 0 #3B3B3B;
-    display: flex; align-items: center; gap: 60px; padding: 0 70px 0 80px; box-sizing: border-box;
-  }
-  /* Quick buttons in the banner's right-hand space. */
-  .quick { width: 580px; flex: none; align-self: stretch; display: flex; flex-direction: column; gap: 26px; padding: 40px 0 46px; box-sizing: border-box; }
-  .q {
-    flex: 1; background: #F4EFE4; border: 6px solid #3B3B3B; border-radius: 40px; box-shadow: 0 8px 0 #3B3B3B;
-    display: flex; align-items: center; gap: 26px; padding: 0 34px; box-sizing: border-box;
-  }
-  .q .qi { width: 118px; height: 118px; flex: none; display: flex; }
-  .q .qi svg { width: 100%; height: 100%; }
-  .q .qt { font-size: 60px; font-weight: 700; line-height: 1; }
-  .q .qs { font-size: 34px; color: #8A8A8A; font-weight: 500; margin-top: 8px; }
-  .mascot { width: 540px; height: 540px; border-radius: 50%; background: #F4EFE4; border: 8px solid #3B3B3B; overflow: hidden; flex: none; box-shadow: 0 10px 0 #8B9270; }
+  .card { position: absolute; box-sizing: border-box; background: #FBF8F1; border: 8px solid #3B3B3B; border-radius: 48px; box-shadow: 0 18px 0 #3B3B3B; overflow: hidden; }
+  /* hero: tap area 1 (top) and 2 (help band) */
+  .hero { left: 68px; top: 64px; width: 1624px; height: 824px; }
+  .hero-top { position: absolute; left: 0; top: 0; right: 0; height: 640px; }
+  .brand { position: absolute; left: 82px; top: 62px; display: flex; align-items: center; gap: 22px; font-size: 64px; font-weight: 700; }
+  .brand .bi { width: 88px; height: 88px; border: 6px solid #3B3B3B; border-radius: 22px; background: #DFE1D2; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+  .brand .bi svg { width: 64px; height: 64px; }
+  .brand span { color: #8B9270; margin-left: -20px; }
+  .title { position: absolute; left: 82px; top: 190px; font-size: 230px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
+  .title.en { font-size: 168px; top: 214px; }
+  .ex { position: absolute; left: 82px; top: 482px; font-size: 64px; font-weight: 400; background: #FFFFFF; border: 6px solid #3B3B3B; border-radius: 60px 60px 60px 14px; padding: 18px 46px; white-space: nowrap; }
+  .mascot { position: absolute; right: 80px; top: 140px; width: 370px; height: 370px; border-radius: 50%; border: 8px solid #3B3B3B; overflow: hidden; background: #F4EFE4; box-shadow: 0 14px 0 #8B9270; }
   .mascot img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.12); }
-  .text { flex: 1; }
-  .name { font-size: 140px; font-weight: 700; line-height: 1.05; letter-spacing: 2px; }
-  .name span { color: #8B9270; }
-  .tag { font-size: 56px; color: #6F7658; margin-top: 10px; font-weight: 600; }
-  .list { margin-top: 26px; display: flex; flex-direction: column; gap: 10px; font-size: 40px; color: #555; font-weight: 500; }
-  .list div::before { content: '✓'; color: #8B9270; font-weight: 700; margin-right: 22px; }
-  .hint { position: absolute; left: 690px; bottom: 912px; font-size: 36px; color: #A09A88; }
-  .row { display: flex; gap: 40px; padding: 40px 60px 80px; box-sizing: border-box; height: 843px; }
-  .btn {
-    flex: 1; background: #FBF8F1; border: 8px solid #3B3B3B; border-radius: 48px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
-    box-shadow: 0 16px 0 #3B3B3B;
-  }
-  /* Fixed-height slots so all four tiles line up whatever the label script. */
-  .icon { width: 230px; height: 230px; display: flex; align-items: center; justify-content: center; }
-  .icon svg { width: 100%; height: 100%; }
-  .label { font-size: 88px; font-weight: 700; color: #3B3B3B; letter-spacing: 1px; height: 110px; line-height: 110px; }
-  .sub { font-size: 42px; color: #8A8A8A; font-weight: 500; height: 56px; line-height: 56px; margin-top: -16px; }
+  .band { position: absolute; left: 0; right: 0; bottom: 0; height: 168px; background: #EFE8D8; border-top: 5px dashed #A8A08C; box-sizing: border-box; display: flex; align-items: center; padding: 0 82px; font-size: 66px; font-weight: 700; white-space: nowrap; }
+  html[lang=en] .band { font-size: 58px; }
+  .band .p2 { color: #686458; }
+  .band .dot { margin: 0 22px; color: #3B3B3B; }
+  .band .help { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+  .band .help svg { width: 72px; height: 72px; }
+  /* right shortcuts: areas 3, 4 */
+  .q { left: 1740px; width: 700px; height: 410px; display: flex; align-items: center; gap: 40px; padding: 0 50px; }
+  .q1 { top: 56px; } .q2 { top: 486px; }
+  .q .qi { width: 130px; height: 130px; flex: none; } .q .qi svg { width: 100%; height: 100%; }
+  .q .qt { font-size: 100px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
+  .q .qs { font-size: 50px; color: #686458; white-space: nowrap; }
+  /* bottom tiles: areas 5-8 */
+  .tile { top: 952px; width: 565px; height: 676px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+  .t1 { left: 60px; } .t2 { left: 665px; } .t3 { left: 1270px; } .t4 { left: 1875px; background: #DFE1D2; }
+  .tile .icon { width: 230px; height: 230px; } .tile .icon svg { width: 100%; height: 100%; }
+  .tile .label { font-size: 120px; font-weight: 700; line-height: 1.3; white-space: nowrap; }
+  .tile .sub { font-size: 54px; color: #686458; white-space: nowrap; }
+  .label, .qt, .qs, .sub, .title { width: max-content; }
 </style>
 </head>
 <body>
-  <div class="banner">
-    <div class="card" data-action="menu_help" data-text="ทำอะไรได้บ้าง">
+  <div class="card hero">
+    <div class="hero-top" data-action="menu_new_reminder" data-input="openKeyboard" data-key="hero">
+      <div class="brand"><div class="bi" data-icon="bell"></div>Jai<span>Ja</span></div>
+      <div class="title" data-t="hero"></div>
+      <div class="ex" data-t="example"></div>
       <div class="mascot"><img src="../mascot.jpg" alt=""></div>
-      <div class="text">
-        <div class="name">Jai<span>Ja</span></div>
-        <div class="tag">เก็บให้ · จำให้ · เตือนให้ ในแชทเดียว</div>
-        <div class="list">
-          <div>ส่งรูป ไฟล์ ลิงก์มา เก็บลง Google Drive ทันที</div>
-          <div>"ช่วยจำ..." แล้วถามหาเมื่อไหร่ก็ได้</div>
-          <div>ส่งโปสเตอร์รับสมัครมา จด deadline + เตือนให้</div>
-        </div>
-      </div>
-      <div class="quick">
-        <div class="q" data-action="menu_notes" data-text="สิ่งที่จำไว้"><div class="qi" data-icon="note"></div><div><div class="qt">สิ่งที่จำไว้</div><div class="qs">"ช่วยจำ..." ทั้งหมด</div></div></div>
-        <div class="q" data-action="menu_gallery" data-text="แกลเลอรี"><div class="qi" data-icon="gallery"></div><div><div class="qt">แกลเลอรี</div><div class="qs">รูปและไฟล์เป็นปฏิทิน</div></div></div>
-        <div class="q" data-action="menu_ai" data-text="โควตา AI"><div class="qi" data-icon="ai"></div><div><div class="qt">โควตา AI</div><div class="qs">ใช้ไปเท่าไหร่วันนี้</div></div></div>
-      </div>
+    </div>
+    <div class="band" data-action="menu_help" data-key="help">
+      <span data-t="p1"></span><span class="dot">·</span><span class="p2" data-t="p2"></span><span class="dot">·</span><span data-t="p3"></span>
+      <span class="help"><span data-icon="help"></span><span data-t="help"></span></span>
     </div>
   </div>
-  <div class="hint">แตะการ์ดเพื่อดูวิธีใช้ทั้งหมด</div>
-  <div class="row">
-    <div class="btn" data-action="menu_reminders" data-text="แจ้งเตือน"><div class="icon" data-icon="bell"></div><div class="label">แจ้งเตือน</div><div class="sub">ดู / ยกเลิก</div></div>
-    <div class="btn" data-action="menu_deadlines" data-text="Deadline"><div class="icon" data-icon="target"></div><div class="label">Deadline</div><div class="sub">สมัคร · แข่ง · ทุน · คอร์ส</div></div>
-    <div class="btn" data-action="menu_files" data-text="ไฟล์/รูป"><div class="icon" data-icon="folder"></div><div class="label">ไฟล์/รูป</div><div class="sub">แกลเลอรี · ปฏิทิน · ค้นหา</div></div>
-    <div class="btn" data-action="menu_settings" data-text="ตั้งค่า"><div class="icon" data-icon="settings"></div><div class="label">ตั้งค่า</div><div class="sub">สถานะบอท</div></div>
-  </div>
+  <div class="card q q1" data-action="menu_notes" data-key="memory"><div class="qi" data-icon="note"></div><div><div class="qt" data-t="memory"></div><div class="qs" data-t="memorySub"></div></div></div>
+  <div class="card q q2" data-action="menu_gallery" data-key="gallery"><div class="qi" data-icon="gallery"></div><div><div class="qt" data-t="gallery"></div><div class="qs" data-t="gallerySub"></div></div></div>
+  <div class="card tile t1" data-action="menu_reminders" data-key="reminders"><div class="icon" data-icon="bell"></div><div class="label" data-t="reminders"></div><div class="sub" data-t="remindersSub"></div></div>
+  <div class="card tile t2" data-action="menu_deadlines" data-key="deadlines"><div class="icon" data-icon="target"></div><div class="label" data-t="deadlines"></div><div class="sub" data-t="deadlinesSub"></div></div>
+  <div class="card tile t3" data-action="menu_files" data-key="files"><div class="icon" data-icon="folder"></div><div class="label" data-t="files"></div><div class="sub" data-t="filesSub"></div></div>
+  <div class="card tile t4" data-action="menu_settings" data-liff="/me" data-key="me"><div class="icon" data-icon="me"></div><div class="label" data-t="me"></div><div class="sub" data-t="meSub"></div></div>
+<script>
+  // Copy for both languages. `said` is what the chat shows when tapped.
+  window.MENU_TEXT = {
+    th: {
+      chatBar: 'เมนู JaiJa', hero: 'ตั้งเตือน', example: '“พรุ่งนี้ 9 โมง เตือนส่งเอกสาร”', fill: 'เตือน ',
+      p1: 'เก็บให้', p2: 'หาเจอ', p3: 'เตือนทัน', help: 'วิธีใช้',
+      memory: 'สิ่งที่จำไว้', memorySub: 'ทุกเรื่องที่ช่วยจำ', gallery: 'แกลเลอรี', gallerySub: 'รูปและไฟล์ตามวัน',
+      reminders: 'แจ้งเตือน', remindersSub: 'ดู · เลื่อน · ยกเลิก', deadlines: 'Deadline', deadlinesSub: 'สมัคร · แข่ง · ทุน',
+      files: 'ไฟล์/รูป', filesSub: 'หา · เปิด · ส่งกลับ', me: 'ของฉัน', meSub: 'บัญชี · AI · ตั้งค่า',
+      said: { hero: 'ตั้งเตือน', help: 'วิธีใช้', memory: 'สิ่งที่จำไว้', gallery: 'แกลเลอรี', reminders: 'แจ้งเตือน', deadlines: 'Deadline', files: 'ไฟล์/รูป', me: 'ของฉัน' },
+    },
+    en: {
+      chatBar: 'JaiJa menu', hero: 'Set a reminder', example: '“remind me tomorrow 9am”', fill: 'remind me ',
+      p1: 'Saves it', p2: 'Finds it', p3: 'Reminds you', help: 'How it works',
+      memory: 'Memory', memorySub: 'Everything you saved', gallery: 'Gallery', gallerySub: 'Photos and files by day',
+      reminders: 'Reminders', remindersSub: 'View · snooze · cancel', deadlines: 'Deadlines', deadlinesSub: 'Apply · compete · funding',
+      files: 'Files', filesSub: 'Find · open · resend', me: 'Me', meSub: 'Account · AI · settings',
+      said: { hero: 'Set a reminder', help: 'How it works', memory: 'Memory', gallery: 'Gallery', reminders: 'Reminders', deadlines: 'Deadlines', files: 'Files', me: 'Me' },
+    },
+  };
+  const lang = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'th';
+  document.documentElement.lang = lang;
+  const T = window.MENU_TEXT[lang];
+  for (const el of document.querySelectorAll('[data-t]')) el.textContent = T[el.dataset.t];
+  document.querySelector('.title').classList.toggle('en', lang === 'en');
+  for (const el of document.querySelectorAll('[data-key]')) el.dataset.text = T.said[el.dataset.key];
+  document.querySelector('[data-key=hero]').dataset.fill = T.fill;
+  // Long English labels shrink to fit their box instead of clipping.
+  for (const el of document.querySelectorAll('.label, .qt, .title, .qs, .sub')) {
+    const box = el.closest('.card');
+    const room = (el.classList.contains('title') ? 1000 : box.clientWidth - (el.closest('.q') ? 260 : 60));
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > room && size > 30) { size -= 4; el.style.fontSize = size + 'px'; }
+  }
+</script>
 </body>
 </html>

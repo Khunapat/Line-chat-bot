@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Deadline detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/2cb68634004ed475055ceb4051ac14e6) format("truetype");font-weight:500}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.pri{background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px solid #3B3B3B;background:#DFE1D2;white-space:nowrap}
+.al{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.al img{width:18px;height:18px;margin-top:2px}
+dt{color:#686458;font-size:14px}
+dd{margin:0;overflow-wrap:anywhere}
+p,h1,h2,h3,dl{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:1900px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <p style="font-size:11px;color:#686458;text-align:right;padding:6px 16px 0">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <header style="display:flex;align-items:center;gap:8px;padding:0 16px 8px"><a class="btn ico" href="Deadlines.dc.html" aria-label="ย้อนกลับ"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></a><p style="font-size:22px;font-weight:700;line-height:1.35;flex:1">ดูรายละเอียด</p></header>
+  <article style="padding:0 16px 110px;display:flex;flex-direction:column;gap:16px" aria-labelledby="tt">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div aria-hidden="true" style="width:58px;flex:none;border:2px solid #3B3B3B;border-radius:12px;overflow:hidden;background:#FBF8F1;text-align:center"><div style="height:22px;display:flex;align-items:center;justify-content:center;background:#B5482F;border-bottom:2px solid #3B3B3B"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M8 1.8 15 14H1z M8 6.2v3.6M8 11.9v.1" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><div style="font-size:22px;font-weight:700;line-height:1.15;padding-top:4px">10</div><div style="font-size:12px;padding-bottom:5px">ต.ค. 69</div></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span><span class="tag">รับสมัคร</span></span><h1 id="tt" style="font-size:22px;line-height:1.4">Youth Innovation Forum 2026</h1><p style="font-size:14px;color:#686458">Example Org</p></div>
+    </div>
+
+    <section aria-label="วันปิดรับ" style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:14px;display:flex;flex-direction:column;gap:4px">
+      <p style="font-size:14px;color:#686458">วันปิดรับ</p>
+      <p style="font-size:22px;font-weight:700;line-height:1.35">ส. 10 ต.ค. 2569</p>
+      <p>หมายเหตุผู้จัด: 23:59</p>
+      <p style="display:inline-flex;gap:6px;align-items:center;color:#B5482F;font-weight:700;font-size:14px"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 15 14H1z M8 6.2v3.6M8 11.9v.1" fill="none" stroke="#B5482F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>อีก 3 วัน</p>
+      <p style="font-size:14px;margin-top:6px">วันจัดงาน: <b>14–16 Nov 2026</b> <span style="color:#686458">(ไม่ใช่วันปิดรับ)</span></p>
+      <p style="font-size:12.5px;color:#686458;border-top:1px dashed #CFC6B2;padding-top:6px;margin-top:4px">“23:59” is the organiser's free-text note, shown as written. A date-only item reads “ไม่ระบุเวลา”. Countdown counts Bangkok calendar days only.</p>
+    </section>
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <a class="btn pri" href="DeadlineActions.dc.html" style="flex:1 1 auto">สมัครแล้ว หยุดเตือน</a>
+      <a class="btn" href="#" style="flex:1 1 auto"><img src="/_blob/fa20178a6b3a242e8d170a68e9800149" alt="" style="width:18px;height:18px">เปิดลิงก์สมัคร</a>
+    </div>
+
+    <section aria-labelledby="ah" style="display:flex;flex-direction:column;gap:8px">
+      <h3 id="ah" style="font-size:16px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt="" style="width:18px;height:18px">การเตือนของงานนี้ <span class="tag">ใช้ค่าเริ่มต้น</span></h3>
+      <p class="al" style="color:#686458"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt=""><span><s>ส. 3 ต.ค. 2569 · 09:00 น.</s> · 7 วันก่อน · ผ่านแล้ว</span></p>
+      <p class="al" style="color:#686458"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt=""><span><s>พ. 7 ต.ค. 2569 · 09:00 น.</s> · 3 วันก่อน · ผ่านแล้ว</span></p>
+      <p class="al"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt=""><span><b>ศ. 9 ต.ค. 2569 · 09:00 น.</b> · 1 วันก่อน</span></p>
+      <p class="al"><img src="/_blob/a84939201176e91b36c1ffb3c5bd508f" alt=""><span><b>ส. 10 ต.ค. 2569 · 09:00 น.</b> · วันปิดรับ</span></p>
+      <p style="font-size:12.5px;color:#686458">เวลาเตือน 09:00 น. ใช้ค่ารวมของทุกงาน เปลี่ยนได้ที่ ตั้งค่าเตือน Deadline · ถ้างานอื่นเตือนนาทีเดียวกัน จะรวมเป็นข้อความเดียว</p>
+      <a class="btn" href="DeadlineActions.dc.html" aria-haspopup="dialog" style="align-self:flex-start;font-size:14px">เปลี่ยนการเตือน</a>
+    </section>
+
+    <section aria-labelledby="mh" style="background:#EFE8D8;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px">
+      <h3 id="mh" style="font-size:16px;display:flex;gap:6px;align-items:center"><img src="/_blob/5568202da3859235695f301afba6d0f0" alt="" style="width:18px;height:18px">รวมรายละเอียดแล้ว</h3>
+      <p>งานนี้จดไว้แล้วนะ เลยรวมรายละเอียดใหม่ให้: ลิงก์, คุณสมบัติ</p>
+      <p style="font-size:12.5px;color:#686458">รวมเมื่อ 6 ต.ค. 69 · 16:12 น. · จากลิงก์ + รูปโปสเตอร์</p>
+      <a class="btn" href="DeadlineActions.dc.html" aria-haspopup="dialog" style="align-self:flex-start;font-size:14px">ไม่ใช่งานเดียวกัน? แยกออก</a>
+    </section>
+
+    <section aria-labelledby="dh" style="display:flex;flex-direction:column;gap:8px">
+      <h3 id="dh" style="font-size:16px">รายละเอียด</h3>
+      <dl style="display:grid;grid-template-columns:96px 1fr;gap:8px 12px">
+        <dt>ประเภท</dt><dd>รับสมัคร</dd>
+        <dt>ผู้จัด</dt><dd>Example Org</dd>
+        <dt>สรุป</dt><dd>Forum for young innovators, 3 days on site.</dd>
+        <dt>คุณสมบัติ</dt><dd>Age 18–25</dd>
+        <dt>ค่าใช้จ่าย</dt><dd>Free</dd>
+        <dt>ติดต่อ</dt><dd style="color:#686458">ไม่ระบุ</dd>
+        <dt>ต้นฉบับ</dt><dd style="display:flex;flex-direction:column;gap:6px">
+          <span style="display:flex;gap:8px;align-items:center;font-size:14px"><img src="/_blob/ecd80836901f5bc6690402dcd2052e36" alt="" style="width:18px;height:18px"><span style="flex:1">example.org/apply</span></span>
+          <span style="display:flex;gap:8px;align-items:center;font-size:14px"><img src="/_blob/ef37c8d59f09327ba30e522f95a91a9a" alt="" style="width:18px;height:18px"><span style="flex:1">รูปโปสเตอร์ใน Drive</span><a class="btn" href="FileDetail.dc.html" style="font-size:13px;padding:4px 12px">เปิดต้นฉบับ</a></span></dd>
+        <dt>อัปเดตล่าสุด</dt><dd>6 ต.ค. 69 · 16:12 น.</dd>
+      </dl>
+    </section>
+
+    <div style="border-top:2px dashed #CFC6B2;padding-top:14px"><a class="btn" href="DeadlineActions.dc.html" style="color:#B5482F;border-color:#B5482F"><img src="/_blob/c7c5f60a8bfb980a1f8efde7cab766c4" alt="" style="width:18px;height:18px">ลบรายการนี้</a><p style="font-size:12.5px;color:#686458;margin-top:6px">ลบแล้วกด “เอาคืน” ได้ (เก็บ 5 รายการล่าสุด)</p></div>
+  </article>
+  <nav aria-label="เมนูหลัก" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 8px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;font:600 12.5px/1.3 'Bai Jamjuree',sans-serif">
+    <a href="Today.dc.html" style="min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#3B3B3B;text-decoration:none"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="" style="width:26px;height:26px">วันนี้</a>
+    <a href="Deadlines.dc.html" aria-current="page" style="min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#3B3B3B;text-decoration:none;border-radius:14px;background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="" style="width:26px;height:26px">Deadline</a>
+    <a href="Library.dc.html" style="min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#3B3B3B;text-decoration:none"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="" style="width:26px;height:26px">คลัง</a>
+    <a href="Me.dc.html" style="min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#3B3B3B;text-decoration:none"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="" style="width:26px;height:26px">ของฉัน</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

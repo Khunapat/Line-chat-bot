@@ -1,0 +1,374 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AlertSettings.dc.html": {
+      "h": 1150,
+      "title": "Deadlines · alert schedule",
+      "w": 390,
+      "x": 1410,
+      "y": 8220
+    },
+    "ChatCardsEN.dc.html": {
+      "h": 1500,
+      "title": "LINE chat cards · English",
+      "w": 1280,
+      "x": 1360,
+      "y": 16490
+    },
+    "ChatCardsTH.dc.html": {
+      "h": 1500,
+      "title": "LINE chat cards · ไทย",
+      "w": 1280,
+      "x": 0,
+      "y": 16490
+    },
+    "Components.dc.html": {
+      "h": 1500,
+      "title": "Components & tokens",
+      "w": 1280,
+      "x": 1360,
+      "y": 0
+    },
+    "DeadlineActions.dc.html": {
+      "h": 1500,
+      "title": "Deadlines · applied, undo, split",
+      "w": 390,
+      "x": 940,
+      "y": 8220
+    },
+    "DeadlineDetail.dc.html": {
+      "h": 1900,
+      "title": "Deadlines · detail, alerts, merge",
+      "w": 390,
+      "x": 470,
+      "y": 8220
+    },
+    "Deadlines.dc.html": {
+      "h": 1500,
+      "title": "Deadlines · list",
+      "w": 390,
+      "x": 0,
+      "y": 8220
+    },
+    "DeadlinesDesktop.dc.html": {
+      "h": 960,
+      "title": "Deadlines · desktop list + detail",
+      "w": 1280,
+      "x": 1880,
+      "y": 8220
+    },
+    "English320.dc.html": {
+      "h": 1600,
+      "title": "English · 320 px test",
+      "w": 760,
+      "x": 940,
+      "y": 12130
+    },
+    "FileDetail.dc.html": {
+      "h": 1150,
+      "title": "Library · file detail",
+      "w": 390,
+      "x": 940,
+      "y": 10500
+    },
+    "LanguageTone.dc.html": {
+      "h": 1250,
+      "title": "ของฉัน · language & tone",
+      "w": 390,
+      "x": 470,
+      "y": 12130
+    },
+    "Library.dc.html": {
+      "h": 1250,
+      "title": "Library · files list + search",
+      "w": 390,
+      "x": 0,
+      "y": 10500
+    },
+    "LibraryGroup.dc.html": {
+      "h": 1000,
+      "title": "Library · group context + memory",
+      "w": 390,
+      "x": 1410,
+      "y": 10500
+    },
+    "LibraryViews.dc.html": {
+      "h": 1250,
+      "title": "Library · gallery & calendar",
+      "w": 390,
+      "x": 470,
+      "y": 10500
+    },
+    "Main.dc.html": {
+      "h": 1000,
+      "title": "Cover · direction, navigation, labels",
+      "w": 1280,
+      "x": 0,
+      "y": 0
+    },
+    "Me.dc.html": {
+      "h": 2250,
+      "title": "ของฉัน · profile",
+      "w": 390,
+      "x": 0,
+      "y": 12130
+    },
+    "MonthOverlay.dc.html": {
+      "h": 844,
+      "title": "Today · month overlay",
+      "w": 390,
+      "x": 470,
+      "y": 4260
+    },
+    "Motion.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "Motion · ใจ๋วิ่งไปจัดให้",
+      "w": 1280,
+      "x": 0,
+      "y": 18370
+    },
+    "Onboarding.dc.html": {
+      "h": 920,
+      "title": "Onboarding · 3 steps",
+      "w": 1330,
+      "x": 0,
+      "y": 14810
+    },
+    "PhotoReminder.dc.html": {
+      "h": 1250,
+      "title": "Reminders · photo → draft (Proposed)",
+      "w": 390,
+      "x": 1880,
+      "y": 6140
+    },
+    "Prototype.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Interactive prototype · start here (ไทย / English)",
+      "w": 390,
+      "x": 0,
+      "y": -1250
+    },
+    "Recovery.dc.html": {
+      "h": 1300,
+      "title": "Recovery states",
+      "w": 1280,
+      "x": 1410,
+      "y": 14810
+    },
+    "ReminderEditor.dc.html": {
+      "h": 1700,
+      "title": "Reminders · editor, repeat revealed",
+      "w": 390,
+      "x": 470,
+      "y": 6140
+    },
+    "ReminderOutcomes.dc.html": {
+      "h": 1300,
+      "title": "Reminders · saved, change time, cancel, fired",
+      "w": 390,
+      "x": 1410,
+      "y": 6140
+    },
+    "ReminderValidation.dc.html": {
+      "h": 1250,
+      "title": "Reminders · clarify, errors, save failed",
+      "w": 390,
+      "x": 940,
+      "y": 6140
+    },
+    "Reminders.dc.html": {
+      "h": 1200,
+      "title": "Reminders · manager",
+      "w": 390,
+      "x": 0,
+      "y": 6140
+    },
+    "RichMenu.dc.html": {
+      "h": 2000,
+      "title": "Rich menu · ไทย / English",
+      "w": 1340,
+      "x": 0,
+      "y": 1880
+    },
+    "RichMenuMap.dc.html": {
+      "h": 1000,
+      "title": "Rich menu · tap-area & action map",
+      "w": 900,
+      "x": 1420,
+      "y": 1880
+    },
+    "Today.dc.html": {
+      "h": 1500,
+      "title": "Today · planner (390)",
+      "w": 390,
+      "x": 0,
+      "y": 4260
+    },
+    "TodayDesktop.dc.html": {
+      "h": 900,
+      "title": "Today · desktop companion",
+      "w": 1280,
+      "x": 1410,
+      "y": 4260
+    },
+    "TodayOtherDay.dc.html": {
+      "h": 900,
+      "title": "Today · another day, empty",
+      "w": 390,
+      "x": 940,
+      "y": 4260
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-07T09:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "n1": {
+      "fill": "orange",
+      "maxH": 1000,
+      "text": "Assumptions to confirm in code\n\n1. Hero ตั้งเตือน sends menu_reminders today; Proposed reminder_new opens the keyboard pre-filled (check LINE client support for inputOption/fillInText).\n2. Monthly reminders on 29–31 and yearly 29 Feb: current cron behaviour in short months is undocumented, so screens warn instead of guessing.\n3. “เพิ่งเตือน” shows only the last 24 h (firedAt purge). Full history is Proposed.\n4. Countdown = whole Bangkok calendar days; deadline_note is never parsed into a time.\n5. Open deadlines count includes the undated item (4 open · 1 applied · 1 closed).\n6. AI reset = next midnight America/Los_Angeles: 14:00 now, 15:00 from 1 Nov 2026.\n7. Calendar events are read-only in the planner; adding one stays a separate chat action.\n8. Group files g1/g2, reminders r4/r5 and poster f4 are extra fictional fixtures.\n9. One deliberate light paper theme. A dark variant is an open question, not designed here.",
+      "w": 440,
+      "x": 2720,
+      "y": 0
+    },
+    "np": {
+      "fill": "green",
+      "maxH": 844,
+      "text": "Connected flows in one phone (390×844, pinned tab bar, content scrolls):\n\n• First open: language choice, remembered after reload; switch again in ของฉัน › ภาษา / Language. Every label, date and message changes language.\n• วันนี้: week strip, prev/next, กลับวันนี้, month overlay (Escape closes), date-aware empty states, เก็บไว้ panel.\n• เตือนทั้งหมด: categories, change time, cancel with confirm, fired → done / snooze.\n• ตั้งเตือน: chat examples (one asks “2 โมง” = 08:00 or 14:00), validation, repeat options revealed on ทำซ้ำ, save → confirmation. Leaving with unsaved input asks first.\n• Deadline: filters → detail → สมัครแล้ว หยุดเตือน / เตือนต่อ, delete → เอาคืน, split a merged item, alert settings (Save only when changed).\n• คลัง: mine / group, tabs, list / gallery, search with ‘กำลังหาให้…’, file detail, forget a fact.\n• ของฉัน › ต้นแบบ: จำลอง: network normal / slow 3 s / very slow 12 s (long-wait after 8 s) / fails; AI at limit; Drive disconnect → reconnect.\n• Loading shows skeleton + status text at once, mini JaiJa after 400 ms; OS reduced-motion uses static poses.",
+      "w": 520,
+      "x": 470,
+      "y": -1250
+    },
+    "t0": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "JaiJa · เก็บให้ หาเจอ เตือนทัน",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 2320,
+      "text": "1 · LINE rich menu (static image 2500×1686)",
+      "w": 240,
+      "x": 0,
+      "y": 1620
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 2690,
+      "text": "2 · Today / planner",
+      "w": 240,
+      "x": 0,
+      "y": 4000
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 2270,
+      "text": "3 · Reminder manager",
+      "w": 240,
+      "x": 0,
+      "y": 5880
+    },
+    "t4": {
+      "kind": "title1",
+      "maxW": 3160,
+      "text": "4 · Deadlines",
+      "w": 240,
+      "x": 0,
+      "y": 7960
+    },
+    "t5": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "5 · Library: files, links, remembered facts",
+      "w": 240,
+      "x": 0,
+      "y": 10240
+    },
+    "t6": {
+      "kind": "title1",
+      "maxW": 1700,
+      "text": "6 · ของฉัน + language",
+      "w": 240,
+      "x": 0,
+      "y": 11870
+    },
+    "t7": {
+      "kind": "title1",
+      "maxW": 2690,
+      "text": "7 · Onboarding & recovery",
+      "w": 240,
+      "x": 0,
+      "y": 14550
+    },
+    "t8": {
+      "kind": "title1",
+      "maxW": 2640,
+      "text": "8 · LINE chat cards (Flex: system font, no shadow, no motion)",
+      "w": 240,
+      "x": 0,
+      "y": 16230
+    },
+    "t9": {
+      "kind": "title1",
+      "maxW": 1280,
+      "text": "9 · Motion (web only)",
+      "w": 240,
+      "x": 0,
+      "y": 18110
+    },
+    "tp": {
+      "kind": "title1",
+      "maxW": 1600,
+      "text": "0 · Interactive prototype: press Play",
+      "w": 240,
+      "x": 0,
+      "y": -1520
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Prototype.dc.html",
+    "Components.dc.html",
+    "RichMenu.dc.html",
+    "RichMenuMap.dc.html",
+    "Today.dc.html",
+    "MonthOverlay.dc.html",
+    "TodayOtherDay.dc.html",
+    "TodayDesktop.dc.html",
+    "Reminders.dc.html",
+    "ReminderEditor.dc.html",
+    "ReminderValidation.dc.html",
+    "ReminderOutcomes.dc.html",
+    "PhotoReminder.dc.html",
+    "Deadlines.dc.html",
+    "DeadlineDetail.dc.html",
+    "DeadlineActions.dc.html",
+    "AlertSettings.dc.html",
+    "DeadlinesDesktop.dc.html",
+    "Library.dc.html",
+    "LibraryViews.dc.html",
+    "FileDetail.dc.html",
+    "LibraryGroup.dc.html",
+    "Me.dc.html",
+    "LanguageTone.dc.html",
+    "English320.dc.html",
+    "Onboarding.dc.html",
+    "Recovery.dc.html",
+    "ChatCardsTH.dc.html",
+    "ChatCardsEN.dc.html",
+    "Motion.dc.html"
+  ],
+  "pages": [],
+  "title": "JaiJa Design"
+}

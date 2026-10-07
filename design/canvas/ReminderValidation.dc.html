@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Reminder clarification and errors</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.inp{width:100%;box-sizing:border-box;min-height:48px;padding:10px 14px;border-radius:10px;border:2px solid #3B3B3B;background:#FFFFFF;font:400 16px/1.5 "Bai Jamjuree",sans-serif;color:#3B3B3B}
+.bad{border-color:#B5482F;box-shadow:0 0 0 2px #F6E1D9}
+.err{color:#B5482F;font-size:14px;font-weight:600;display:flex;gap:6px;align-items:flex-start}
+.err i{flex:none;width:18px;height:18px;border-radius:50%;background:#B5482F;color:#FFFFFF;font:700 12px/18px "Bai Jamjuree",sans-serif;text-align:center;font-style:normal;margin-top:2px}
+.rc{display:flex;gap:12px;align-items:center;min-height:44px;padding:12px 14px;border:2px solid #3B3B3B;border-radius:10px;background:#FBF8F1;box-sizing:border-box;font-weight:600}
+.rc input{width:20px;height:20px;margin:0;accent-color:#62694D;flex:none}
+p,h1,h2,legend,fieldset{margin:0}
+fieldset{border:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+</style>
+</helmet>
+<div style="width:390px;height:1250px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <p style="font-size:11px;color:#686458;text-align:right;padding:6px 16px 0">ต้นแบบ · ข้อมูลสมมุติ</p>
+  <header style="display:flex;align-items:center;gap:8px;padding:0 16px 8px"><a class="btn ico" href="ReminderEditor.dc.html" aria-label="ย้อนกลับ"><img src="/_blob/662000020ecf816ebc9ac6bd04cf9d33" alt="" style="width:24px;height:24px"></a><h1 style="font-size:22px;line-height:1.35;flex:1">ตั้งเตือนใหม่</h1></header>
+  <div style="padding:0 16px;display:flex;flex-direction:column;gap:16px">
+    <div role="alert" tabindex="-1" style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #B5482F;background:#F6E1D9"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt="" style="width:24px;height:24px"><b>ยังบันทึกไม่ได้ เช็กช่องที่มีเครื่องหมาย ! ก่อนนะ</b></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <label for="nl" style="font-weight:600">พิมพ์แบบแชตก็ได้</label>
+      <input class="inp" id="nl" type="text" value="เตือนโทรหาแม่ 2 โมง">
+      <p style="font-size:14px;color:#686458">เติมช่องให้แล้ว ตรวจอีกทีก่อนบันทึกนะ</p>
+    </div>
+    <section aria-labelledby="cl" style="display:flex;flex-direction:column;gap:8px">
+      <h2 id="cl" style="font-size:16px;display:flex;gap:6px;align-items:center"><img src="/_blob/820b705bcd324b1730cfdde4293775f8" alt="" style="width:18px;height:18px">ช่วยเลือกให้ชัดหน่อย</h2>
+      <fieldset style="background:#EFE8D8;border-radius:16px;padding:14px">
+        <legend style="font-weight:600;padding-top:2px">“2 โมง” หมายถึงตอนไหน</legend>
+        <label class="rc"><input type="radio" name="a">08:00 น. <span style="font-weight:400;color:#686458">(สองโมงเช้า)</span></label>
+        <label class="rc"><input type="radio" name="a">14:00 น. <span style="font-weight:400;color:#686458">(บ่ายสองโมง)</span></label>
+        <p class="err"><i>!</i>ช่วยเลือกตัวเลือกด้านบนให้ชัดก่อนนะ</p>
+      </fieldset>
+      <p style="font-size:12.5px;color:#686458">Other prompts that ask first: “10/11” → 10 พ.ย. หรือ 11 ต.ค.? · “ศุกร์หน้า” → 9 ต.ค. หรือ 16 ต.ค.? · “6 โมง” → 06:00 หรือ 18:00?</p>
+    </section>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <label for="t" style="font-weight:600">1. เตือนเรื่องอะไร</label>
+      <input class="inp" id="t" type="text" value="โทรหาแม่">
+    </div>
+    <fieldset>
+      <legend style="font-weight:600">2. วันและเวลา</legend>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1 1 180px;display:flex;flex-direction:column;gap:4px"><label for="d" style="font-size:14px;font-weight:600">วันที่</label><input class="inp bad" id="d" type="text" value="" placeholder="วว/ดด/ปปปป" aria-invalid="true" aria-describedby="we"></div>
+        <div style="flex:1 1 110px;display:flex;flex-direction:column;gap:4px"><label for="h" style="font-size:14px;font-weight:600">เวลา</label><input class="inp" id="h" type="text" value="08:00"></div>
+      </div>
+      <p class="err" id="we"><i>!</i>เลือกวันและเวลาให้ครบก่อนนะ</p>
+      <p style="font-size:12.5px;color:#686458">Past time → “เวลานี้ผ่านไปแล้ว เลือกเวลาหลังจากนี้นะ”. Empty task → “ใส่เรื่องที่อยากให้เตือนก่อนนะ”. Focus moves to the summary banner; each field names its own fix.</p>
+    </fieldset>
+
+    <div style="border-top:2px dashed #CFC6B2;padding-top:14px;display:flex;flex-direction:column;gap:10px">
+      <p style="font-size:12.5px;font-weight:700;color:#686458">SAVE FAILED · after tapping ตั้งเตือน</p>
+      <div role="alert" style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:12px 14px;border-radius:10px;border:2px solid #B5482F;background:#F6E1D9"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt="" style="width:24px;height:24px"><div><b>ยังไม่ได้ตั้งเตือน</b><p style="font-size:14px">บันทึกไม่สำเร็จ (เครือข่ายไม่ตอบ) ข้อมูลที่กรอกยังอยู่ กดลองอีกครั้งได้ ไม่ซ้ำแน่นอน</p></div></div>
+      <div style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;padding:12px 14px"><p><b>“โทรหาแม่”</b></p><p style="font-size:14px">ครั้งเดียว · พฤ. 8 ต.ค. 2569 · 14:00 น.</p></div>
+      <a class="btn" href="ReminderOutcomes.dc.html" style="width:100%;min-height:52px;background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B">ลองอีกครั้ง</a>
+      <p style="font-size:12.5px;color:#686458">Retry reuses the same request key, so a slow first attempt can never create two reminders.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

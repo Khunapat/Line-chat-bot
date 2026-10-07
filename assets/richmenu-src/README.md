@@ -1,13 +1,18 @@
 # Rich menu source
 
-`richmenu.html` is the source of `../richmenu.png` (2500×1686). Font: Bai Jamjuree
+`richmenu.html` is the source of the Thai and English rich menus
+(2500×1686), following the Claude Design RichMenu and RichMenuMap boards
+(`design/canvas/`). Open it with `?lang=en` for English. Font: Bai Jamjuree
 (SIL Open Font License, see `fonts/OFL.txt`). Mascot: `../mascot.jpg`.
 
-The tile icons come from `../icons-src/icons.mjs` (the same set the chat cards
-use); `data-icon="name"` on a tile picks one. Re-render after editing:
+Icons come from `../icons-src/icons.mjs`; `data-icon="name"` picks one.
+Each `[data-action]` box is a tap area. Re-render after editing:
 
 ```bash
 npm run richmenu-image
 ```
 
-Then upload with `npm run rich-menu` (or re-run `./scripts/setup.sh`).
+That writes `../richmenu.th.png`, `../richmenu.en.png` and the action maps
+`../richmenu-areas.th.json` / `.en.json` (`{ data, text, bounds }` per area,
+plus `inputOption`, `fillInText` or `liffPath` where used), and refuses
+overlapping areas or images over 1 MB. Upload with `npm run rich-menu`.

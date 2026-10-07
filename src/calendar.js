@@ -86,6 +86,19 @@ export class Calendar {
     return (data.items || []).filter((e) => e.start?.date === date && e.summary === summary).map((e) => e.id);
   }
 
+  /** Events overlapping [timeMin, timeMax), at most `max`, soonest first. */
+  async listRange({ timeMin, timeMax, max = 250 }) {
+    const { data } = await this.api.events.list({
+      calendarId: this.calendarId,
+      timeMin,
+      timeMax,
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: max,
+    });
+    return (data.items || []).filter((e) => e.status !== 'cancelled').map(simplify);
+  }
+
   /** Upcoming events in the next `days` days. */
   async listUpcoming({ days = 7, max = 15 } = {}) {
     const now = new Date();

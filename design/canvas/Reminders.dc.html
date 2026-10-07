@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Reminder manager</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/2cb68634004ed475055ceb4051ac14e6) format("truetype");font-weight:500}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 15px/1.35 "Bai Jamjuree",sans-serif;text-decoration:none;box-sizing:border-box}
+.ico{width:44px;height:44px;padding:0;border-color:transparent;background:transparent}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 14px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;font:600 14px/1.3 "Bai Jamjuree",sans-serif;white-space:nowrap;color:#3B3B3B;flex:none}
+.card{background:#FBF8F1;border:2px solid #3B3B3B;border-radius:16px;box-shadow:0 3px 0 #3B3B3B;padding:14px;display:flex;flex-direction:column;gap:8px}
+.tag{display:inline-flex;align-items:center;font:600 12px/1.5 "Bai Jamjuree",sans-serif;padding:1px 8px;border-radius:999px;border:1px dashed #3B3B3B;background:#F6E7CB;white-space:nowrap}
+.nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:600 12.5px/1.3 "Bai Jamjuree",sans-serif;color:#3B3B3B;text-decoration:none;border-radius:14px}
+.nav img{width:26px;height:26px}
+p,h1,h2,h3{margin:0}
+</style>
+</helmet>
+<div style="width:390px;height:1200px;position:relative;overflow:hidden;box-sizing:border-box;background:#F4EFE4;background-image:repeating-linear-gradient(to bottom,transparent 0 31px,rgba(59,59,59,.07) 31px 32px);font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.6;font-size:16px">
+  <div style="padding:6px 16px 120px;display:flex;flex-direction:column;gap:14px">
+    <p style="font-size:11px;color:#686458;text-align:right">ต้นแบบ · ข้อมูลสมมุติ</p>
+    <h1 style="font-size:22px;line-height:1.35">สวัสดีตอนบ่าย Jai</h1>
+    <div role="tablist" style="display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;background:#EFE8D8;border:2px solid #3B3B3B;border-radius:999px">
+      <a role="tab" aria-selected="false" href="Today.dc.html" style="min-height:40px;display:flex;align-items:center;justify-content:center;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B;text-decoration:none">แพลนเนอร์</a>
+      <button role="tab" aria-selected="true" style="min-height:40px;border:0;border-radius:999px;background:#FBF8F1;box-shadow:0 0 0 2px #3B3B3B;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B">เตือนทั้งหมด</button>
+    </div>
+    <div role="group" aria-label="หมวดการเตือน" style="display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:2px 16px 6px">
+      <button class="chip" aria-pressed="false">ที่จะถึง <span style="font-weight:500;color:#686458">1</span></button>
+      <button class="chip" aria-pressed="true" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D">ทำซ้ำ <span style="font-weight:500;color:#686458">3</span></button>
+      <button class="chip" aria-pressed="false">เพิ่งเตือน <span style="font-weight:500;color:#686458">1</span></button>
+    </div>
+
+    <article class="card" aria-labelledby="r1">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:64px"><b style="font-size:22px;line-height:1.3;font-variant-numeric:tabular-nums">19:00</b><p style="font-size:12.5px;color:#686458">วันนี้</p></div>
+        <div style="flex:1;min-width:0"><b id="r1" style="line-height:1.5">กินยา</b><p style="font-size:14px">ทุกวัน เวลา 19:00 น.</p><p style="font-size:12.5px;color:#686458">ถัดจากนั้น: 8 ต.ค. 69 · 19:00 น. · 9 ต.ค. 69 · 19:00 น.</p></div>
+        <a class="btn ico" href="ReminderOutcomes.dc.html" aria-haspopup="dialog" aria-label="ตัวเลือกเพิ่มเติม: กินยา"><img src="/_blob/51c717318ff9a3860e681ac48eb7377c" alt="" style="width:24px;height:24px"></a>
+      </div>
+      <p style="font-size:12.5px;color:#686458;display:flex;gap:6px;align-items:center"><img src="/_blob/9dc4dfc579a5693312ff65359d944bfb" alt="" style="width:16px;height:16px">ส่งเข้าแชตกับ JaiJa</p>
+      <a class="btn" href="ReminderOutcomes.dc.html" style="align-self:flex-start;font-size:14px"><img src="/_blob/87d1a18d29202acad76c9f753d634137" alt="" style="width:18px;height:18px">เปลี่ยนเวลา</a>
+    </article>
+
+    <article class="card" aria-labelledby="r3">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:64px"><b style="font-size:22px;line-height:1.3">09:00</b><p style="font-size:12.5px;color:#686458">25 ต.ค.</p></div>
+        <div style="flex:1;min-width:0"><b id="r3">จ่ายค่าเน็ต</b><p style="font-size:14px">ทุกวันที่ 25 ของเดือน เวลา 09:00 น.</p><p style="font-size:12.5px;color:#686458">ถัดจากนั้น: 25 พ.ย. 69 · 25 ธ.ค. 69</p></div>
+        <a class="btn ico" href="#" aria-label="ตัวเลือกเพิ่มเติม: จ่ายค่าเน็ต"><img src="/_blob/51c717318ff9a3860e681ac48eb7377c" alt="" style="width:24px;height:24px"></a>
+      </div>
+      <a class="btn" href="#" style="align-self:flex-start;font-size:14px"><img src="/_blob/87d1a18d29202acad76c9f753d634137" alt="" style="width:18px;height:18px">เปลี่ยนเวลา</a>
+    </article>
+
+    <article class="card" aria-labelledby="r5">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="min-width:64px"><b style="font-size:22px;line-height:1.3">20:00</b><p style="font-size:12.5px;color:#686458">31 ต.ค.</p></div>
+        <div style="flex:1;min-width:0"><b id="r5">สรุปรายจ่ายสิ้นเดือน</b><p style="font-size:14px">ทุกวันที่ 31 ของเดือน เวลา 20:00 น.</p><p style="font-size:12.5px;color:#686458">ถัดจากนั้น: <b>พ.ย. 2569: ไม่มีวันที่ 31</b> · 31 ธ.ค. 69</p></div>
+        <a class="btn ico" href="#" aria-label="ตัวเลือกเพิ่มเติม: สรุปรายจ่ายสิ้นเดือน"><img src="/_blob/51c717318ff9a3860e681ac48eb7377c" alt="" style="width:24px;height:24px"></a>
+      </div>
+      <p style="display:flex;gap:6px;font-size:14px;background:#F6E7CB;border-radius:10px;padding:8px 10px"><img src="/_blob/088a8dc1c1fb1918be83eabb092b5957" alt="" style="width:18px;height:18px;flex:none;margin-top:3px"><span>บางเดือนไม่มีวันที่ 31 ตอนนี้ยังไม่ได้กำหนดว่าจะเตือนวันไหนแทน <span class="tag">Proposed: วันสุดท้ายของเดือน</span></span></p>
+      <a class="btn" href="#" style="align-self:flex-start;font-size:14px"><img src="/_blob/87d1a18d29202acad76c9f753d634137" alt="" style="width:18px;height:18px">เปลี่ยนเวลา</a>
+    </article>
+
+    <p style="font-size:12.5px;font-weight:700;color:#686458;margin-top:6px">หมวด “เพิ่งเตือน” · fired state</p>
+    <article class="card" aria-labelledby="r4" style="background:#FBF8F1">
+      <span style="display:inline-flex;gap:6px;align-items:center;color:#B5482F;font-weight:700;font-size:14px"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 15 14H1z M8 6.2v3.6M8 11.9v.1" fill="none" stroke="#B5482F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>ถึงเวลาแล้ว · 12:45 น.</span>
+      <b id="r4">โทรหาคลินิกทันตกรรม</b>
+      <p style="font-size:14px;color:#686458">พ. 7 ต.ค. 2569 · 12:45 น. · ส่งเข้าแชตกับ JaiJa</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px"><a class="btn" href="#" style="background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B">เสร็จแล้ว</a><a class="btn" href="#" style="font-size:14px">อีก 10 นาที</a><a class="btn" href="#" style="font-size:14px">อีก 1 ชม.</a></div>
+      <p style="font-size:12.5px;color:#686458">เตือนครั้งเดียวที่ส่งแล้วอยู่ตรงนี้ 24 ชม. แล้วหายไป · ประวัติย้อนหลัง <span class="tag">Proposed</span></p>
+    </article>
+  </div>
+  <a class="btn" href="ReminderEditor.dc.html" style="position:absolute;right:16px;bottom:104px;min-height:52px;padding:6px 20px;background:#62694D;color:#FFFFFF;box-shadow:0 2px 0 #3B3B3B"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"></path></svg>ตั้งเตือน</a>
+  <nav class="nav" aria-label="เมนูหลัก" style="position:absolute;left:0;right:0;bottom:0;background:#FBF8F1;border-top:2px solid #3B3B3B;padding:6px 8px 26px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">
+    <a href="Today.dc.html" aria-current="page" style="background:#DFE1D2;box-shadow:inset 0 -3px 0 #62694D"><img src="/_blob/a4153b6be5eceba48d0398055f541b8b" alt="">วันนี้</a>
+    <a href="Deadlines.dc.html"><img src="/_blob/dd2cee13694052ac847584fbb4eedfab" alt="">Deadline</a>
+    <a href="Library.dc.html"><img src="/_blob/a94c5a1070ce2a4d13a008b6499d1d6d" alt="">คลัง</a>
+    <a href="Me.dc.html"><img src="/_blob/17c363473f9d8f80cc1a3bca146dc366" alt="">ของฉัน</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

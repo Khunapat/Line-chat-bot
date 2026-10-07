@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Mini JaiJa motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/02ea665b238152d1dcce9906beb2825a) format("truetype");font-weight:600}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+.mo svg *{transform-box:fill-box}
+.leg{transform-origin:30% 0%}
+.arm{transform-origin:0% 100%;opacity:0}
+.folder,.check,.clock,.bad,.part,.fnote{opacity:0}
+.dot{transform:translateX(250px)}
+.is-idle .d1,.is-wave .d1,.is-failure .d1,.is-longwait .d1,.rm.is-pending .d1{transform:translateX(150px)}
+.is-idle .d2,.is-wave .d2,.is-failure .d2,.is-longwait .d2,.rm.is-pending .d2{transform:translateX(176px)}
+.is-idle .d3,.is-wave .d3,.is-failure .d3,.is-longwait .d3,.rm.is-pending .d3{transform:translateX(202px)}
+.is-wave .note{opacity:0}
+.is-wave .arm{opacity:1;animation:wave .7s ease-in-out 2}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-22deg)}}
+.is-pending .dot{animation:pass 2.4s linear infinite}
+.is-pending .d2{animation-delay:-.8s}
+.is-pending .d3{animation-delay:-1.6s}
+@keyframes pass{0%{transform:translateX(250px) translateY(0)}62%{transform:translateX(86px) translateY(0)}70%{transform:translateX(64px) translateY(-6px)}78%{transform:translateX(43px) translateY(0)}100%{transform:translateX(-12px)}}
+.is-pending .char{animation:bob .6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.is-pending .ll{animation:stride .6s ease-in-out infinite}
+.is-pending .lr{animation:stride .6s ease-in-out infinite reverse}
+@keyframes stride{0%,100%{transform:rotate(24deg)}50%{transform:rotate(-24deg)}}
+.is-success .folder,.is-partial .folder{opacity:1;animation:inr .2s cubic-bezier(.2,.7,.2,1) both}
+.is-success .note{animation:tofolder .32s .12s cubic-bezier(.2,.7,.2,1) both}
+.is-success .fnote,.is-partial .fnote{animation:fin .12s .4s both}
+.is-success .check,.is-partial .check{animation:pop .16s .4s cubic-bezier(.2,.7,.2,1) both}
+.is-success .dot,.is-partial .dot{opacity:0}
+.is-partial .part{opacity:1}
+.is-failure .bad{opacity:1}
+.is-failure .dot,.is-longwait .dot{fill:#D9D2C1}
+.is-longwait .clock{opacity:1}
+@keyframes inr{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes tofolder{from{transform:none;opacity:1}to{transform:translate(98px,-4px) scale(.7);opacity:0}}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.around.is-pending .actor{animation:around 4.8s ease-in-out infinite}
+@keyframes around{0%{transform:translate(-30px,0) scaleX(1)}25%{transform:translate(40px,-14px) scaleX(1)}48%{transform:translate(110px,0) scaleX(1)}50%{transform:translate(110px,0) scaleX(-1)}75%{transform:translate(40px,-14px) scaleX(-1)}98%{transform:translate(-30px,0) scaleX(-1)}100%{transform:translate(-30px,0) scaleX(1)}}
+.around.is-pending .dot{animation:none}
+.around.is-pending .d1{transform:translateX(150px)}.around.is-pending .d2{transform:translateX(176px)}.around.is-pending .d3{transform:translateX(202px)}
+.rm *{animation:none !important;transition:none !important}
+.rm.is-success .note{opacity:0}
+.rm.is-success .folder,.rm.is-success .check,.rm.is-success .fnote{opacity:1}
+.rm.is-partial .folder,.rm.is-partial .check,.rm.is-partial .fnote,.rm.is-partial .part{opacity:1}
+.rm.is-wave .arm{opacity:1;transform:rotate(-12deg)}
+td,th{padding:7px 10px;border-bottom:1px solid #CFC6B2;text-align:left;vertical-align:top;font-size:13.5px}
+th{font-size:12px;color:#686458;letter-spacing:.05em}
+</style>
+</helmet>
+<div style="width:1280px;height:900px;box-sizing:border-box;padding:40px;background:#F4EFE4;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.55;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:36px">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div><p style="margin:0;font-size:26px;font-weight:700">ใจ๋วิ่งไปจัดให้</p><p style="margin:0;font-size:14px;color:#686458">Web only. LINE chat keeps its native three dots. Timings are JaiJa design choices; competitor timing is unverified.</p></div>
+    <div class="mo is-{{s}} {{rm}} {{path}}" style="background:#FBF8F1;border:2px solid #3B3B3B;border-radius:22px;box-shadow:0 3px 0 #3B3B3B;padding:24px;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <svg viewBox="0 0 240 120" width="480" height="240" aria-hidden="true" style="overflow:visible;max-width:100%">
+        <path d="M8 106 H232" stroke="#CFC6B2" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 7" fill="none"></path>
+        <circle class="dot d1" cx="0" cy="100" r="6" fill="#8B9270" stroke="#3B3B3B" stroke-width="1.5"></circle>
+        <circle class="dot d2" cx="0" cy="100" r="6" fill="#8B9270" stroke="#3B3B3B" stroke-width="1.5"></circle>
+        <circle class="dot d3" cx="0" cy="100" r="6" fill="#8B9270" stroke="#3B3B3B" stroke-width="1.5"></circle>
+        <g class="folder">
+          <path d="M160 66 h20 l6 6 h30 a4 4 0 0 1 4 4 v26 a4 4 0 0 1 -4 4 h-56 a4 4 0 0 1 -4 -4 v-32 a4 4 0 0 1 4 -4 z" fill="#8B9270" stroke="#3B3B3B" stroke-width="2.4" stroke-linejoin="round"></path>
+          <rect class="fnote" x="170" y="62" width="22" height="20" rx="2" fill="#FBF8F1" stroke="#3B3B3B" stroke-width="2" transform="rotate(-6 181 72)"></rect>
+          <path d="M156 80 h68 l-4 22 a4 4 0 0 1 -4 4 h-56 a4 4 0 0 1 -4 -4 z" fill="#EFE8D8" stroke="#3B3B3B" stroke-width="2.4" stroke-linejoin="round"></path>
+        </g>
+        <g class="check"><circle cx="214" cy="60" r="12" fill="#62694D" stroke="#3B3B3B" stroke-width="2"></circle><path d="M208 60 l4.5 4.5 l8 -9" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g>
+        <g class="clock"><circle cx="120" cy="26" r="11" fill="#FBF8F1" stroke="#3B3B3B" stroke-width="2.2"></circle><path d="M120 19.5 v7 l4.5 3" stroke="#3B3B3B" stroke-width="2.2" fill="none" stroke-linecap="round"></path></g>
+        <g transform="translate(40 10)"><g class="actor"><g class="char">
+          <path d="M13 47 C8 22 24 5 41 5 C60 5 73 20 67 47 C64 41 62 37 59 35 L21 35 C18 38 15 42 13 47 Z" fill="#4E4540" stroke="#3B3B3B" stroke-width="2.4" stroke-linejoin="round"></path>
+          <circle cx="19" cy="45" r="4.5" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="2.2"></circle>
+          <circle cx="61" cy="45" r="4.5" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="2.2"></circle>
+          <ellipse cx="40" cy="42" rx="21" ry="20" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="2.4"></ellipse>
+          <path d="M18.5 39 C18 22 29 13 41 13 C54 13 63 22 62 39 C58 34 54 30 49 28 C46 33 40 34 34 31 C30 33 24 35 18.5 39 Z" fill="#4E4540"></path>
+          <path d="M18.5 39 C24 35 30 33 34 31 C40 34 46 33 49 28 C54 30 58 34 62 39" stroke="#3B3B3B" stroke-width="2" fill="none" stroke-linecap="round"></path>
+          <path d="M28 37 q4 -2 7 0 M45 37 q3 -2 7 0" stroke="#3B3B3B" stroke-width="1.6" fill="none" stroke-linecap="round"></path>
+          <ellipse cx="32" cy="43" rx="2.4" ry="2.8" fill="#3B3B3B"></ellipse><ellipse cx="48" cy="43" rx="2.4" ry="2.8" fill="#3B3B3B"></ellipse>
+          <ellipse cx="28" cy="50" rx="3.6" ry="2" fill="#F2B4A2"></ellipse><ellipse cx="52" cy="50" rx="3.6" ry="2" fill="#F2B4A2"></ellipse>
+          <path d="M35 52 q5 4 10 0" stroke="#3B3B3B" stroke-width="1.8" fill="none" stroke-linecap="round"></path>
+          <path d="M23 81 L25 65 Q40 58 55 65 L57 81 Q40 85 23 81 Z" fill="#FFFFFF" stroke="#3B3B3B" stroke-width="2.4" stroke-linejoin="round"></path>
+          <path d="M35 61.5 L40 68 L45 61.5" stroke="#3B3B3B" stroke-width="1.8" fill="none"></path>
+          <rect x="46" y="69" width="6" height="5" rx="1" fill="#8B9270" stroke="#3B3B3B" stroke-width="1"></rect>
+          <g class="leg ll"><path d="M34 80 L32 93 L27 94" stroke="#3B3B3B" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g>
+          <g class="leg lr"><path d="M46 80 L48 93 L53 94" stroke="#3B3B3B" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g>
+          <g class="arm"><path d="M55 66 Q62 58 66 49" stroke="#3B3B3B" stroke-width="3" fill="none" stroke-linecap="round"></path><circle cx="66.5" cy="47" r="3.6" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="2"></circle></g>
+          <g class="note">
+            <g transform="rotate(-8 62 72)"><rect x="52" y="60" width="20" height="24" rx="2.5" fill="#FBF8F1" stroke="#3B3B3B" stroke-width="2"></rect><path d="M56 67 h12 M56 72 h12 M56 77 h8" stroke="#8B9270" stroke-width="1.8" stroke-linecap="round"></path></g>
+            <path d="M27 67 Q36 76 51 75" stroke="#3B3B3B" stroke-width="2.6" fill="none" stroke-linecap="round"></path>
+            <circle cx="53" cy="75" r="3.2" fill="#F8DCCB" stroke="#3B3B3B" stroke-width="1.8"></circle>
+            <g class="bad"><circle cx="72" cy="58" r="6" fill="#B5482F" stroke="#3B3B3B" stroke-width="1.5"></circle><path d="M72 54.5 v4.2 M72 61.2 v.2" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"></path></g>
+            <g class="part"><circle cx="72" cy="58" r="6" fill="#C98A2B" stroke="#3B3B3B" stroke-width="1.5"></circle><path d="M69.8 56.2 q2.2 -2.4 4.4 0 q0 1.6 -2.2 2.4 v.8 M72 61.4 v.2" stroke="#3B3B3B" stroke-width="1.7" fill="none" stroke-linecap="round"></path></g>
+          </g>
+        </g></g></g>
+      </svg>
+      <p role="status" aria-live="polite" style="margin:0;font-size:16px;font-weight:600;text-align:center;min-height:26px">{{status}}</p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <sc-for list="{{buttons}}" as="b" hint-placeholder-count="7">
+        <button onClick="{{b.pick}}" aria-pressed="{{b.on}}" style="min-height:44px;padding:6px 16px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B;cursor:pointer">{{b.label}}</button>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button onClick="{{run}}" style="min-height:44px;padding:6px 18px;border-radius:999px;border:2px solid #3B3B3B;background:#62694D;color:#FFFFFF;font:600 14px 'Bai Jamjuree',sans-serif;cursor:pointer;box-shadow:0 2px 0 #3B3B3B">Run a request (2.6 s → success)</button>
+      <button onClick="{{runSlow}}" style="min-height:44px;padding:6px 18px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 14px 'Bai Jamjuree',sans-serif;cursor:pointer">Run a slow request (long wait at 8 s, done at 12 s)</button>
+      <button onClick="{{togglePath}}" aria-pressed="{{pathOn}}" style="min-height:44px;padding:6px 18px;border-radius:999px;border:2px solid #3B3B3B;background:#FBF8F1;color:#3B3B3B;font:600 14px 'Bai Jamjuree',sans-serif;cursor:pointer">Path: {{pathLabel}}</button>
+      <button onClick="{{toggleRm}}" aria-pressed="{{rmOn}}" style="min-height:44px;padding:6px 18px;border-radius:999px;border:2px solid #3B3B3B;background:#DFE1D2;font:600 14px 'Bai Jamjuree',sans-serif;color:#3B3B3B;cursor:pointer">Reduced motion: {{rmLabel}}</button>
+    </div>
+    <p style="margin:0;font-size:13px;color:#686458">{{rmNote}} · Elapsed: <b>{{elapsed}}</b></p>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:.06em;color:#686458">TIMING &amp; RULES</p>
+    <table style="border-collapse:collapse;width:100%">
+      <thead><tr><th>Moment</th><th>Value</th><th>Rule</th></tr></thead>
+      <tbody>
+        <tr><td>Reveal</td><td>400 ms</td><td>Faster requests never flash the runner; skeleton and status text show at once.</td></tr>
+        <tr><td>Run cycle</td><td>2.4 s · stride 0.6 s</td><td>Three olive dots pass under JaiJa while pending. Loops only while pending.</td></tr>
+        <tr><td>Curved path (option)</td><td>4.8 s out and back</td><td>JaiJa runs an arc over the dots, turns, runs back (2 × 2.4 s). Same reveal, long-wait and reduced-motion rules.</td></tr>
+        <tr><td>Success</td><td>≈ 560 ms</td><td>Folder 200 ms, note drops in 320 ms, check 160 ms. Only after the server confirms.</td></tr>
+        <tr><td>Partial</td><td>as success + amber “?”</td><td>Original is in the folder; JaiJa still holds the unread sheet. Text says which half failed.</td></tr>
+        <tr><td>Failure</td><td>instant stop</td><td>Red “!” on the note, grey dots; text explains and keeps input.</td></tr>
+        <tr><td>Long wait</td><td>after 8 s</td><td>Loop stops, clock appears: “ยังทำอยู่ ใช้เวลานานกว่าปกติ ไม่ต้องกดซ้ำนะ”.</td></tr>
+        <tr><td>Wave</td><td>2 × 0.7 s</td><td>First open only.</td></tr>
+        <tr><td>Transitions</td><td>140 ms · 200 ms</td><td>Selection 140 ms; panels and dialogs 200 ms; opacity/transform, ease-out.</td></tr>
+        <tr><td>Reduced motion</td><td>0 ms</td><td>Static pose per state, instant swap, same text.</td></tr>
+      </tbody>
+    </table>
+    <div style="background:#EFE8D8;border-radius:14px;padding:14px 16px;font-size:13.5px;display:flex;flex-direction:column;gap:6px">
+      <b>Lifecycle</b>
+      <span>Each request owns one instance. A new query, a route change or unmount destroys it and clears its timers; a late result from a superseded request is ignored. Hidden tabs pause the loop.</span>
+      <span>Used for web loading, searching (“กำลังหาให้…”), saving (“กำลังบันทึก…”) and reading files (“กำลังอ่านรายละเอียด…”). Never replayed after data has loaded. Never sent as an extra chat message.</span>
+      <span>Status text is a live region and reads correctly with the art hidden.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"path":{"editor":"enum","options":["inplace","around"],"default":"inplace"},"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 'pending', rm: false, sysRm: false, around: null, t0: null, now: 0 }; this.timers = []; this.tick = null; }
+  componentDidMount() {
+    try {
+      this.mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      this.onMq = () => this.setState({ sysRm: this.mq.matches, rm: this.mq.matches ? true : this.state.rm });
+      this.onMq();
+      if (this.mq.addEventListener) this.mq.addEventListener('change', this.onMq);
+    } catch (e) {}
+  }
+  componentWillUnmount() { this.clear(); try { this.mq && this.mq.removeEventListener && this.mq.removeEventListener('change', this.onMq); } catch (e) {} }
+  clear() { this.timers.forEach(clearTimeout); this.timers = []; if (this.tick) { clearInterval(this.tick); this.tick = null; } }
+  go(s) { this.clear(); this.setState({ s: s, t0: null }); }
+  start(doneAt) {
+    this.clear();
+    const t0 = Date.now();
+    this.setState({ s: 'pending', t0: t0, now: t0 });
+    this.tick = setInterval(() => this.setState({ now: Date.now() }), 250);
+    this.timers.push(setTimeout(() => { if (this.state.s === 'pending') this.setState({ s: 'longwait' }); }, 8000));
+    this.timers.push(setTimeout(() => { this.clear(); this.setState({ s: 'success', t0: null }); }, doneAt));
+  }
+  renderVals() {
+    const T = { idle: '', wave: 'สวัสดี', pending: 'กำลังจัดให้…', success: 'เรียบร้อย เก็บเข้า Drive แล้ว', failure: 'บันทึกไม่สำเร็จ ข้อมูลที่กรอกยังอยู่ ลองอีกครั้งได้', partial: 'เก็บไฟล์แล้ว แต่อ่านรายละเอียดไม่สำเร็จ', longwait: 'ยังทำอยู่ ใช้เวลานานกว่าปกติ ไม่ต้องกดซ้ำนะ' };
+    const L = [['idle', 'Idle'], ['wave', 'Wave'], ['pending', 'Pending'], ['success', 'Success'], ['failure', 'Failure'], ['partial', 'Partial'], ['longwait', 'Long wait']];
+    const s = this.state.s;
+    const around = this.state.around == null ? (this.props.path === 'around') : this.state.around;
+    const el = this.state.t0 ? ((this.state.now - this.state.t0) / 1000).toFixed(1) + ' s' : '—';
+    return {
+      s: s,
+      rm: this.state.rm ? 'rm' : '',
+      rmOn: this.state.rm ? 'true' : 'false',
+      rmLabel: this.state.rm ? 'on' : 'off',
+      rmNote: this.state.sysRm ? 'System setting: reduce motion is ON, so the static poses are used' : 'System setting: reduce motion is off (the toggle simulates it)',
+      path: around ? 'around' : '',
+      pathOn: around ? 'true' : 'false',
+      pathLabel: around ? 'running around (curved)' : 'in place, dots pass',
+      elapsed: el,
+      status: T[s],
+      buttons: L.map((x) => ({ label: x[1], on: s === x[0] ? 'true' : 'false', pick: () => this.go(x[0]) })),
+      toggleRm: () => this.setState({ rm: !this.state.rm }),
+      togglePath: () => this.setState({ around: !around }),
+      run: () => this.start(2600),
+      runSlow: () => this.start(12000),
+    };
+  }
+}
+</script>
+</body>
+</html>

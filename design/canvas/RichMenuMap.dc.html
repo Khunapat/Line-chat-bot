@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Rich menu tap-area and action map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/d0e22ed35bd45d3e89aca0f21cf4d592) format("truetype");font-weight:400}
+@font-face{font-family:"Bai Jamjuree";src:url(/_blob/6e7f34a9163aea73b659b314ed454da0) format("truetype");font-weight:700}
+body{margin:0}
+td,th{padding:8px 10px;border-bottom:1px solid #CFC6B2;text-align:left;vertical-align:top}
+th{font-size:12.5px;letter-spacing:.06em;color:#686458}
+code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#EFE8D8;border-radius:6px;padding:1px 5px}
+</style>
+</helmet>
+<div style="width:900px;height:1000px;box-sizing:border-box;padding:40px;background:#FBF8F1;font-family:'Bai Jamjuree',system-ui,sans-serif;color:#3B3B3B;line-height:1.5;display:flex;flex-direction:column;gap:18px">
+  <p style="margin:0;font-size:24px;font-weight:700">Tap areas · <code>{ data, text, bounds }</code></p>
+  <p style="margin:0;font-size:14px;color:#686458">Pixel rectangles on the 2500×1686 image. Uploadable today with existing postbacks; the right column is the Proposed upgrade.</p>
+  <table style="border-collapse:collapse;font-size:14px;width:100%">
+    <thead><tr><th>#</th><th>Label TH / EN</th><th>data (today)</th><th>x, y, w, h</th><th>Proposed</th></tr></thead>
+    <tbody>
+      <tr><td><b>1</b></td><td>ตั้งเตือน<br>Set a reminder</td><td><code>menu_reminders</code></td><td>68, 64, 1624, 656</td><td><code>reminder_new</code> + keyboard opens pre-filled “เตือน ” / “remind me ”</td></tr>
+      <tr><td><b>2</b></td><td>วิธีใช้<br>How it works</td><td><code>menu_help</code></td><td>68, 720, 1624, 168</td><td>—</td></tr>
+      <tr><td><b>3</b></td><td>สิ่งที่จำไว้<br>Memory</td><td><code>menu_notes</code></td><td>1740, 56, 700, 410</td><td>LIFF คลัง › สิ่งที่จำไว้</td></tr>
+      <tr><td><b>4</b></td><td>แกลเลอรี<br>Gallery</td><td><code>menu_gallery</code></td><td>1740, 486, 700, 410</td><td>LIFF คลัง › calendar view</td></tr>
+      <tr><td><b>5</b></td><td>แจ้งเตือน<br>Reminders</td><td><code>menu_reminders</code></td><td>60, 952, 565, 676</td><td>LIFF วันนี้ › เตือนทั้งหมด</td></tr>
+      <tr><td><b>6</b></td><td>Deadline<br>Deadlines</td><td><code>menu_deadlines</code></td><td>665, 952, 565, 676</td><td>LIFF Deadline</td></tr>
+      <tr><td><b>7</b></td><td>ไฟล์/รูป<br>Files</td><td><code>menu_files</code></td><td>1270, 952, 565, 676</td><td>LIFF คลัง › ไฟล์/รูป</td></tr>
+      <tr><td><b>8</b></td><td>ของฉัน<br>Me</td><td><code>menu_settings</code> (fallback)</td><td>1875, 952, 565, 676</td><td>LIFF ของฉัน (uri action)</td></tr>
+    </tbody>
+  </table>
+  <div style="background:#EFE8D8;border-radius:12px;padding:14px 16px;font-size:14px;display:flex;flex-direction:column;gap:6px">
+    <b>Rules the art follows</b>
+    <span>PNG ≤ 1 MB (TH 126 KB, EN 109 KB) · ≤ 20 areas (8 used) · plain rectangles, none overlapping · chat-bar text ≤ 14 characters.</span>
+    <span>Gutters between cards are outside every area, so a near-miss tap does nothing rather than the wrong thing.</span>
+    <span>Smallest area (วิธีใช้ band) is 1624×168 px, about 254×26 pt on a 390 pt phone: wide enough to hit, and the band reads as a button.</span>
+  </div>
+  <p style="margin:0;font-size:13px;color:#686458">Editable source, PNG export and the JSON live with the build files (HTML → PNG + areas, the repo's existing pipeline). Not uploaded to LINE.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
