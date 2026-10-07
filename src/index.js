@@ -13,12 +13,18 @@ import { fireDueReminders, pendingReminders, describeWhen, describeRepeat } from
 import {
   textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, dueReminderCard, eventCard,
   infoCard, linkButton, postbackButton, opportunityCard, opportunityListCard, scanOfferCard,
+  deadlineAlertsMessage, alertSettingsCard, appliedCard, deletedCard,
 } from './flex.js';
 import {
-  extractFromMedia, extractFromText, fetchPageText, deadlineReminderTimes, sortOpportunities,
-  renderMarkdown, describeDeadline, captionSlug,
+  extractFromMedia, extractFromText, fetchPageText, sortOpportunities,
+  describeDeadline, captionSlug, daysUntil, THAI_MONTHS,
   fetchPageMeta,
 } from './opportunities.js';
+import {
+  oppCandidates, parseAlertCommand, describeAlerts, normalizeTime, normalizeDays, alertsFor, ALERT_PRESETS,
+} from './deadlines.js';
+import * as deadlines from './deadlineService.js';
+import { withLock } from './lock.js';
 import { registerGalleryRoutes, galleryUrl, thumbUrl, setGalleryTimeZone } from './gallery.js';
 import { setAssetBase, linkAsFile } from './flex.js';
 import path from 'node:path';
@@ -146,9 +152,15 @@ const handlers = {
   },
 
   async list_reminders(_input, ctx) {
-    const list = pendingReminders(await ctx.svc.store.reminders());
-    ctx.attachments.push(reminderListCard(list, { timeZone: tz, now: ctx.now }));
-    return { reminders: list.map((r) => ({ id: r.id, text: r.text, when: describeWhen(r.at, tz, ctx.now), repeat: r.repeat })) };
+    const all = pendingReminders(await ctx.svc.store.reminders());
+    // Deadline alerts belong to their deadline (menu Deadline), not this list.
+    const list = all.filter((r) => !r.oppId);
+    const deadlineAlerts = all.length - list.length;
+    ctx.attachments.push(reminderListCard(list, { timeZone: tz, now: ctx.now, deadlineAlerts }));
+    return {
+      reminders: list.map((r) => ({ id: r.id, text: r.text, when: describeWhen(r.at, tz, ctx.now), repeat: r.repeat })),
+      deadline_alerts_pending: deadlineAlerts,
+    };
   },
 
   async cancel_reminder({ id }, ctx) {
@@ -177,21 +189,61 @@ const handlers = {
   },
 
   async save_opportunity(fields, ctx) {
-    const opp = await registerOpportunity({ ...fields, is_opportunity: true, confidence: 1 }, { ctx, source: { kind: 'text' } });
-    ctx.attachments.push(opportunityCard(opp, { timeZone: tz, now: ctx.now }));
-    return { ok: true, id: opp.id, deadline: describeDeadline(opp.deadline, tz, ctx.now), reminders: opp.reminderIds?.length || 0, duplicate: Boolean(opp.duplicate) };
+    // The model saw the recently saved items (in its hint) and chose same_as or not.
+    const r = await deadlines.registerOpportunity(ctx.svc, { ...fields, is_opportunity: true, confidence: 1, ai_checked: Boolean(ctx.oppHintGiven) }, {
+      source: { kind: 'text' }, userId: ctx.userId, timeZone: tz, now: ctx.now,
+    });
+    await rememberMerge(r, ctx);
+    ctx.attachments.push(await oppCardFor(r, ctx));
+    return {
+      ok: true, id: r.opp.id, merged_into_existing: r.merged, added_details: r.added,
+      deadline: describeDeadline(r.opp.deadline, tz, ctx.now), alerts: r.opp.reminderIds?.length || 0,
+    };
   },
 
   async list_opportunities(_input, ctx) {
-    const list = sortOpportunities(await ctx.svc.store.opportunities(), tz, ctx.now);
-    for (const o of list) if (o.source?.fileId) withThumb(o, ctx, { fileId: o.source.fileId, mimeType: o.source.kind === 'pdf' ? 'application/pdf' : 'image/jpeg' });
-    ctx.attachments.push(opportunityListCard(list, { timeZone: tz, now: ctx.now }));
-    return { opportunities: list.map((o) => ({ id: o.id, title: o.title, kind: o.kind, deadline: o.deadline, when: describeDeadline(o.deadline, tz, ctx.now), link: o.link || o.source?.webViewLink || '' })) };
+    const list = await ctx.svc.store.opportunities();
+    const alerts = await deadlines.alertSettings(ctx.svc);
+    ctx.attachments.push(opportunityListCard(list, { timeZone: tz, now: ctx.now, alerts }));
+    return {
+      alert_schedule: describeAlerts(alerts),
+      opportunities: sortOpportunities(list, tz, ctx.now).map((o) => ({
+        id: o.id, title: o.title, kind: o.kind, deadline: o.deadline, when: describeDeadline(o.deadline, tz, ctx.now),
+        status: o.status === 'applied' ? 'applied' : 'open', link: o.link || o.source?.webViewLink || '',
+      })),
+    };
   },
 
   async delete_opportunity({ id }, ctx) {
-    const removed = await deleteOpportunity(id, ctx);
+    const removed = await removeOpportunityWithUndo(id, ctx);
     return removed ? { ok: true, title: removed.title } : { error: 'not found' };
+  },
+
+  async mark_opportunity_applied({ id, applied }, ctx) {
+    const opp = await deadlines.setApplied(ctx.svc, id, applied, { timeZone: tz, now: ctx.now });
+    if (!opp) return { error: 'not found' };
+    ctx.attachments.push(applied ? appliedCard(opp) : await detailCard(opp, ctx));
+    return { ok: true, title: opp.title, applied, alerts: opp.reminderIds?.length || 0 };
+  },
+
+  async set_deadline_alerts({ days, time, id, off }, ctx) {
+    const t = time ? normalizeTime(time) : null;
+    if (time && !t) return { error: 'time must be HH:MM, e.g. 20:00' };
+    const d = normalizeDays(days);
+    if (Array.isArray(days) && days.length > 0 && d.length === 0) return { error: 'days must be whole numbers from 0 to 60' };
+    if (!off && d.length === 0 && !t) return { error: 'nothing to change: give days, time or off' };
+    if (id && (off || d.length)) {
+      // Days (or off) for this one item; the time of day is shared by every deadline.
+      const r = await deadlines.setAlertSettings(ctx.svc, { off: Boolean(off), days: d.length ? d : undefined, oppId: id }, { timeZone: tz, now: ctx.now });
+      if (!r) return { error: 'not found' };
+      if (t) await deadlines.setAlertSettings(ctx.svc, { time: t }, { timeZone: tz, now: ctx.now });
+      const base = await deadlines.alertSettings(ctx.svc);
+      ctx.attachments.push(alertSettingsCard(base, { opp: r.opp }));
+      return { ok: true, scope: 'item', schedule: describeAlerts(alertsFor(r.opp, base)), time_changed_for_all: t || undefined };
+    }
+    const r = await deadlines.setAlertSettings(ctx.svc, { off: Boolean(off), days: d.length ? d : undefined, time: t || undefined }, { timeZone: tz, now: ctx.now });
+    ctx.attachments.push(alertSettingsCard(r.alerts));
+    return { ok: true, scope: 'all', schedule: describeAlerts(r.alerts), note: id ? 'only a time was given, and the time applies to every deadline' : undefined };
   },
 
   async list_calendar({ days }, ctx) {
@@ -261,12 +313,19 @@ app.all('/cron/reminders', async (req, res) => {
         const svc = await tenants.services(tenant);
         if (!svc) continue;
         summary.tenants++;
-        const r = await fireDueReminders(svc.store, async (rem) => {
-          await lineClient.pushMessage({
-            to: tenant.id,
-            messages: [dueReminderCard(rem, { userName: tenant.type === 'group' ? '' : tenant.name, timeZone: tz, now: new Date() })],
-          });
-        });
+        const now = new Date();
+        try {
+          if (await deadlines.ensureAlertsUpToDate(svc, { timeZone: tz, now })) console.log('deadline alerts re-planned for', tenant.id);
+        } catch (err) {
+          console.warn('re-planning deadline alerts failed', tenant.id, describeError(err));
+        }
+        const r = await fireDueReminders(svc.store, async (due) => {
+          const messages = await dueMessages(due, svc, tenant, now);
+          // One push carries up to 5 messages and counts once against LINE's monthly quota.
+          for (let i = 0; i < messages.length; i += 5) {
+            await lineClient.pushMessage({ to: tenant.id, messages: messages.slice(i, i + 5) });
+          }
+        }, now, { batch: true });
         summary.fired += r.fired;
       } catch (err) {
         summary.errors++;
@@ -395,7 +454,7 @@ async function handleEvent(event) {
         if (read?.fields?.caption) file.caption = read.fields.caption;
         ctx.attachments.push(fileCard(file, { title: chatType === 'user' ? '📁 เก็บไว้แล้ว' : '📁 เก็บไว้ในโฟลเดอร์กลุ่มแล้ว' }));
         if (ctx.aiLimited) ctx.attachments.push(textMessage('AI ติดลิมิตชั่วคราว เลยยังไม่ได้อ่านเนื้อหาไฟล์นี้ ถ้าเป็นประกาศรับสมัคร ส่งมาใหม่ทีหลังได้นะ'));
-        if (read?.opp) ctx.attachments.push(textMessage(scanIntro(read.opp)), opportunityCard(read.opp, { timeZone: tz, now: ctx.now }));
+        if (read?.reg) ctx.attachments.push(textMessage(scanIntro(read.reg)), await oppCardFor(read.reg, ctx));
         else if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'ask') ctx.attachments.push(scanOfferCard(saved.id));
         break;
       }
@@ -520,6 +579,19 @@ async function handleText(text, ctx) {
     return;
   }
 
+  // "เตือน deadline ก่อน 10 5 2 1 วัน 20:00" works without AI.
+  const alertCmd = parseAlertCommand(trimmed);
+  if (alertCmd) {
+    const r = await deadlines.setAlertSettings(ctx.svc, alertCmd.off ? { off: true } : { days: alertCmd.days, time: alertCmd.time }, { timeZone: tz, now: ctx.now });
+    ctx.attachments.push(
+      textMessage(alertCmd.off
+        ? 'ปิดการเตือน deadline แล้ว เปิดใหม่ได้ที่เมนู Deadline > ตั้งเวลาเตือน'
+        : `ได้เลย ต่อไปจะเตือน deadline ${describeAlerts(r.alerts)} ปรับให้ทุกรายการแล้ว`),
+      alertSettingsCard(r.alerts),
+    );
+    return;
+  }
+
   // Bare links (or link + a few words) are archived straight to notes.md.
   const urls = trimmed.match(/https?:\/\/\S+/g) || [];
   const remainder = trimmed.replace(/https?:\/\/\S+/g, '').trim();
@@ -547,12 +619,21 @@ async function handleText(text, ctx) {
   }
 
   if (brain) {
-    const { text: answer, attachments } = await brain.chat({
-      userId: ctx.userId, text: trimmed, hint,
-      ctx: { svc: ctx.svc, tenant: ctx.tenant, tenantId: ctx.tenantId, chatId: ctx.chatId, chatType: ctx.chatType },
+    // One AI step at a time per chat: a poster sent with this message is read
+    // and saved first, so the model below can see it and merge instead of
+    // saving the same activity twice.
+    await inAiTurn(ctx, async () => {
+      const recent = await deadlines.recentOpportunities(ctx.svc, { userId: ctx.userId, now: ctx.now });
+      const oppHint = recent.length
+        ? `deadline ที่เพิ่งบันทึกในแชทนี้: ${recent.map((o) => `[id=${o.id}] ${o.title} (หมดเขต ${o.deadline || 'ไม่ระบุ'})`).join('; ')} ถ้าข้อความนี้เป็นงานเดียวกัน ให้เรียก save_opportunity พร้อม same_as=id นั้น เพื่อเพิ่มรายละเอียดเข้ารายการเดิม`
+        : '';
+      const { text: answer, attachments } = await brain.chat({
+        userId: ctx.userId, text: trimmed, hint: [hint, oppHint].filter(Boolean).join('\n') || undefined,
+        ctx: { svc: ctx.svc, tenant: ctx.tenant, tenantId: ctx.tenantId, chatId: ctx.chatId, chatType: ctx.chatType, oppHintGiven: recent.length > 0 },
+      });
+      if (answer) ctx.attachments.push(textMessage(answer));
+      ctx.attachments.push(...attachments);
     });
-    if (answer) ctx.attachments.push(textMessage(answer));
-    ctx.attachments.push(...attachments);
     if (ctx.attachments.length === 0) ctx.attachments.push(textMessage('โอเค 👍'));
     return;
   }
@@ -650,9 +731,89 @@ async function handlePostback(event, ctx) {
     case 'menu_deadlines':
       await handlers.list_opportunities({}, ctx);
       return;
+    case 'opp_view': {
+      const o = await deadlines.getOpportunity(ctx.svc, id);
+      ctx.attachments.push(o ? await detailCard(o, ctx, { title: '🎯 รายละเอียด' }) : textMessage(GONE));
+      return;
+    }
     case 'opp_delete': {
-      const removed = await deleteOpportunity(id, ctx);
-      ctx.attachments.push(textMessage(removed ? `ลบ "${removed.title}" ออกแล้ว (เตือนที่เกี่ยวข้องก็ยกเลิกให้)` : 'รายการนี้ถูกลบไปแล้ว'));
+      const removed = await removeOpportunityWithUndo(id, ctx);
+      if (!removed) ctx.attachments.push(textMessage(GONE));
+      return;
+    }
+    case 'opp_restore': {
+      const state = await store.getUserState(ctx.chatId);
+      const stack = state.deleted || [];
+      const snap = stack.find((x) => x.opp?.id === id)?.opp;
+      if (!snap) return void ctx.attachments.push(textMessage('เอาคืนไม่ได้แล้ว เอาคืนได้เฉพาะ 5 รายการที่ลบล่าสุด'));
+      const back = await deadlines.restoreOpportunity(ctx.svc, snap, { timeZone: tz, now: ctx.now });
+      await store.setUserState(ctx.chatId, { deleted: stack.filter((x) => x.opp?.id !== id) });
+      if (!back) return void ctx.attachments.push(textMessage('รายการนี้กลับมาแล้ว'));
+      ctx.attachments.push(textMessage(`เอา "${back.title}" คืนให้แล้ว ตั้งเตือนให้ใหม่ด้วย`), await detailCard(back, ctx, { title: '🎯 เอาคืนแล้ว' }));
+      return;
+    }
+    case 'opp_applied':
+    case 'opp_unapplied': {
+      const applied = action === 'opp_applied';
+      const o = await deadlines.setApplied(ctx.svc, id, applied, { timeZone: tz, now: ctx.now });
+      if (!o) return void ctx.attachments.push(textMessage(GONE));
+      if (applied) ctx.attachments.push(appliedCard(o));
+      else ctx.attachments.push(textMessage('โอเค เตือนต่อให้นะ'), await detailCard(o, ctx));
+      return;
+    }
+    case 'opp_split': {
+      const state = await store.getUserState(ctx.chatId);
+      const lm = state.lastMerge;
+      if (!lm || lm.before?.id !== id) return void ctx.attachments.push(textMessage('แยกไม่ได้แล้ว แยกได้เฉพาะการรวมครั้งล่าสุด ถ้ายังผิดอยู่ ลบรายการนี้แล้วส่งใหม่ได้เลย'));
+      const r = await deadlines.splitMerge(ctx.svc, lm, { userId: ctx.userId, timeZone: tz, now: ctx.now });
+      await store.setUserState(ctx.chatId, { lastMerge: null });
+      if (!r) return void ctx.attachments.push(textMessage('แยกไม่ได้ ลองใหม่อีกทีนะ'));
+      ctx.attachments.push(textMessage('แยกเป็น 2 รายการให้แล้ว ตั้งเตือนแยกกันด้วย'));
+      if (r.restored) ctx.attachments.push(await detailCard(r.restored, ctx, { title: '🎯 รายการเดิม' }));
+      ctx.attachments.push(await detailCard(r.created, ctx, { title: '🎯 รายการใหม่' }));
+      return;
+    }
+    case 'opp_merge': {
+      const r = await deadlines.mergeInto(ctx.svc, id, params.get('src'), { timeZone: tz, now: ctx.now });
+      if (!r) return void ctx.attachments.push(textMessage('รวมไม่ได้แล้ว มีรายการหนึ่งถูกลบไปแล้ว'));
+      await rememberMerge(r, ctx);
+      ctx.attachments.push(textMessage(scanIntro(r)), await oppCardFor(r, ctx));
+      return;
+    }
+    case 'alerts_menu': {
+      const base = await deadlines.alertSettings(ctx.svc);
+      const o = id ? await deadlines.getOpportunity(ctx.svc, id) : null;
+      if (id && !o) return void ctx.attachments.push(textMessage(GONE));
+      ctx.attachments.push(alertSettingsCard(base, { opp: o }));
+      return;
+    }
+    case 'alerts_set':
+    case 'alerts_time':
+    case 'alerts_off':
+    case 'alerts_reset': {
+      let change;
+      if (action === 'alerts_set') {
+        const preset = ALERT_PRESETS.find((x) => x.key === params.get('p'));
+        if (!preset) return void ctx.attachments.push(textMessage('ไม่รู้จักแบบนี้ ลองเลือกใหม่นะ'));
+        change = { days: preset.days };
+      } else if (action === 'alerts_time') {
+        const raw = String(params.get('t') || '');
+        const t = normalizeTime(`${raw.slice(0, 2)}:${raw.slice(2)}`);
+        if (!t) return void ctx.attachments.push(textMessage('เวลาไม่ถูกต้อง ลองเลือกใหม่นะ'));
+        change = { time: t };
+      } else if (action === 'alerts_off') {
+        change = { off: true };
+      } else {
+        change = { reset: true };
+      }
+      const r = await deadlines.setAlertSettings(ctx.svc, { ...change, oppId: id || undefined }, { timeZone: tz, now: ctx.now });
+      if (!r) return void ctx.attachments.push(textMessage(GONE));
+      const base = await deadlines.alertSettings(ctx.svc);
+      const what = r.alerts.days.length ? `เตือน${describeAlerts(r.alerts)}` : 'ไม่เตือน';
+      ctx.attachments.push(
+        textMessage(r.scope === 'item' ? `ได้เลย "${r.opp.title}" ${what}` : `ได้เลย ต่อไปทุก deadline ${what} ปรับให้ทุกรายการแล้ว`),
+        alertSettingsCard(base, { opp: r.scope === 'item' ? r.opp : null }),
+      );
       return;
     }
     case 'scan': {
@@ -661,7 +822,7 @@ async function handlePostback(event, ctx) {
       const info = await drive.fileInfo(fileId);
       const buffer = await drive.download(fileId);
       const read = await readMedia(buffer, info.mimeType, info, ctx);
-      if (read?.opp) ctx.attachments.push(textMessage(scanIntro(read.opp)), opportunityCard(read.opp, { timeZone: tz, now: ctx.now }));
+      if (read?.reg) ctx.attachments.push(textMessage(scanIntro(read.reg)), await oppCardFor(read.reg, ctx));
       else ctx.attachments.push(textMessage(read?.fields?.caption ? `อ่านแล้ว เป็น${read.fields.caption} ไม่ใช่ประกาศรับสมัคร แต่จดคำค้นไว้ให้แล้ว` : 'อ่านแล้ว แต่ไม่เจอว่าเป็นประกาศรับสมัครนะ'));
       return;
     }
@@ -737,6 +898,7 @@ async function handlePostback(event, ctx) {
         `โหมด AI: ${brain ? brain.label : 'ปิด (ยังไม่ได้ใส่ GEMINI_API_KEY)'}`,
         ...(provider ? [await aiUsageLine()] : []),
         `อ่านโปสเตอร์/ลิงก์อัตโนมัติ: ${{ always: 'เปิด', ask: 'ถามก่อน', off: 'ปิด' }[config.autoScan] || config.autoScan}`,
+        `เตือน deadline: ${describeAlerts(await deadlines.alertSettings(ctx.svc))}`,
         `เขตเวลา: ${tz}`,
         `LINE user ID: ${ctx.userId}`,
       ];
@@ -746,7 +908,10 @@ async function handlePostback(event, ctx) {
           postbackButton('สิ่งที่จำไว้', 'action=menu_notes', 'ดูสิ่งที่จำไว้'),
         ] },
       ];
-      if (provider) buttons.push(postbackButton('โควตา AI วันนี้', 'action=menu_ai', 'ดูโควตา AI'));
+      buttons.push({ type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
+        postbackButton('เตือน deadline', 'action=alerts_menu', 'ตั้งเวลาเตือน deadline'),
+        ...(provider ? [postbackButton('โควตา AI', 'action=menu_ai', 'ดูโควตา AI')] : []),
+      ] });
       if (ctx.tenant.type === 'group' && ctx.tenant.hostUserId === ctx.userId) {
         buttons.push(postbackButton('แชร์ลิงก์โฟลเดอร์ให้กลุ่ม', 'action=group_share', 'แชร์ลิงก์โฟลเดอร์ให้กลุ่ม'));
       } else if (ctx.chatType === 'user' && !tenants.isOwner(ctx.userId) && multiUserEnabled()) {
@@ -801,14 +966,22 @@ function isScannable(mimeType, size) {
 /**
  * Read an image / PDF once: caption + tags go into the search index (and the
  * file is renamed after the caption when it still has a generic name); if it
- * announces something with a deadline, record that too.
- * Returns { fields, file, opp } or null on failure.
+ * announces something with a deadline, record that too (or fold it into the
+ * saved item it repeats). Runs one at a time per chat, see inAiTurn.
+ * Returns { fields, file, opp, reg } or null on failure; `reg` is the
+ * registration result from deadlineService.registerOpportunity.
  */
 async function readMedia(buffer, mimeType, file, ctx) {
+  return inAiTurn(ctx, () => readMediaNow(buffer, mimeType, file, ctx));
+}
+
+async function readMediaNow(buffer, mimeType, file, ctx) {
   try {
     const { drive, store } = ctx.svc;
     const base = (mimeType || '').split(';')[0].trim().toLowerCase();
-    const fields = await extractFromMedia(provider, { mimeType: base, base64: buffer.toString('base64') }, { now: ctx.now, timeZone: tz });
+    // The saved list lets the model say "this poster is item X" (same call, other words).
+    const candidates = oppCandidates(await store.opportunities(), tz, ctx.now);
+    const fields = await extractFromMedia(provider, { mimeType: base, base64: buffer.toString('base64') }, { now: ctx.now, timeZone: tz, candidates });
     if (!fields) return null;
     let current = file;
     if (fields.caption && /^\d{2}-\d{2}-\d{2}_(image|file|video|audio)_/.test(file.name)) {
@@ -821,12 +994,15 @@ async function readMedia(buffer, mimeType, file, ctx) {
       name: current.name, day: current.day || file.day, mimeType: base, webViewLink: current.webViewLink,
       caption: fields.caption || '', tags: fields.tags || [],
     });
-    let opp = null;
+    let reg = null;
     if (fields.is_opportunity && fields.confidence >= 0.5) {
-      opp = await registerOpportunity(fields, { ctx, source: { kind: base === 'application/pdf' ? 'pdf' : 'image', fileId: file.id, webViewLink: current.webViewLink } });
-      withThumb(opp, ctx, { fileId: file.id, mimeType: base });
+      reg = await deadlines.registerOpportunity(ctx.svc, fields, {
+        source: { kind: base === 'application/pdf' ? 'pdf' : 'image', fileId: file.id, webViewLink: current.webViewLink },
+        userId: ctx.userId, timeZone: tz, now: ctx.now,
+      });
+      await rememberMerge(reg, ctx);
     }
-    return { fields, file: current, opp };
+    return { fields, file: current, opp: reg?.opp || null, reg };
   } catch (err) {
     console.error('read media failed', describeError(err));
     if (isQuotaError(err)) ctx.aiLimited = true;
@@ -878,23 +1054,29 @@ function galleryCard(ctx) {
 }
 
 /** Fetch a link and read it like a poster. */
-async function scanLink(url, ctx, { text: given, linkId } = {}) {
+async function scanLink(url, ctx, opts = {}) {
+  return inAiTurn(ctx, () => scanLinkNow(url, ctx, opts));
+}
+
+async function scanLinkNow(url, ctx, { text: given, linkId } = {}) {
   try {
     const text = given ?? await fetchPageText(url);
     if (text.length < 80) {
       if (config.autoScan === 'always') ctx.attachments.push(textMessage('เปิดหน้าเว็บนี้อ่านไม่ได้ ถ้าเป็นประกาศรับสมัคร ส่งรูปโปสเตอร์มาด้วยได้นะ เดี๋ยวจด deadline ให้'));
       return null;
     }
-    const fields = await extractFromText(provider, text, { url, now: ctx.now, timeZone: tz });
+    const candidates = oppCandidates(await ctx.svc.store.opportunities(), tz, ctx.now);
+    const fields = await extractFromText(provider, text, { url, now: ctx.now, timeZone: tz, candidates });
     // Caption and tags make the link findable by keyword even when it is not an opportunity.
     if (linkId && (fields?.caption || fields?.tags?.length)) {
       await ctx.svc.store.updateLink(linkId, { caption: fields.caption || '', tags: fields.tags || [] });
     }
     if (!fields?.is_opportunity || fields.confidence < 0.5) return null;
     if (!fields.link) fields.link = url;
-    const opp = await registerOpportunity(fields, { ctx, source: { kind: 'link', url } });
-    ctx.attachments.push(textMessage(scanIntro(opp)), opportunityCard(opp, { timeZone: tz, now: ctx.now }));
-    return opp;
+    const reg = await deadlines.registerOpportunity(ctx.svc, fields, { source: { kind: 'link', url }, userId: ctx.userId, timeZone: tz, now: ctx.now });
+    await rememberMerge(reg, ctx);
+    ctx.attachments.push(textMessage(scanIntro(reg)), await oppCardFor(reg, ctx));
+    return reg.opp;
   } catch (err) {
     console.error('link scan failed', describeError(err));
     if (isQuotaError(err)) ctx.attachments.push(textMessage('AI ติดลิมิตชั่วคราว เลยยังไม่ได้อ่านลิงก์นี้ ส่งมาใหม่ทีหลังได้นะ'));
@@ -913,97 +1095,89 @@ async function aiUsageLine() {
   }
 }
 
-function scanIntro(opp) {
-  const n = opp.reminderIds?.length || 0;
-  const dl = opp.deadline ? `หมดเขต ${describeDeadline(opp.deadline, tz)}` : 'ไม่เห็นวันหมดเขตในนี้';
-  const kind = ({ competition: 'การแข่งขัน', application: 'ประกาศรับสมัคร', scholarship: 'ทุน', course: 'คอร์สอบรม', event: 'กิจกรรม' })[opp.kind] || 'ประกาศ';
-  if (opp.duplicate) return `อันนี้จดไว้แล้วนะ (${kind}) ${dl} ไม่ได้จดซ้ำ`;
-  return `อ่านแล้ว เป็น${kind} จดไว้ให้แล้ว 🎯 ${dl}${n ? ` ตั้งเตือนให้ ${n} ครั้งก่อนหมดเขต` : ''}`;
+const GONE = 'รายการนี้ถูกลบไปแล้ว';
+
+// One AI step at a time per chat (see handleText); a stuck call is skipped after 45 s.
+const aiLocks = new Map();
+function inAiTurn(ctx, fn) {
+  return withLock(aiLocks, `ai:${ctx.chatId}`, fn, { maxWaitMs: 45_000 });
 }
 
-function normalizeTitle(s) {
-  return String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-}
+const shortDate = (iso) => {
+  const [, m, d] = iso.split('-').map(Number);
+  return `${d} ${THAI_MONTHS[m - 1]}`;
+};
 
-/**
- * Save an opportunity, its deadline reminders, a calendar entry, and refresh
- * Opportunities.md. The same announcement sent twice (same deadline and a
- * matching title) updates the existing record instead of adding another.
- */
-async function registerOpportunity(fields, { ctx, source }) {
-  const { store, calendar } = ctx.svc;
-  const title = fields.title || 'ไม่มีชื่อ';
-  const deadline = fields.deadline || '';
-
-  const existing = (await store.opportunities()).find((o) => {
-    if ((o.deadline || '') !== deadline) return false;
-    const a = normalizeTitle(o.title);
-    const b = normalizeTitle(title);
-    return a && b && (a === b || a.includes(b) || b.includes(a));
-  });
-  if (existing) {
-    const patch = {};
-    for (const k of ['organizer', 'summary', 'deadline_note', 'event_dates', 'eligibility', 'cost', 'link', 'contact']) {
-      if (!existing[k] && fields[k]) patch[k] = fields[k];
-    }
-    if (Object.keys(patch).length) {
-      await store.update('opportunities.json', [], (list) => { const o = list.find((x) => x.id === existing.id); if (o) Object.assign(o, patch); });
-      await refreshOpportunitiesDoc(ctx);
-    }
-    return { ...existing, ...patch, duplicate: true };
+/** The line sent above a deadline card after a poster / link / message was read. */
+function scanIntro(r) {
+  const o = r.opp;
+  const kind = ({ competition: 'การแข่งขัน', application: 'ประกาศรับสมัคร', scholarship: 'ทุน', course: 'คอร์สอบรม', event: 'กิจกรรม' })[o.kind] || 'ประกาศ';
+  if (r.merged) {
+    const what = r.added?.length ? `เลยรวมรายละเอียดใหม่ให้: ${r.added.join(', ')}` : 'ไม่มีอะไรใหม่ เลยไม่ได้จดซ้ำ';
+    const dates = r.otherDeadline && o.deadline
+      ? ` (เจอวันหมดเขต 2 แบบ ${shortDate(o.deadline)} กับ ${shortDate(r.otherDeadline)} ใช้วันที่เร็วกว่าไว้ก่อนกันพลาด)`
+      : '';
+    return `งานนี้จดไว้แล้วนะ ${what}${dates}`;
   }
-
-  const opp = await store.addOpportunity({
-    title,
-    kind: fields.kind || 'other',
-    organizer: fields.organizer || '',
-    summary: fields.summary || '',
-    deadline,
-    deadline_note: fields.deadline_note || '',
-    event_dates: fields.event_dates || '',
-    eligibility: fields.eligibility || '',
-    cost: fields.cost || '',
-    link: fields.link || '',
-    contact: fields.contact || '',
-    confidence: fields.confidence ?? 1,
-    source,
-    userId: ctx.userId,
-    reminderIds: [],
-  });
-
-  if (opp.deadline) {
-    const ids = [];
-    for (const t of deadlineReminderTimes(opp.deadline, tz, ctx.now)) {
-      const r = await store.addReminder({ userId: ctx.userId, text: `${t.label}: ${opp.title}`, at: t.at, repeat: 'none', oppId: opp.id });
-      ids.push(r.id);
-    }
-    opp.reminderIds = ids;
-    await store.update('opportunities.json', [], (list) => { const o = list.find((x) => x.id === opp.id); if (o) o.reminderIds = ids; });
-    try {
-      await calendar.createEvent({ title: `⏳ Deadline: ${opp.title}`, start: opp.deadline, allDay: true, description: [opp.summary, opp.link || opp.source?.webViewLink].filter(Boolean).join('\n') });
-    } catch (err) {
-      console.warn('calendar entry for deadline failed', err?.message || err);
-    }
-  }
-  await refreshOpportunitiesDoc(ctx);
-  return opp;
+  const n = o.reminderIds?.length || 0;
+  const dl = o.deadline ? `หมดเขต ${describeDeadline(o.deadline, tz)}` : 'ไม่เห็นวันหมดเขตในนี้';
+  return `อ่านแล้ว เป็น${kind} จดไว้ให้แล้ว ${dl}${n ? ` จะเตือนให้ ${n} ครั้งก่อนหมดเขต` : ''}`;
 }
 
-async function deleteOpportunity(id, ctx) {
-  const { store } = ctx.svc;
-  const removed = await store.removeOpportunity(id);
+/** Picture for a deadline card: its own poster, wherever it came from. */
+function oppThumb(o, ctx) {
+  if (o?.source?.fileId) withThumb(o, ctx, { fileId: o.source.fileId, mimeType: o.source.kind === 'pdf' ? 'application/pdf' : 'image/jpeg' });
+  return o;
+}
+
+async function detailCard(o, ctx, opts = {}) {
+  const alerts = await deadlines.alertSettings(ctx.svc);
+  return opportunityCard(oppThumb({ ...o }, ctx), { timeZone: tz, now: ctx.now, alerts, ...opts });
+}
+
+/** Card for a freshly saved / merged deadline, with split or merge offers. */
+async function oppCardFor(r, ctx) {
+  return detailCard(r.opp, ctx, {
+    title: r.merged ? '🎯 อัปเดตรายการเดิมแล้ว' : '🎯 บันทึกไว้แล้ว',
+    merged: r.merged,
+    suggestion: r.suggestion,
+  });
+}
+
+/** Keep the last merge per chat so "not the same? split" can undo it. */
+async function rememberMerge(r, ctx) {
+  if (!r?.merged) return;
+  await ctx.svc.store.setUserState(ctx.chatId, { lastMerge: { before: r.before, incoming: r.incoming, at: ctx.now.toISOString() } });
+}
+
+/** Delete a deadline, keep it (last 5 per chat) for "เอาคืน", and show the undo card. */
+async function removeOpportunityWithUndo(id, ctx) {
+  const removed = await deadlines.deleteOpportunity(ctx.svc, id, { timeZone: tz, now: ctx.now });
   if (!removed) return null;
-  for (const r of await store.reminders()) if (r.oppId === id) await store.removeReminder(r.id);
-  await refreshOpportunitiesDoc(ctx);
+  const state = await ctx.svc.store.getUserState(ctx.chatId);
+  const deleted = [{ opp: removed, at: ctx.now.toISOString() }, ...(state.deleted || [])].slice(0, 5);
+  await ctx.svc.store.setUserState(ctx.chatId, { deleted });
+  ctx.attachments.push(deletedCard(removed));
   return removed;
 }
 
-async function refreshOpportunitiesDoc(ctx) {
-  try {
-    await ctx.svc.drive.writeRootText('Opportunities.md', renderMarkdown(await ctx.svc.store.opportunities(), tz, ctx.now || new Date()));
-  } catch (err) {
-    console.warn('Opportunities.md refresh failed', err?.message || err);
+/**
+ * Messages for everything due in one cron run: deadline alerts become one
+ * card per deadline (several together = one carousel), other reminders keep
+ * their snooze card. Alerts for deadlines that already closed are dropped.
+ */
+async function dueMessages(due, svc, tenant, now) {
+  const regular = due.filter((r) => !r.oppId);
+  const alertFor = new Set(due.filter((r) => r.oppId).map((r) => r.oppId));
+  const opps = alertFor.size
+    ? (await svc.store.opportunities()).filter((o) => alertFor.has(o.id) && o.status !== 'applied' && o.deadline && daysUntil(o.deadline, tz, now) >= 0)
+    : [];
+  const messages = regular.map((r) => dueReminderCard(r, { userName: tenant.type === 'group' ? '' : tenant.name, timeZone: tz, now }));
+  if (opps.length) {
+    opps.sort((a, b) => a.deadline.localeCompare(b.deadline));
+    for (let i = 0; i < opps.length; i += 12) messages.push(deadlineAlertsMessage(opps.slice(i, i + 12), { timeZone: tz, now }));
   }
+  return messages;
 }
 
 function buildFileName(message, mimeType, when, ctx) {
@@ -1062,7 +1236,8 @@ function welcomeText() {
 • "ช่วยจำ ที่จอดรถชั้น 3 B12" → จำไว้ให้
 • "เตือนกินยา 19.00" → ตั้งเตือน
 • "ลง calendar พรุ่งนี้ 10 โมง ประชุม" → ลงปฏิทิน
-• ส่งโปสเตอร์/ลิงก์รับสมัคร → จด deadline + เตือนก่อนหมดเขต
+• ส่งโปสเตอร์/ลิงก์รับสมัคร → จด deadline + เตือนก่อนหมดเขต (ส่งรูปกับข้อความของงานเดียวกัน จะรวมเป็นรายการเดียว)
+• "เตือน deadline ก่อน 7 3 1 วัน 20:00" → ตั้งว่าจะให้เตือนกี่วันก่อน และกี่โมง
 • ถามอะไรก็ได้ คุยเล่นก็ได้`;
 }
 

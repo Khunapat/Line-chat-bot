@@ -199,8 +199,9 @@ export const TOOLS = [
         cost: { type: 'string', description: 'ค่าใช้จ่าย/รางวัล หรือค่าว่าง' },
         link: { type: 'string', description: 'URL หรือค่าว่าง' },
         contact: { type: 'string', description: 'ช่องทางติดต่อ หรือค่าว่าง' },
+        same_as: { type: 'string', description: 'id ของ deadline ที่เพิ่งบันทึก (ดูบริบท) ถ้าข้อความนี้พูดถึงงานเดียวกัน ระบบจะรวมรายละเอียดเข้ารายการเดิม ไม่งั้นค่าว่าง' },
       },
-      required: ['title', 'kind', 'organizer', 'summary', 'deadline', 'event_dates', 'eligibility', 'cost', 'link', 'contact'],
+      required: ['title', 'kind', 'organizer', 'summary', 'deadline', 'event_dates', 'eligibility', 'cost', 'link', 'contact', 'same_as'],
       additionalProperties: false,
     },
     strict: true,
@@ -218,6 +219,33 @@ export const TOOLS = [
       type: 'object',
       properties: { id: { type: 'string' } },
       required: ['id'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: 'mark_opportunity_applied',
+    description: 'บันทึกว่าสมัคร/ส่งรายการนี้แล้ว ระบบจะหยุดเตือน (applied=true) หรือกลับมาเตือนต่อ (applied=false) ใช้เมื่อผู้ใช้บอกว่า "สมัคร X แล้ว" "ส่งใบสมัครแล้ว" ระบุ id จาก list_opportunities',
+    input_schema: {
+      type: 'object',
+      properties: { id: { type: 'string' }, applied: { type: 'boolean' } },
+      required: ['id', 'applied'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: 'set_deadline_alerts',
+    description: 'ตั้งว่าจะเตือน deadline ล่วงหน้ากี่วันและเวลาไหน เช่น "เตือนก่อน 2 อาทิตย์ด้วย" "เตือนตอน 2 ทุ่ม" "ทุน X เตือนแค่วันก่อนพอ" ใช้กับทุกรายการ หรือใส่ id (จาก list_opportunities) เพื่อตั้งเฉพาะรายการเดียว',
+    input_schema: {
+      type: 'object',
+      properties: {
+        days: { type: 'array', items: { type: 'integer' }, description: 'จำนวนวันก่อนหมดเขตที่จะเตือน 0 = วันสุดท้าย เช่น [14,7,3,1,0] ใส่ [] ถ้าไม่เปลี่ยนวัน' },
+        time: { type: 'string', description: 'เวลาเตือน HH:MM เช่น "20:00" หรือค่าว่างถ้าไม่เปลี่ยน (เวลาใช้กับทุกรายการ)' },
+        id: { type: 'string', description: 'id รายการ ถ้าตั้งเฉพาะรายการเดียว หรือค่าว่าง = ทุกรายการ' },
+        off: { type: 'boolean', description: 'true = ปิดการเตือน (ของรายการนั้น หรือทั้งหมดถ้า id ว่าง)' },
+      },
+      required: ['days', 'time', 'id', 'off'],
       additionalProperties: false,
     },
     strict: true,
@@ -266,7 +294,8 @@ ${who}
 - จดโน้ต/ลิงก์ลง Drive (save_note)
 - ตั้งเตือน ดูเตือน ยกเลิก เปลี่ยนเวลา (set_reminder / list_reminders / cancel_reminder / reschedule_reminder) - ระบบแนบการ์ดยืนยันให้เอง คุณตอบยืนยันสั้น ๆ พร้อมเวลา เช่น "ได้เลย พรุ่งนี้ 10:15 น. เดี๋ยวเด้งเตือนให้"
 - ลงนัด / ดูนัดใน Google Calendar (add_calendar_event / list_calendar)
-- จดประกาศรับสมัคร / แข่งขัน / ทุน / คอร์ส พร้อม deadline (save_opportunity / list_opportunities / delete_opportunity) - โปสเตอร์และลิงก์ที่ผู้ใช้ส่งมา ระบบอ่านและจดให้เองอยู่แล้ว คุณใช้ save_opportunity เฉพาะข้อความที่พิมพ์/วางมา
+- จดประกาศรับสมัคร / แข่งขัน / ทุน / คอร์ส พร้อม deadline (save_opportunity / list_opportunities / delete_opportunity / mark_opportunity_applied) - โปสเตอร์และลิงก์ที่ผู้ใช้ส่งมา ระบบอ่านและจดให้เองอยู่แล้ว คุณใช้ save_opportunity เฉพาะข้อความที่พิมพ์/วางมา ถ้าบริบทบอกว่ามี deadline ที่เพิ่งบันทึกและข้อความนี้เป็นงานเดียวกัน ให้ใส่ same_as เพื่อรวมเป็นรายการเดียว อย่าสร้างซ้ำ
+- ระบบเตือน deadline ล่วงหน้าหลายครั้งตามที่ตั้งไว้ (ปกติ 7, 3, 1 วันก่อน และวันสุดท้าย 09:00) ผู้ใช้เปลี่ยนวันหรือเวลาได้ (set_deadline_alerts) ถ้าผู้ใช้บอกว่าสมัครแล้ว ให้ mark_opportunity_applied เพื่อหยุดเตือน
 - ถามอะไรก็ตอบได้ ให้ความเห็นตรง ๆ แบบเพื่อน ถ้าไม่มั่นใจก็บอกว่าไม่ชัวร์
 
 กติกา:

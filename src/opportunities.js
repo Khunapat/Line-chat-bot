@@ -36,8 +36,9 @@ export const SCHEMA = {
     confidence: { type: 'number', description: '0 to 1' },
     caption: { type: 'string', description: 'ALWAYS filled for images/PDFs: what this file is, in Thai, max 8 words, e.g. "ใบเสร็จร้านกาแฟ Starbucks" or "สลิปโอนเงิน KBank"' },
     tags: { type: 'array', items: { type: 'string' }, description: '3 to 8 short search keywords in Thai and English, e.g. ["ใบเสร็จ","receipt","กาแฟ","Starbucks"]' },
+    same_as: { type: 'string', description: 'id of an already-saved item (listed in the message) that is the SAME activity, or empty' },
   },
-  required: ['is_opportunity', 'kind', 'title', 'organizer', 'summary', 'deadline', 'deadline_note', 'event_dates', 'eligibility', 'cost', 'link', 'contact', 'confidence', 'caption', 'tags'],
+  required: ['is_opportunity', 'kind', 'title', 'organizer', 'summary', 'deadline', 'deadline_note', 'event_dates', 'eligibility', 'cost', 'link', 'contact', 'confidence', 'caption', 'tags', 'same_as'],
   additionalProperties: false,
 };
 
@@ -48,31 +49,44 @@ Output every field. Use empty strings when unknown. Summary in Thai, casual but 
 Always fill caption and tags for an image or PDF (what it shows: receipt, slip, ID card, screenshot, document, poster, photo of a place or people, etc.) so the file can be found later by keyword. For plain text or a web page, caption and tags may be empty.`;
 }
 
+/**
+ * The already-saved list, so the model can say "this is the same activity as
+ * item X" (a poster and a message about one call should become one record).
+ * `candidates` is [{ id, title, deadline, organizer }].
+ */
+export function savedListNote(candidates) {
+  if (!candidates?.length) return 'Already saved: (nothing yet). Set same_as to "".';
+  const lines = candidates.map((o) => `${o.id} | ${o.title} | ${o.deadline || '-'} | ${o.organizer || '-'}`).join('\n');
+  return `Already saved (id | title | deadline | organizer):
+${lines}
+If this content announces the SAME activity as one of these (same program / event / round, even if worded differently or in another language), set same_as to that id. Otherwise set same_as to "".`;
+}
+
 /** Ask the provider to read an image / PDF. */
-export async function extractFromMedia(provider, { mimeType, base64 }, { now = new Date(), timeZone } = {}) {
+export async function extractFromMedia(provider, { mimeType, base64 }, { now = new Date(), timeZone, candidates } = {}) {
   const today = todayIso(now, timeZone);
   return normalize(await provider.extract({
     system: systemPrompt(today),
     parts: [
       { inlineData: { mimeType, data: base64 } },
-      { text: 'Read this and fill the schema.' },
+      { text: `Read this and fill the schema.\n\n${savedListNote(candidates)}` },
     ],
     schema: SCHEMA,
-  }));
+  }), candidates);
 }
 
 /** Ask the provider to read text (a fetched web page, or a pasted message). */
-export async function extractFromText(provider, text, { url, now = new Date(), timeZone } = {}) {
+export async function extractFromText(provider, text, { url, now = new Date(), timeZone, candidates } = {}) {
   const today = todayIso(now, timeZone);
   const header = url ? `Source URL: ${url}\n\n` : '';
   return normalize(await provider.extract({
     system: systemPrompt(today),
-    parts: [{ text: header + text.slice(0, 12_000) }],
+    parts: [{ text: `${header}${text.slice(0, 12_000)}\n\n---\n${savedListNote(candidates)}` }],
     schema: SCHEMA,
-  }));
+  }), candidates);
 }
 
-function normalize(o) {
+function normalize(o, candidates = []) {
   if (!o || typeof o !== 'object') return null;
   const out = {};
   for (const k of Object.keys(SCHEMA.properties)) out[k] = o[k] ?? '';
@@ -82,6 +96,11 @@ function normalize(o) {
   out.tags = Array.isArray(o.tags) ? o.tags.map((t) => String(t).trim()).filter(Boolean).slice(0, 12) : [];
   if (!KINDS.includes(out.kind)) out.kind = 'other';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(out.deadline)) out.deadline = '';
+  // Only ids we actually offered count; anything else is the model guessing.
+  const sameAs = String(o.same_as || '').trim();
+  out.same_as = (candidates || []).some((c) => c.id === sameAs) ? sameAs : '';
+  // Tells the caller the model did compare against the saved list.
+  out.ai_checked = (candidates || []).length > 0;
   return out;
 }
 
@@ -166,7 +185,7 @@ export function daysUntil(dateIso, timeZone, now = new Date()) {
   return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(t.year, t.month - 1, t.day)) / 86_400_000);
 }
 
-const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+export const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 /** "อีก 12 วัน (20 ก.ย.)", "พรุ่งนี้", "วันนี้", "หมดเขตแล้ว (1 ก.ย.)" */
 export function describeDeadline(dateIso, timeZone, now = new Date()) {
@@ -178,18 +197,6 @@ export function describeDeadline(dateIso, timeZone, now = new Date()) {
   if (days === 0) return `วันนี้ (${label})`;
   if (days === 1) return `พรุ่งนี้ (${label})`;
   return `อีก ${days} วัน (${label})`;
-}
-
-/** Reminder times for a deadline: 3 days before and the morning of, 09:00 local. */
-export function deadlineReminderTimes(dateIso, timeZone, now = new Date()) {
-  const at9 = (iso) => localDateTimeToUtc(iso, 9, 0, timeZone);
-  const [y, m, d] = dateIso.split('-').map(Number);
-  const before = new Date(Date.UTC(y, m - 1, d - 3));
-  const beforeIso = before.toISOString().slice(0, 10);
-  return [
-    { at: at9(beforeIso), label: 'อีก 3 วันจะปิดรับ' },
-    { at: at9(dateIso), label: 'วันนี้วันสุดท้าย' },
-  ].filter((r) => new Date(r.at) > now);
 }
 
 /** Convert a local wall-clock time in `timeZone` to a UTC ISO string. */
@@ -217,7 +224,8 @@ export function sortOpportunities(list, timeZone, now = new Date()) {
 /** Markdown table for Drive. */
 export function renderMarkdown(list, timeZone, now = new Date()) {
   const rows = sortOpportunities(list, timeZone, now).map((o) => {
-    const dl = o.deadline ? `${o.deadline} (${describeDeadline(o.deadline, timeZone, now)})` : '-';
+    const dl = (o.deadline ? `${o.deadline} (${describeDeadline(o.deadline, timeZone, now)})` : '-')
+      + (o.status === 'applied' ? ' ✓ สมัครแล้ว' : '');
     const link = o.link || o.source?.webViewLink || '';
     return `| ${escapeCell(o.title)} | ${KIND_THAI[o.kind] || KIND_THAI.other} | ${dl} | ${escapeCell(o.event_dates)} | ${escapeCell(o.eligibility)} | ${escapeCell(o.cost)} | ${link ? `[เปิด](${link})` : ''} |`;
   });

@@ -14,8 +14,11 @@ A LINE Official Account that works like a friend-plus-secretary in one chat:
 | `พรุ่งนี้มีเตือนอะไรบ้าง` | lists reminders |
 | `ลง calendar พรุ่งนี้ team dinner 18.09` | creates a Google Calendar event |
 | `เตือนและลง calendar 15.00 โทรหาลูกค้า` | does both |
-| a poster, PDF, or link for a competition, application, scholarship, course, or event | reads it, records title, deadline, dates, eligibility, cost, contact; replies with a card; sets reminders 3 days before and on the deadline; adds an all-day calendar entry; keeps `Opportunities.md` in Drive |
-| `มีอะไรใกล้หมดเขตบ้าง` | lists everything you sent, soonest deadline first |
+| a poster, PDF, or link for a competition, application, scholarship, course, or event | reads it, records title, deadline, dates, eligibility, cost, contact; replies with a card; alerts 7, 3 and 1 days before and on the deadline day; adds an all-day calendar entry; keeps `Opportunities.md` in Drive |
+| a poster **and** a message or link about the same call | one record, not two: the new details are folded into the saved one (the model compares against the saved list; a poster and text sent together are read one after the other). The card offers **แยกเป็นอันใหม่** if it guessed wrong, or **รวมเลย** when something only looks related |
+| `มีอะไรใกล้หมดเขตบ้าง` / menu **Deadline** | the deadline list: a date badge coloured by urgency, the countdown, a **ลบ** button per row (with **เอาคืน** to undo), tap a row for details. Applied and closed items sit at the bottom |
+| `เตือน deadline ก่อน 10 5 2 1 วัน 20:00` | changes when deadline alerts go out (no AI needed); also **ตั้งเวลาเตือน** in the Deadline list, or per item via **ตั้งเตือนอันนี้** |
+| **สมัครแล้ว หยุดเตือน** on a deadline or alert card | stops that item's remaining alerts (undo with **เตือนต่อ**) |
 | `หา ใบเสร็จ` / `หา receipt` | searches files (names, captions, tags), memories and deadlines at once. Every photo and PDF gets a caption and tags when it arrives, and is renamed after the caption, so keyword search works even for photos |
 | menu **ไฟล์/รูป** | recent files plus a link to the **gallery**: a private calendar page served by the bot, one tap per day to see that day's photos and files as thumbnails, with search. Links expire after 24 hours |
 | anything else | chats back in casual Thai (or English if you write English) |
@@ -37,6 +40,7 @@ My Drive/LineArchive/
 │   ├── reminders.json
 │   ├── opportunities.json            ← posters / links with deadlines
 │   ├── files.json                    ← captions and tags for search
+│   ├── settings.json                 ← deadline alert schedule
 │   └── state.json
 └── Opportunities.md                  ← readable deadline table
 ```
@@ -61,6 +65,8 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `src/reminders.js` – scheduling, recurrence, Thai date phrases ("พรุ่งนี้ 10:15 น.").
 * `src/calendar.js` – Google Calendar events.
 * `src/opportunities.js` – reads posters / pages with the model (deadlines, captions, tags), deadline maths, `Opportunities.md`.
+* `src/deadlines.js` – pure deadline logic: alert schedule, "is this the same call?" matching, merging two readings, list order.
+* `src/deadlineService.js` – saving / merging / splitting deadlines, planning their alerts and calendar entries, delete with undo, "applied".
 * `src/gallery.js` – the calendar gallery page and its API, signed expiring links, thumbnail proxy.
 * `src/tenants.js`, `src/oauth.js` – one Drive per person or group; the "connect your Drive" flow.
 * `src/flex.js` – the beige cards with olive buttons.

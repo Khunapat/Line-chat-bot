@@ -45,6 +45,47 @@ export class Calendar {
     return simplify(data);
   }
 
+  /** Delete an event; an event that is already gone counts as deleted. */
+  async deleteEvent(eventId) {
+    try {
+      await this.api.events.delete({ calendarId: this.calendarId, eventId });
+      return true;
+    } catch (err) {
+      const code = err?.code || err?.response?.status;
+      if (code === 404 || code === 410) return false;
+      throw err;
+    }
+  }
+
+  /** Move an all-day event to another date (YYYY-MM-DD). */
+  async moveAllDayEvent(eventId, date) {
+    const next = new Date(date + 'T00:00:00Z');
+    next.setUTCDate(next.getUTCDate() + 1);
+    const { data } = await this.api.events.patch({
+      calendarId: this.calendarId,
+      eventId,
+      requestBody: { start: { date }, end: { date: next.toISOString().slice(0, 10) } },
+    });
+    return simplify(data);
+  }
+
+  /**
+   * Ids of all-day events on `date` whose title is exactly `summary`. Used to
+   * find deadline entries made before their event id was recorded.
+   */
+  async findAllDay(date, summary) {
+    const day = new Date(date + 'T00:00:00Z');
+    const { data } = await this.api.events.list({
+      calendarId: this.calendarId,
+      timeMin: new Date(day.getTime() - 86_400_000).toISOString(),
+      timeMax: new Date(day.getTime() + 2 * 86_400_000).toISOString(),
+      singleEvents: true,
+      q: summary,
+      maxResults: 20,
+    });
+    return (data.items || []).filter((e) => e.start?.date === date && e.summary === summary).map((e) => e.id);
+  }
+
   /** Upcoming events in the next `days` days. */
   async listUpcoming({ days = 7, max = 15 } = {}) {
     const now = new Date();

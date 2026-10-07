@@ -24,25 +24,54 @@ export function nextOccurrence(atIso, repeat) {
  * Fire every reminder whose time has passed. `notify(reminder)` sends the
  * message; on success one-off reminders are removed and repeating ones
  * advanced (skipping any occurrences already in the past).
+ *
+ * With `{ batch: true }` notify receives all due reminders at once, so they
+ * can go out as one push (LINE counts one push per recipient, however many
+ * messages it carries); they are marked done only when that push succeeds.
  */
-export async function fireDueReminders(store, notify, now = new Date()) {
+export async function fireDueReminders(store, notify, now = new Date(), { batch = false } = {}) {
   const list = await store.reminders();
   const due = list.filter((r) => !r.firedAt && new Date(r.at) <= now);
+  const settle = async (r) => {
+    if (r.repeat && r.repeat !== 'none') {
+      let next = nextOccurrence(r.at, r.repeat);
+      while (next && new Date(next) <= now) next = nextOccurrence(next, r.repeat);
+      await store.updateReminder(r.id, { at: next });
+    } else {
+      // Keep it around (hidden) so the snooze / done buttons still work.
+      await store.updateReminder(r.id, { firedAt: now.toISOString() });
+    }
+  };
   let fired = 0;
-  for (const r of due) {
-    try {
-      await notify(r);
-      fired++;
-      if (r.repeat && r.repeat !== 'none') {
-        let next = nextOccurrence(r.at, r.repeat);
-        while (next && new Date(next) <= now) next = nextOccurrence(next, r.repeat);
-        await store.updateReminder(r.id, { at: next });
-      } else {
-        // Keep it around (hidden) so the snooze / done buttons still work.
-        await store.updateReminder(r.id, { firedAt: now.toISOString() });
+  if (batch) {
+    let sent = false;
+    if (due.length) {
+      try {
+        await notify(due);
+        sent = true;
+      } catch (err) {
+        console.error('reminder batch notify failed', due.map((r) => r.id).join(','), err?.message || err);
       }
-    } catch (err) {
-      console.error('reminder notify failed', r.id, err?.message || err);
+    }
+    if (sent) {
+      fired = due.length;
+      for (const r of due) {
+        try {
+          await settle(r);
+        } catch (err) {
+          console.error('reminder sent but not marked', r.id, err?.message || err);
+        }
+      }
+    }
+  } else {
+    for (const r of due) {
+      try {
+        await notify(r);
+        fired++;
+        await settle(r);
+      } catch (err) {
+        console.error('reminder notify failed', r.id, err?.message || err);
+      }
     }
   }
   // Purge fired one-offs older than a day.

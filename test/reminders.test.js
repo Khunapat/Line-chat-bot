@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { nextOccurrence, describeWhen, localIsoWithOffset, fireDueReminders, pendingReminders, zonedParts } from '../src/reminders.js';
+import { Store } from '../src/store.js';
 
 const TZ = 'Asia/Bangkok';
 
@@ -51,4 +52,22 @@ test('fireDueReminders notifies, hides one-offs, advances repeats, purges old', 
   assert.deepEqual(pendingReminders(list).map((r) => r.id), ['c', 'b']); // soonest first
   assert.equal(list.find((r) => r.id === 'b').at, '2026-09-09T08:00:00.000Z'); // skipped past days
   assert.ok(list.find((r) => r.id === 'c'));
+});
+
+test('fireDueReminders batch: one notify for everything due, marked only on success', async () => {
+  const docs = new Map([['reminders.json', [
+    { id: 'a', text: 'D-3', at: '2026-10-07T02:00:00Z', repeat: 'none', oppId: 'o1' },
+    { id: 'b', text: 'D-1', at: '2026-10-07T02:00:00Z', repeat: 'none', oppId: 'o2' },
+    { id: 'c', text: 'later', at: '2026-10-08T02:00:00Z', repeat: 'none' },
+  ]]]);
+  const store = new Store({ async readJson(n, f) { return structuredClone(docs.get(n) ?? f); }, async writeJson(n, v) { docs.set(n, structuredClone(v)); } }, { cacheMs: 0 });
+  const now = new Date('2026-10-07T02:00:30Z');
+  const calls = [];
+  const failing = await fireDueReminders(store, async () => { throw new Error('push failed'); }, now, { batch: true });
+  assert.equal(failing.fired, 0);
+  assert.ok((await store.reminders()).every((r) => !r.firedAt)); // retried next minute
+  const ok = await fireDueReminders(store, async (due) => { calls.push(due.map((r) => r.id)); }, now, { batch: true });
+  assert.equal(ok.fired, 2);
+  assert.deepEqual(calls, [['a', 'b']]);
+  assert.deepEqual((await store.reminders()).filter((r) => r.firedAt).map((r) => r.id), ['a', 'b']);
 });

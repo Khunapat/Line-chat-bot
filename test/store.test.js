@@ -76,3 +76,52 @@ test('links are stored, searched by title/host/caption and listed newest first',
   assert.ok(await store.removeLink(a.id));
   assert.equal((await store.links()).length, 1);
 });
+
+test('replaceDeadlineAlerts swaps future alerts in one write and keeps fired or due ones', async () => {
+  const drive = fakeDrive();
+  let writes = 0;
+  const realWrite = drive.writeJson;
+  drive.writeJson = async (n, v) => { writes++; return realWrite(n, v); };
+  const store = new Store(drive, { cacheMs: 0 });
+  const now = new Date('2026-10-07T02:30:00Z');
+  await store.addReminder({ text: 'old D-3', at: '2026-10-10T02:00:00Z', oppId: 'o1' });          // future: replaced
+  await store.addReminder({ text: 'fired', at: '2026-10-01T02:00:00Z', oppId: 'o1', firedAt: '2026-10-01T02:00:05Z' });
+  await store.addReminder({ text: 'due now', at: '2026-10-07T02:00:00Z', oppId: 'o1' });         // due, not sent yet: kept
+  await store.addReminder({ text: 'other deadline', at: '2026-10-12T02:00:00Z', oppId: 'o2' });
+  await store.addReminder({ text: 'กินยา', at: '2026-10-07T12:00:00Z' });
+  writes = 0;
+  const ids = await store.replaceDeadlineAlerts(new Map([['o1', [
+    { text: 'D-7', at: '2026-10-08T02:00:00Z', kind: 'deadline' },
+    { text: 'D-1', at: '2026-10-12T02:00:00Z', kind: 'deadline' },
+  ]]]), now);
+  assert.equal(writes, 1);
+  assert.equal(ids.get('o1').length, 2);
+  const texts = (await store.reminders()).map((r) => r.text).sort();
+  assert.deepEqual(texts, ['D-1', 'D-7', 'due now', 'fired', 'other deadline', 'กินยา']);
+  assert.ok((await store.reminders()).filter((r) => r.text.startsWith('D-')).every((r) => r.oppId === 'o1' && r.repeat === 'none'));
+});
+
+test('concurrent updates to one document are queued, none is lost', async () => {
+  const drive = fakeDrive();
+  // a slow Drive: every read and write yields, like the real API
+  const slow = (fn) => async (...a) => { await new Promise((r) => setTimeout(r, 5)); return fn(...a); };
+  drive.readJson = slow(drive.readJson.bind(drive));
+  drive.writeJson = slow(drive.writeJson.bind(drive));
+  const store = new Store(drive, { cacheMs: 0 });
+  await Promise.all(Array.from({ length: 8 }, (_, i) => store.addOpportunity({ title: `t${i}` })));
+  assert.equal((await store.opportunities()).length, 8);
+});
+
+test('settings and opportunity patch / restore', async () => {
+  const store = new Store(fakeDrive(), { cacheMs: 0 });
+  assert.deepEqual(await store.settings(), {});
+  await store.updateSettings({ deadlineAlerts: { days: [3, 0], time: '20:00' } });
+  assert.deepEqual((await store.settings()).deadlineAlerts, { days: [3, 0], time: '20:00' });
+  const o = await store.addOpportunity({ title: 'x', status: 'applied' });
+  const patched = await store.updateOpportunity(o.id, { title: 'y', status: undefined });
+  assert.equal(patched.title, 'y');
+  assert.ok(!('status' in patched));
+  const removed = await store.removeOpportunity(o.id);
+  assert.equal((await store.restoreOpportunity(removed)).id, o.id);
+  assert.equal(await store.restoreOpportunity(removed), null); // already back
+});

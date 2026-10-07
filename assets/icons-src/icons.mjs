@@ -86,6 +86,12 @@ export const ICONS = {
     <path d="M26 12 h32 l18 18 v54 q0 6 -6 6 h-44 q-6 0 -6 -6 v-66 q0 -6 6 -6 z" fill="${C.cream}" ${S}/>
     <path d="M58 12 v18 h18" fill="${C.cream2}" ${S}/>
     <path d="M34 50 h32 M34 62 h32 M34 74 h20" ${S}/>`,
+  // trash bin with lid
+  trash: `
+    <path d="M40 26 v-6 q0 -5 5 -5 h10 q5 0 5 5 v6" fill="${C.olive}" ${S}/>
+    <path d="M26 32 h48 l-5 50 q-1 6 -7 6 h-24 q-6 0 -7 -6 z" fill="${C.cream}" ${S}/>
+    <path d="M17 29 h66" ${S}/>
+    <path d="M42 44 v30 M58 44 v30" ${S}/>`,
   // pdf: document with red band
   pdf: `
     <path d="M26 12 h32 l18 18 v54 q0 6 -6 6 h-44 q-6 0 -6 -6 v-66 q0 -6 6 -6 z" fill="${C.cream}" ${S}/>

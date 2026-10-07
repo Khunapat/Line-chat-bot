@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  describeDeadline, daysUntil, deadlineReminderTimes, localDateTimeToUtc, sortOpportunities,
-  renderMarkdown, htmlToText, SCHEMA, todayIso,
+  describeDeadline, daysUntil, localDateTimeToUtc, sortOpportunities,
+  renderMarkdown, htmlToText, SCHEMA, todayIso, extractFromText, extractFromMedia,
 } from '../src/opportunities.js';
 
 const TZ = 'Asia/Bangkok';
@@ -21,13 +21,26 @@ test('daysUntil and describeDeadline count whole local days', () => {
   assert.equal(todayIso(new Date('2026-09-08T18:30:00Z'), TZ), '2026-09-09');
 });
 
-test('deadline reminders land at 09:00 Bangkok, only in the future', () => {
+test('local 09:00 Bangkok converts to 02:00 UTC', () => {
   assert.equal(localDateTimeToUtc('2026-09-20', 9, 0, TZ), '2026-09-20T02:00:00.000Z');
-  const times = deadlineReminderTimes('2026-09-20', TZ, now);
-  assert.deepEqual(times.map((t) => t.at), ['2026-09-17T02:00:00.000Z', '2026-09-20T02:00:00.000Z']);
-  // deadline in 2 days: the "3 days before" slot is already past
-  assert.equal(deadlineReminderTimes('2026-09-10', TZ, now).length, 1);
-  assert.equal(deadlineReminderTimes('2026-09-01', TZ, now).length, 0);
+});
+
+test('extraction shows the saved list and only trusts same_as ids it offered', async () => {
+  const seen = [];
+  const provider = { async extract({ parts }) { seen.push(parts); return { is_opportunity: true, title: 'KHS', deadline: '2026-10-07', same_as: 'k1', confidence: 0.9 }; } };
+  const candidates = [{ id: 'k1', title: 'Knight-Hennessy Scholars', deadline: '2026-10-07', organizer: 'Stanford' }];
+  const a = await extractFromText(provider, 'Knight-Hennessy Scholars Program 2027 apply now', { now, timeZone: TZ, candidates });
+  assert.equal(a.same_as, 'k1');
+  assert.equal(a.ai_checked, true);
+  assert.match(seen[0][0].text, /k1 \| Knight-Hennessy Scholars \| 2026-10-07 \| Stanford/);
+  // an id the model made up is dropped
+  const b = await extractFromMedia({ async extract() { return { is_opportunity: true, title: 'x', same_as: 'zzz' }; } }, { mimeType: 'image/png', base64: '' }, { now, timeZone: TZ, candidates });
+  assert.equal(b.same_as, '');
+  // nothing saved yet: the model is told so and same_as stays empty
+  const c = await extractFromText(provider, 'hello world announcement text', { now, timeZone: TZ });
+  assert.equal(c.same_as, '');
+  assert.equal(c.ai_checked, false);
+  assert.match(seen[1][0].text, /nothing yet/);
 });
 
 test('sortOpportunities: upcoming by deadline, then undated, then past', () => {
