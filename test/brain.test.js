@@ -62,5 +62,16 @@ test('Gemini function declarations keep the JSON schema and drop strict', () => 
   assert.equal(decl.parametersJsonSchema.type, 'object');
   assert.deepEqual(decl.parametersJsonSchema.required, ['text', 'at', 'repeat']);
   assert.equal('strict' in decl, false);
-  assert.equal(TOOLS.length, 19);
+  assert.equal(TOOLS.length, 23);
+});
+
+test('every tool schema is strict: all fields required, nothing extra', () => {
+  for (const tool of TOOLS) {
+    const s = tool.input_schema;
+    assert.equal(s.additionalProperties, false, tool.name);
+    assert.deepEqual([...(s.required || [])].sort(), Object.keys(s.properties).sort(), tool.name);
+    assert.equal(tool.strict, true, tool.name);
+  }
+  const names = TOOLS.map((t) => t.name);
+  for (const n of ['save_subscription', 'list_subscriptions', 'update_subscription', 'record_charge']) assert.ok(names.includes(n), n);
 });

@@ -1,5 +1,6 @@
 import { localIsoWithOffset, REPEATS } from './reminders.js';
 import { KINDS } from './opportunities.js';
+import { CYCLES } from './subscriptions.js';
 
 /**
  * The conversational layer. A provider (Claude or Gemini) decides what the
@@ -251,6 +252,73 @@ export const TOOLS = [
     strict: true,
   },
   {
+    name: 'save_subscription',
+    description: 'จดค่าสมาชิก/บริการที่ตัดเงินประจำ (รายเดือน รายปี) หรือการทดลองใช้ฟรีที่ผู้ใช้บอก เช่น "เริ่มทดลอง ChatGPT Plus ฟรีถึง 5 พ.ย." "สมัคร Spotify 149 บาทต่อเดือน ตัดทุกวันที่ 3" ระบบเตือนก่อนทดลองใช้หมด (2 วัน 1 วัน และเช้าวันสุดท้าย) และก่อนตัดเงินรายปีให้เอง ชื่อเดิมซ้ำ = อัปเดตรายการเดิม ใช้ได้เฉพาะแชทส่วนตัว',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'ชื่อบริการ เช่น "Netflix" "ChatGPT Plus"' },
+        status: { type: 'string', enum: ['trial', 'active'], description: 'trial = กำลังทดลองใช้ฟรี, active = จ่ายเงินอยู่' },
+        amount: { type: 'number', description: 'ราคาต่อรอบ 0 ถ้าไม่รู้' },
+        currency: { type: 'string', description: 'THB USD ... (บาท = THB)' },
+        cycle: { type: 'string', enum: CYCLES, description: 'รอบตัดเงิน ถ้าไม่บอก ใช้ monthly' },
+        trial_end_date: { type: 'string', description: 'YYYY-MM-DD (ค.ศ.) วันที่ทดลองใช้หมด = วันแรกที่จะตัดเงิน หรือค่าว่าง ถ้าบอกเป็น "ฟรี 7 วัน" ให้นับจากวันนี้' },
+        next_charge_date: { type: 'string', description: 'YYYY-MM-DD วันตัดเงินครั้งถัดไป (เช่น "ตัดทุกวันที่ 3" = วันที่ 3 ที่จะมาถึง) หรือค่าว่าง' },
+        card_last4: { type: 'string', description: 'เลขท้ายบัตร หรือค่าว่าง' },
+        remind: { type: 'string', enum: ['default', 'on', 'off'], description: 'default = เตือนเฉพาะทดลองใช้และรายปี, on = เตือนก่อนตัดเงินทุกครั้ง, off = ไม่เตือน' },
+        note: { type: 'string', description: 'หมายเหตุสั้น ๆ หรือค่าว่าง' },
+      },
+      required: ['name', 'status', 'amount', 'currency', 'cycle', 'trial_end_date', 'next_charge_date', 'card_last4', 'remind', 'note'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: 'list_subscriptions',
+    description: 'ดูค่าสมาชิกและการทดลองใช้ฟรีที่จดไว้ทั้งหมด พร้อมวันตัดเงินครั้งถัดไปและยอดรวมต่อเดือน ใช้เมื่อผู้ใช้ถามว่าจ่ายค่าอะไรอยู่บ้าง มีทดลองใช้อะไรใกล้หมด',
+    input_schema: { type: 'object', properties: {}, additionalProperties: false },
+    strict: true,
+  },
+  {
+    name: 'update_subscription',
+    description: 'เปลี่ยนค่าสมาชิกที่จดไว้ ระบุ id จาก list_subscriptions: cancelled = ผู้ใช้ยกเลิกแล้ว (หยุดเตือน และถ้ายังโดนตัดเงินจะแจ้ง), active = ใช้ต่อ/จ่ายแล้ว, remind_on / remind_off = เปิด/ปิดเตือนก่อนตัดเงิน, delete = ลบ, edit = แก้ราคา รอบ หรือวันที่',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        action: { type: 'string', enum: ['cancelled', 'active', 'remind_on', 'remind_off', 'delete', 'edit'] },
+        amount: { type: 'number', description: 'ราคาใหม่ 0 = ไม่เปลี่ยน' },
+        cycle: { type: 'string', enum: ['same', 'monthly', 'yearly', 'weekly'], description: 'same = ไม่เปลี่ยน' },
+        next_charge_date: { type: 'string', description: 'YYYY-MM-DD หรือค่าว่าง = ไม่เปลี่ยน' },
+        trial_end_date: { type: 'string', description: 'YYYY-MM-DD หรือค่าว่าง = ไม่เปลี่ยน' },
+      },
+      required: ['id', 'action', 'amount', 'cycle', 'next_charge_date', 'trial_end_date'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: 'record_charge',
+    description: 'บันทึกรายการเงินที่ผู้ใช้วางหรือส่งต่อมา: SMS/อีเมลแจ้งตัดบัตรหรือจ่ายเงินจากธนาคาร ใบเสร็จค่าสมาชิก อีเมลแจ้งเริ่มทดลองใช้ฟรีหรือแจ้งต่ออายุ หรือผู้ใช้เล่าเอง เช่น "โดนตัด Netflix 419 เมื่อกี้" ระบบจะดูว่าตรงกับค่าสมาชิกที่จดไว้ไหม ถ้าเป็นรายการใหม่ระบบจะแนบการ์ดถามผู้ใช้เอง คุณแค่ตอบสั้น ๆ ห้ามใช้กับรหัส OTP ใช้ได้เฉพาะแชทส่วนตัว',
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['charge', 'payment', 'refund', 'trial_started', 'subscription_started', 'renewal_notice'], description: 'charge = ตัดบัตร, payment = จ่ายจากบัญชี/สแกนจ่าย, refund = ได้เงินคืน, trial_started = เริ่มทดลองใช้ฟรี, subscription_started = เริ่มสมัครแบบจ่ายเงิน, renewal_notice = แจ้งว่าจะต่ออายุ/ตัดเงินวันไหน' },
+        merchant: { type: 'string', description: 'ชื่อร้าน/ผู้รับเงินตามที่เขียนในข้อความ' },
+        service: { type: 'string', description: 'ชื่อบริการแบบอ่านง่าย เช่น "Netflix" "ChatGPT Plus" หรือค่าว่าง' },
+        amount: { type: 'number', description: 'จำนวนเงิน 0 ถ้าไม่มี' },
+        currency: { type: 'string', description: 'THB USD ... (บาท = THB)' },
+        date: { type: 'string', description: 'YYYY-MM-DD (ค.ศ.) วันที่ตัดเงิน หรือวันที่จะต่ออายุ หรือค่าว่าง' },
+        card_last4: { type: 'string', description: 'เลขท้ายบัตร/บัญชี หรือค่าว่าง' },
+        cycle: { type: 'string', enum: CYCLES },
+        trial_end_date: { type: 'string', description: 'YYYY-MM-DD วันหมดทดลองใช้ หรือค่าว่าง' },
+      },
+      required: ['kind', 'merchant', 'service', 'amount', 'currency', 'date', 'card_last4', 'cycle', 'trial_end_date'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
     name: 'add_calendar_event',
     description: 'ลงนัดใน Google Calendar ใช้เมื่อผู้ใช้บอกว่า "ลง calendar" "ลงปฏิทิน" "ลงนัด" ถ้าไม่บอกเวลาสิ้นสุดให้เว้นว่าง (ระบบใส่ 1 ชั่วโมงให้)',
     input_schema: {
@@ -296,6 +364,7 @@ ${who}
 - ลงนัด / ดูนัดใน Google Calendar (add_calendar_event / list_calendar)
 - จดประกาศรับสมัคร / แข่งขัน / ทุน / คอร์ส พร้อม deadline (save_opportunity / list_opportunities / delete_opportunity / mark_opportunity_applied) - โปสเตอร์และลิงก์ที่ผู้ใช้ส่งมา ระบบอ่านและจดให้เองอยู่แล้ว คุณใช้ save_opportunity เฉพาะข้อความที่พิมพ์/วางมา ถ้าบริบทบอกว่ามี deadline ที่เพิ่งบันทึกและข้อความนี้เป็นงานเดียวกัน ให้ใส่ same_as เพื่อรวมเป็นรายการเดียว อย่าสร้างซ้ำ
 - ระบบเตือน deadline ล่วงหน้าหลายครั้งตามที่ตั้งไว้ (ปกติ 7, 3, 1 วันก่อน และวันสุดท้าย 09:00) ผู้ใช้เปลี่ยนวันหรือเวลาได้ (set_deadline_alerts) ถ้าผู้ใช้บอกว่าสมัครแล้ว ให้ mark_opportunity_applied เพื่อหยุดเตือน
+- ค่าสมาชิกและทดลองใช้ฟรี (save_subscription / list_subscriptions / update_subscription / record_charge) เฉพาะแชทส่วนตัว: ผู้ใช้กลัวลืมยกเลิกทดลองใช้แล้วโดนตัดเงิน ถ้าผู้ใช้บอกว่าเริ่มทดลองใช้ ให้ save_subscription status=trial พร้อมวันหมด (ถามถ้าไม่รู้) ถ้าผู้ใช้วาง/ส่งต่อ SMS หรืออีเมลแจ้งตัดเงิน ใบเสร็จ หรืออีเมลทดลองใช้/ต่ออายุ ให้ record_charge ระบบแนบการ์ดให้เอง ถ้าผู้ใช้บอกว่ายกเลิกแล้ว ให้ update_subscription action=cancelled ห้ามขอเลขบัตรเต็ม รหัส OTP หรือรหัสผ่าน
 - ถามอะไรก็ตอบได้ ให้ความเห็นตรง ๆ แบบเพื่อน ถ้าไม่มั่นใจก็บอกว่าไม่ชัวร์
 
 กติกา:

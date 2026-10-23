@@ -61,6 +61,7 @@ before(async () => {
     thumbUrlFor: (_req, tid, fid) => `https://x/thumb/${tid}/${fid}`,
     onLangChanged: async (uid, lang) => { langCalls.push([uid, lang]); return { menuSwitched: true }; },
     settings: { liffId: '1234-abcd', rootFolderName: 'LineArchive', multiUser: true },
+    hookBaseFor: () => 'https://bot.example',
     now: () => NOW,
   });
   await new Promise((r) => { server = app.listen(0, r); });
@@ -341,4 +342,89 @@ test('language is stored per verified user and switches the menu', async () => {
   const tone = await call('PUT', '/prefs', { body: { tone: 'friend' } });
   assert.equal(tone.json.prefs.tone, 'friend');
   assert.equal(langCalls.length, 1, 'changing only the tone does not touch the menu');
+});
+
+// ---------------------------------------------------------- subscriptions
+
+test('subscriptions are personal: groups and other people never see them', async () => {
+  const created = await call('POST', '/subscriptions', { body: { name: 'Canva Pro', status: 'trial', trialEndsOn: '2026-10-10', amount: 299, currency: 'THB', cycle: 'monthly' } });
+  assert.equal(created.status, 201);
+  assert.equal(created.json.item.status, 'trial');
+  assert.equal(created.json.item.remind, true);
+  assert.equal(created.json.item.daysLeft, 3);
+  // a group context is refused, also for its host
+  assert.equal((await call('GET', `/subscriptions?ctx=${GROUP}`)).status, 403);
+  assert.equal((await call('POST', `/subscriptions?ctx=${GROUP}`, { body: { name: 'X' } })).status, 403);
+  // Bob's list is his own
+  const bob = await call('GET', '/subscriptions', { uid: BOB });
+  assert.equal(bob.status, 200);
+  assert.deepEqual(bob.json.items, []);
+  assert.equal((await call('PATCH', `/subscriptions/${created.json.item.id}`, { uid: BOB, body: { status: 'cancelled' } })).status, 404);
+  // Alice sees it with its alerts kept out of the plain reminders
+  const mine = await call('GET', '/subscriptions');
+  assert.equal(mine.json.items.length, 1);
+  assert.equal(mine.json.hook.enabled, false);
+  const rem = await call('GET', '/reminders');
+  assert.equal(rem.json.items.some((r) => /Canva/.test(r.text)), false);
+});
+
+test('subscription edits validate, and planner shows trial ends and charges', async () => {
+  const bad = await call('POST', '/subscriptions', { body: { name: '', amount: -1, cycle: 'daily', trialEndsOn: '2026-02-30' } });
+  assert.equal(bad.status, 400);
+  assert.deepEqual(Object.keys(bad.json.fields).sort(), ['amount', 'cycle', 'name', 'trialEndsOn']);
+  const nf = await call('POST', '/subscriptions', { body: { name: 'Netflix', amount: 419, cycle: 'monthly', nextChargeOn: '2026-10-09' } });
+  const id = nf.json.item.id;
+  const on = await call('PATCH', `/subscriptions/${id}`, { body: { remind: true } });
+  assert.equal(on.json.item.remind, true);
+  assert.equal((await call('PATCH', `/subscriptions/${id}`, { body: { remind: 'yes' } })).status, 400);
+  const plan = await call('GET', '/planner?from=2026-10-05&to=2026-10-11');
+  assert.equal(plan.json.subscriptions.status, 'ok');
+  const kinds = plan.json.subscriptions.items.map((x) => `${x.name}:${x.kind}:${x.on}`).sort();
+  assert.deepEqual(kinds, ['Canva Pro:trial_end:2026-10-10', 'Netflix:charge:2026-10-09']);
+  assert.equal(plan.json.reminders.some((r) => /Netflix|Canva/.test(r.text)), false);
+  const groupPlan = await call('GET', `/planner?ctx=${GROUP}&from=2026-10-05&to=2026-10-11`);
+  assert.equal(groupPlan.json.subscriptions.status, 'not_applicable');
+  const me = await call('GET', '/me');
+  assert.deepEqual(me.json.counts.subscriptions, { trials: 1, active: 1, pending: 0 });
+  // subscription alerts cannot be edited as plain reminders
+  const alerts = (await tenants.svcs.get(ALICE).store.reminders()).filter((r) => r.subId);
+  assert.ok(alerts.length > 0);
+  assert.equal((await call('PATCH', `/reminders/${alerts[0].id}`, { body: { text: 'x' } })).json.error, 'subscription_alert');
+  assert.equal((await call('DELETE', `/subscriptions/${id}`)).status, 200);
+  assert.equal((await call('DELETE', `/subscriptions/${id}`)).status, 404);
+});
+
+test('answering a new-charge question from the app', async () => {
+  const svc = tenants.svcs.get(ALICE);
+  const subsMod = await import('../src/subscriptionService.js');
+  const r = await subsMod.recordCharge(svc, { kind: 'charge', merchant: 'SPOTIFY P1A2B3', amount: 149, on: '2026-10-07' }, { userId: ALICE, timeZone: 'Asia/Bangkok', now: NOW });
+  assert.equal(r.outcome, 'new');
+  const list = await call('GET', '/subscriptions');
+  assert.equal(list.json.pending.length, 1);
+  assert.equal(list.json.pending[0].charge.merchant, 'SPOTIFY P1A2B3');
+  assert.equal((await call('POST', `/subscriptions/pending/${r.pending.id}`, { body: { action: 'maybe' } })).status, 400);
+  assert.equal((await call('POST', `/subscriptions/pending/${r.pending.id}`, { uid: BOB, body: { action: 'track' } })).status, 404);
+  const t = await call('POST', `/subscriptions/pending/${r.pending.id}`, { body: { action: 'track', cycle: 'monthly' } });
+  assert.equal(t.json.outcome, 'tracked');
+  assert.equal(t.json.item.name, 'Spotify');
+  assert.equal(t.json.item.nextChargeOn, '2026-11-07');
+  assert.equal((await call('POST', `/subscriptions/pending/${r.pending.id}`, { body: { action: 'track' } })).status, 404);
+});
+
+test('forwarding link: shown only to its owner, regenerated, switched off', async () => {
+  assert.deepEqual((await call('GET', '/money-hook')).json, { enabled: false });
+  const on = await call('POST', '/money-hook', { body: { action: 'enable' } });
+  assert.equal(on.json.enabled, true);
+  assert.equal(on.json.url, 'https://bot.example/hooks/money');
+  assert.ok(on.json.pathUrl.endsWith(on.json.token));
+  const again = await call('POST', '/money-hook', { body: { action: 'enable' } });
+  assert.equal(again.json.token, on.json.token, 'enable keeps the current link');
+  const fresh = await call('POST', '/money-hook', { body: { action: 'regenerate' } });
+  assert.notEqual(fresh.json.token, on.json.token);
+  assert.equal((await call('GET', '/money-hook', { uid: BOB })).json.enabled, false, "Bob does not see Alice's link");
+  assert.equal((await call('GET', `/money-hook?ctx=${GROUP}`)).status, 403);
+  assert.equal((await call('POST', '/money-hook', { body: { action: 'nope' } })).status, 400);
+  const off = await call('POST', '/money-hook', { body: { action: 'disable' } });
+  assert.deepEqual(off.json, { enabled: false });
+  assert.equal((await call('GET', '/subscriptions')).json.hook.enabled, false);
 });

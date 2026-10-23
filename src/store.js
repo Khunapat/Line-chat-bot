@@ -7,6 +7,7 @@ import { withLock } from './lock.js';
  *   reminders.json  - pending reminders
  *   state.json      - per-user scratch state (last uploaded file, pending actions)
  *   settings.json   - per-chat preferences (deadline alert schedule)
+ *   subscriptions.json, charges.json - personal subscriptions / trials (subscriptionService.js)
  *
  * Each document is cached in memory for a short while and written through on
  * every change. Fine for a single-user bot; run Cloud Run with max 1 instance
@@ -158,17 +159,26 @@ export class Store {
    * sent twice. Returns oppId -> ids of the alerts now scheduled.
    */
   async replaceDeadlineAlerts(plan, now = new Date()) {
+    return this.replaceAlertsBy('oppId', plan, now);
+  }
+
+  /** The same for subscription / free-trial alerts, keyed by subId. */
+  async replaceSubscriptionAlerts(plan, now = new Date()) {
+    return this.replaceAlertsBy('subId', plan, now);
+  }
+
+  async replaceAlertsBy(field, plan, now) {
     const ids = new Map([...plan.keys()].map((k) => [k, []]));
     await this.update('reminders.json', [], (list) => {
       for (let i = list.length - 1; i >= 0; i--) {
         const r = list[i];
-        if (r.oppId && plan.has(r.oppId) && !r.firedAt && new Date(r.at) > now) list.splice(i, 1);
+        if (r[field] && plan.has(r[field]) && !r.firedAt && new Date(r.at) > now) list.splice(i, 1);
       }
-      for (const [oppId, entries] of plan) {
+      for (const [key, entries] of plan) {
         for (const e of entries) {
-          const entry = { id: shortId(), createdAt: now.toISOString(), repeat: 'none', ...e, oppId };
+          const entry = { id: shortId(), createdAt: now.toISOString(), repeat: 'none', ...e, [field]: key };
           list.push(entry);
-          ids.get(oppId).push(entry.id);
+          ids.get(key).push(entry.id);
         }
       }
     });
@@ -177,10 +187,19 @@ export class Store {
 
   /** Drop every alert of one opportunity (used when it is deleted or merged away). */
   async removeAlertsFor(oppId) {
+    return this.removeAlertsBy('oppId', oppId);
+  }
+
+  /** Drop every alert of one subscription (deleted). */
+  async removeSubscriptionAlerts(subId) {
+    return this.removeAlertsBy('subId', subId);
+  }
+
+  async removeAlertsBy(field, key) {
     return this.update('reminders.json', [], (list) => {
       let n = 0;
       for (let i = list.length - 1; i >= 0; i--) {
-        if (list[i].oppId === oppId) { list.splice(i, 1); n++; }
+        if (list[i][field] === key) { list.splice(i, 1); n++; }
       }
       return n;
     });

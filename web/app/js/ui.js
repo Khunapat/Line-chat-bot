@@ -139,14 +139,15 @@ export function countdownEl(item, tone, text) {
   return h('span', { class: `cd ${tone}` }, toneMark(item.status === 'applied' ? 'applied' : tone, false, 16), text);
 }
 
-export function markers({ r, d, e, f }) {
-  return h('span', { class: 'mk', 'aria-hidden': 'true' }, r ? h('i', { class: 'mr' }) : null, d ? h('i', { class: 'md' }) : null, e ? h('i', { class: 'me' }) : null, f ? h('i', { class: 'mf' }) : null);
+export function markers({ r, d, e, f, s }) {
+  return h('span', { class: 'mk', 'aria-hidden': 'true' }, r ? h('i', { class: 'mr' }) : null, d ? h('i', { class: 'md' }) : null, s ? h('i', { class: 'ms' }) : null, e ? h('i', { class: 'me' }) : null, f ? h('i', { class: 'mf' }) : null);
 }
 
-export function legend(T) {
+export function legend(T, { subs = false } = {}) {
   return h('div', { class: 'legend', 'aria-label': T('legend') },
     h('span', null, h('i', { class: 'mr lg-i' }), T('lgRem')),
     h('span', null, h('i', { class: 'md lg-i' }), 'Deadline'),
+    subs ? h('span', null, h('i', { class: 'ms lg-i' }), T('lgSub')) : null,
     h('span', null, h('i', { class: 'me lg-i' }), T('lgEv')),
     h('span', null, h('i', { class: 'mf lg-i' }), T('lgSaved')));
 }

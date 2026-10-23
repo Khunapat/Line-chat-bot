@@ -244,10 +244,44 @@ await check('system reduced motion gives static poses', async () => {
   await p2.context().close();
 });
 
+// (the app is in Thai again here)
+await check('subscriptions: pending question answered, trial shows in the planner, editor validates', async () => {
+  await go(page, '#/subscriptions');
+  await page.waitForTimeout(500);
+  const before = await page.locator('article.card').count();
+  assert(before >= 1, 'no pending question shown');
+  await page.getByRole('button', { name: 'ใช่ รายเดือน' }).first().click();
+  await page.waitForTimeout(1200);
+  assert(await page.getByText('Spotify').count(), 'tracked item not listed');
+  await go(page, '#/subscription/new');
+  await page.getByRole('button', { name: 'บันทึก' }).click();
+  assert(await page.getByText('ใส่ชื่อบริการ').count(), 'empty name accepted');
+  await go(page, '#/today');
+  await page.waitForTimeout(600);
+  assert(await page.locator('.mk .ms').count(), 'no subscription marker in the week');
+});
+
+await check('subscriptions: forwarding link turns on, tests OK, and turns off', async () => {
+  await go(page, '#/subscriptions/connect');
+  await page.waitForTimeout(500);
+  if (await page.getByRole('button', { name: 'เปิดใช้ลิงก์ส่วนตัว' }).count()) {
+    await page.getByRole('button', { name: 'เปิดใช้ลิงก์ส่วนตัว' }).click();
+    await page.waitForTimeout(800);
+  }
+  await page.getByRole('button', { name: 'ทดสอบลิงก์' }).click();
+  await page.waitForTimeout(600);
+  assert(await page.getByText('ลิงก์ใช้ได้ ✓').count(), 'link test failed');
+  assert(await page.locator('pre').count(), 'no Gmail script shown');
+  await page.getByRole('button', { name: 'ปิดลิงก์' }).click();
+  await page.locator('.dlg').getByRole('button', { name: 'ปิดลิงก์' }).click();
+  await page.waitForTimeout(800);
+  assert(await page.getByRole('button', { name: 'เปิดใช้ลิงก์ส่วนตัว' }).count(), 'link still on');
+});
+
 for (const [w, hgt] of [[320, 740], [390, 844], [1280, 900]]) {
   await check(`no horizontal scroll at ${w}px on every tab`, async () => {
     const p3 = await open({ width: w, height: hgt });
-    for (const hsh of ['#/today', '#/reminders', '#/reminder/new', '#/deadlines', '#/deadline/d2', '#/deadline-alerts', '#/library', '#/file/f3', '#/me']) {
+    for (const hsh of ['#/today', '#/reminders', '#/reminder/new', '#/deadlines', '#/deadline/d2', '#/deadline-alerts', '#/library', '#/file/f3', '#/me', '#/subscriptions', '#/subscription/new', '#/subscriptions/connect']) {
       await go(p3, hsh);
       await p3.waitForTimeout(400);
       const over = await p3.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

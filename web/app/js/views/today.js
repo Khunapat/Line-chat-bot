@@ -13,6 +13,7 @@ import {
 } from '../model.js';
 import { loader, emptyState, markers, legend, banner, countdownEl, errorState, mascotFace } from '../ui.js';
 import { createMotion } from '../motion.js';
+import { formatMoney } from '../../../shared/money.js';
 
 const gridStart = (y, m) => weekStart(makeKey(y, m, 1));
 
@@ -96,6 +97,7 @@ export function renderToday(app, route, { seg } = {}) {
       dls: data.deadlines.filter((d) => d.deadline === k),
       evs: data.events.items.filter((e) => (e.allDay ? e.start === k : zoned(e.start, app.tz).key === k)),
       saved: data.saved.items.filter((x) => x.day === k),
+      subs: (data.subscriptions?.items || []).filter((x) => x.on === k),
     };
   }
 
@@ -118,6 +120,7 @@ export function renderToday(app, route, { seg } = {}) {
         const it = dayItems(data, k);
         const rel = i === 0 ? T('today') : i === 1 ? T('tomorrow') : formatDay(k, lang, 'dm');
         for (const d of it.dls) if (bucket(d) === 'open') up.push({ sort: `${k}0`, node: agendaDeadline(d, { day: rel }) });
+        for (const x of it.subs) up.push({ sort: `${k}0`, node: agendaSub(x, k, { day: rel }) });
         for (const { r, hm } of it.rems) {
           if (r.firedAt || Date.parse(zonedToUtc(k, hm, app.tz)) <= now.getTime()) continue;
           up.push({ sort: `${k}1${hm}`, node: agendaReminder(r, hm, { day: rel }) });
@@ -152,15 +155,16 @@ export function renderToday(app, route, { seg } = {}) {
         type: 'button', class: `day${k === today ? ' today' : ''}${p.m !== selMonth ? ' out' : ''}`, 'aria-pressed': String(k === sel),
         'aria-label': `${formatDay(k, lang)}${k === today ? ` (${T('today')})` : ''}: ${T('dayCount', { r: it.rems.length, d: it.dls.length, e: it.evs.length })}`,
         onclick: () => select(k),
-      }, h('small', null, formatDay(k, lang, 'dw')), h('b', null, p.d), markers({ r: it.rems.length, d: it.dls.length, e: it.evs.length, f: it.saved.length })));
+      }, h('small', null, formatDay(k, lang, 'dw')), h('b', null, p.d), markers({ r: it.rems.length, d: it.dls.length, e: it.evs.length, f: it.saved.length, s: it.subs.length })));
     }
-    left.append(week, legend(T));
+    left.append(week, legend(T, { subs: data.subscriptions?.status === 'ok' && data.subscriptions.items.length > 0 }));
 
     // The selected day.
     const it = dayItems(data, sel);
     const whenWord = sel === today ? 'today' : 'on';
     left.append(h('h2', { 'aria-live': 'polite' }, formatDay(sel, lang, 'full') + (sel === today ? ` (${T('today')})` : sel === addDays(today, 1) ? ` (${T('tomorrow')})` : '')));
     for (const d of it.dls) left.append(agendaDeadline(d));
+    for (const x of it.subs) left.append(agendaSub(x, sel));
     left.append(h('h3', { class: 'row', style: { gap: '6px', fontSize: '14px' } }, icon('bell'), T('lgRem'), h('span', { class: 'muted', style: { fontWeight: '500' } }, String(it.rems.length))));
     if (it.rems.length) {
       for (const { r, hm } of it.rems) left.append(agendaReminder(r, hm, { past: Date.parse(zonedToUtc(sel, hm, app.tz)) <= now.getTime() }));
@@ -188,6 +192,17 @@ export function renderToday(app, route, { seg } = {}) {
       h('div', null, h('b', { style: { display: 'block' } }, d.title),
         h('span', { class: 'kind' }, icon('target', { size: 16 }), `Deadline · ${noteText(d, T)}`),
         countdownEl(d, tone, countdown(d, T))));
+  }
+
+  /** A trial that ends or a plan that charges that day (personal planner only). */
+  function agendaSub(x, k, { day } = {}) {
+    const n = Math.round((Date.parse(`${k}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+    const tone = n <= 1 ? 'urgent' : n <= 3 ? 'soon' : 'later';
+    const price = formatMoney(x.amount, x.currency, lang);
+    const what = x.kind === 'trial_end' ? T('agSubTrial') : price ? T('agSubCharge', { price }) : T('agSubChargeNoPrice');
+    return h('a', { class: `ag s ${tone}`, href: `#/subscription/${encodeURIComponent(x.id)}` },
+      h('div', null, day ? h('small', { class: 'xs muted' }, day) : null, day ? h('br') : null, h('b', null, T('allDay'))),
+      h('div', null, h('b', { style: { display: 'block' } }, x.name), h('span', { class: 'kind' }, icon('card', { size: 16 }), `${T('lgSub')} · ${what}`)));
   }
 
   function agendaReminder(r, hm, { day, past } = {}) {
@@ -243,12 +258,12 @@ export function renderToday(app, route, { seg } = {}) {
     for (let i = 0; i < 42; i++) {
       const k = addDays(gs, i);
       const kp = parseKey(k);
-      const it = data ? dayItems(data, k) : { rems: [], dls: [], evs: [], saved: [] };
+      const it = data ? dayItems(data, k) : { rems: [], dls: [], evs: [], saved: [], subs: [] };
       grid.append(h('button', {
         type: 'button', class: `mday${kp.m !== mm ? ' out' : ''}${k === today ? ' today' : ''}`, 'aria-pressed': String(k === sel),
         'aria-label': `${formatDay(k, lang)}${k === today ? ` (${T('today')})` : ''}: ${T('dayCount', { r: it.rems.length, d: it.dls.length, e: it.evs.length })}`,
         onclick: () => (onPick ? onPick(k) : select(k)),
-      }, h('span', { class: 'dn' }, kp.d), markers({ r: it.rems.length, d: it.dls.length, e: it.evs.length, f: it.saved.length })));
+      }, h('span', { class: 'dn' }, kp.d), markers({ r: it.rems.length, d: it.dls.length, e: it.evs.length, f: it.saved.length, s: it.subs.length })));
     }
     if (!inline) return grid;
     return h('section', { class: 'card' }, h('b', { style: { textAlign: 'center' } }, formatDay(makeKey(yy, mm, 1), lang, 'my')), grid);

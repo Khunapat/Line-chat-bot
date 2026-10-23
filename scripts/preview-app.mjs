@@ -14,6 +14,8 @@ import { registerAppRoutes } from '../src/appApi.js';
 import { registerWebApp } from '../src/webApp.js';
 import { AuthError } from '../src/appAuth.js';
 import { Prefs } from '../src/prefs.js';
+import { registerMoneyHook } from '../src/moneyHook.js';
+import * as subs from '../src/subscriptionService.js';
 import { nextReset } from '../src/providers/usage.js';
 import { fakeTenants, fakeLine, makeSvc, memoryStore } from '../test/helpers/appFakes.js';
 import { addDays, zonedToUtc, todayKey } from '../web/shared/dates.js';
@@ -108,6 +110,15 @@ async function seed() {
     idx.f1 = { caption: 'ใบเสร็จร้านกาแฟ', tags: ['ใบเสร็จ', 'กาแฟ'] };
     idx.f4 = { caption: 'โปสเตอร์แข่งออกแบบวงจร Analog IC', tags: ['deadline'] };
   });
+  // Subscriptions and trials (made-up services and amounts).
+  const o = { userId: ME, timeZone: TZ, now: new Date() };
+  await subs.saveSubscription(mine, { name: 'Canva Pro', status: 'trial', trialEndsOn: day(1), amount: 299, cycle: 'monthly' }, o);
+  await subs.saveSubscription(mine, { name: 'Netflix', amount: 419, cycle: 'monthly', nextChargeOn: day(5) }, o);
+  await subs.saveSubscription(mine, { name: 'Adobe Creative Cloud', amount: 9000, cycle: 'yearly', nextChargeOn: day(40) }, o);
+  await subs.saveSubscription(mine, { name: 'ChatGPT Plus', amount: 20, currency: 'USD', cycle: 'monthly', nextChargeOn: day(12), remind: true }, o);
+  const old = await subs.saveSubscription(mine, { name: 'Old Music App', amount: 129, cycle: 'monthly' }, o);
+  await subs.updateSubscription(mine, old.sub.id, { status: 'cancelled' }, o);
+  await subs.recordCharge(mine, { kind: 'charge', merchant: 'SPOTIFY P1A2B3', amount: 149, on: day(0), time: '10:05', cardLast4: '1234' }, { ...o, source: 'sms' });
   await group.store.update('links.json', [], (list) => { list.push({ id: 'l2', url: 'https://example.com/brief', title: 'Project brief (example)', host: 'example.com', day: day(-3), at: at(-3, '12:00') }); });
   await group.store.update('files.json', {}, (idx) => { idx.g1 = { caption: 'สไลด์นำเสนองานกลุ่ม' }; idx.g2 = { caption: 'กระดานสรุปงานกลุ่ม' }; });
 }
@@ -151,13 +162,16 @@ app.use('/api/app', (req, res, next) => {
 const realServices = tenants.services.bind(tenants);
 tenants.services = async (t) => (sim.drive && t.id !== GROUP ? null : realServices(t));
 
+const prefs = new Prefs(memoryStore());
+registerMoneyHook(app, { tenants, prefs, secret: 'preview-only-secret', provider: null, timeZone: TZ, notify: async () => {} });
 registerWebApp(app, { maxAge: 0 });
 registerAppRoutes(app, {
   tenants,
   lineClient: fakeLine({ members: { [GROUP]: [ME, FRIEND] }, profiles: { [ME]: 'Jai', [FRIEND]: 'เพื่อน A' } }),
   sessionSecret: 'preview-only-secret',
-  prefs: new Prefs(memoryStore()),
+  prefs,
   timeZone: TZ,
+  hookBaseFor: () => `http://127.0.0.1:${port}`,
   verifyIdToken: async (tok) => {
     if (typeof tok === 'string' && tok.startsWith('preview')) return { userId: ME, name: 'Jai' };
     throw new AuthError('invalid_token');

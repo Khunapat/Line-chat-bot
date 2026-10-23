@@ -13,6 +13,7 @@ import { renderDeadlines, renderDeadline, renderAlertSettings } from './views/de
 import { renderLibrary, renderFile } from './views/library.js';
 import { renderMe, renderLang, renderTone, renderHelp, renderPrivacy } from './views/me.js';
 import { renderWelcome } from './views/welcome.js';
+import { renderSubscriptions, renderSubEditor, renderConnect } from './views/subscriptions.js';
 
 const LIFF_SDK = 'https://static.line-scdn.net/liff/edge/2/sdk.js';
 const root = document.getElementById('app');
@@ -198,7 +199,7 @@ function tabOf(name) {
   if (['today', 'reminders', 'reminder', 'reminder-done', ''].includes(name)) return 'today';
   if (['deadlines', 'deadline', 'deadline-alerts'].includes(name)) return 'deadlines';
   if (['library', 'file'].includes(name)) return 'library';
-  if (name === 'me') return 'me';
+  if (['me', 'subscriptions', 'subscription'].includes(name)) return 'me';
   return null;
 }
 
@@ -261,6 +262,8 @@ const VIEWS = {
   file: renderFile,
   me: (a, r) => ({ lang: renderLang, tone: renderTone, help: renderHelp, privacy: renderPrivacy }[r.parts[0]] || renderMe)(a, r),
   welcome: renderWelcome,
+  subscriptions: (a, r) => (r.parts[0] === 'connect' ? renderConnect(a, r) : renderSubscriptions(a, r)),
+  subscription: renderSubEditor,
 };
 
 function render() {

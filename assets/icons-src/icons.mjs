@@ -64,6 +64,13 @@ export const ICONS = {
     <circle cx="50" cy="50" r="32" fill="${C.cream}" ${S}/>
     <path d="M39 40 a11 11 0 1 1 15 10 c-3 1 -4 3 -4 6 v3" ${S}/>
     <circle cx="50" cy="70" r="3" fill="${C.stroke}"/>`,
+  // bank card with a stripe and a chip (subscriptions, charges)
+  card: `
+    <rect x="12" y="24" width="76" height="54" rx="10" fill="${C.cream}" stroke="none"/>
+    <path d="M14 36 h72 v11 h-72 z" fill="${C.olive}" stroke="none"/>
+    <rect x="12" y="24" width="76" height="54" rx="10" ${S}/>
+    <rect x="22" y="56" width="15" height="11" rx="3" fill="${C.orange}" ${S}/>
+    <path d="M50 62 h26" ${S}/>`,
   // little robot head (AI)
   ai: `
     <rect x="18" y="30" width="64" height="50" rx="14" fill="${C.cream}" ${S}/>

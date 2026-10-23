@@ -25,6 +25,12 @@ const FIELDS = ['kind', 'organizer', 'summary', 'deadline_note', 'event_dates', 
 
 const validDate = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : '');
 
+// Called after the chat-wide alert time changes (subscription alerts share it).
+const timeListeners = [];
+export function onAlertTimeChange(fn) {
+  timeListeners.push(fn);
+}
+
 export async function alertSettings(svc) {
   return normalizeAlerts((await svc.store.settings()).deadlineAlerts);
 }
@@ -111,7 +117,13 @@ export async function setAlertSettings(svc, { days, time, off = false, reset = f
     };
     await svc.store.updateSettings({ deadlineAlerts: next });
     await reschedule(svc, { timeZone, now });
-    return { scope: 'all', alerts: normalizeAlerts(next) };
+    return { scope: 'all', alerts: normalizeAlerts(next), timeChanged: next.time !== settings.time };
+  }).then(async (r) => {
+    if (r?.timeChanged) {
+      for (const fn of timeListeners) await Promise.resolve(fn(svc, { timeZone, now })).catch((err) => console.warn('alert time listener failed', err?.message || err));
+    }
+    if (r) delete r.timeChanged;
+    return r;
   });
 }
 

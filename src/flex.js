@@ -8,7 +8,9 @@ import {
   ALERT_PRESETS, ALERT_TIMES, normalizeAlerts, alertsFor, describeAlerts, groupForList,
 } from './deadlines.js';
 import { L, currentLang } from './lang.js';
-import { formatDay, formatTime } from '../web/shared/dates.js';
+import { formatDay, formatTime, diffDays, zoned } from '../web/shared/dates.js';
+import { formatMoney, formatPrice } from '../web/shared/money.js';
+import { monthlyTotals } from './subscriptions.js';
 
 const C = {
   card: '#F4EFE4',
@@ -37,7 +39,7 @@ const EMOJI_ICON = {
   '📁': 'folder', '🗂️': 'folder', '🖼️': 'gallery', '⏰': 'bell', '🔔': 'bell', '🎯': 'target', '📝': 'note',
   '🔗': 'link', '👥': 'group', '⚙️': 'settings', '🤖': 'ai', '📅': 'calendar', '🗓️': 'calendar', '📍': 'pin',
   '🔍': 'search', '📄': 'doc', '📎': 'clip', '🎬': 'video', '🎙️': 'audio', '✅': 'check', '👋': 'wave', '🕐': 'clock',
-  '🗑️': 'trash', '🗑': 'trash',
+  '🗑️': 'trash', '🗑': 'trash', '💳': 'card',
 };
 const LEADING_EMOJI = /^(\p{Extended_Pictographic}\uFE0F?)\s*/u;
 
@@ -754,6 +756,312 @@ export function scanOfferCard(fileId) {
     contents: [heading(L('b_scanTitle')), muted(L('b_scanBody'))],
     footer: [button(L('b_scanBtn'), postbackAction(L('b_scanBtn'), `action=scan&file=${fileId}`, L('b_scanSaid')))],
   }));
+}
+
+// ------------------------------------------------------- subscriptions
+
+const label20 = (s) => String(s).slice(0, 20);
+const money = (amount, currency) => formatMoney(amount, currency, currentLang());
+const priceOf = (s) => formatPrice(s.amount, s.currency, s.cycle, currentLang());
+const dayMonth = (k) => (k ? formatDay(k, currentLang(), 'dm') : '');
+const cycleWord = (c) => L(`b_sub_cycle_${['monthly', 'yearly', 'weekly'].includes(c) ? c : 'unknown'}`);
+const subTone = (days) => (days === null || days === undefined ? TONE.none : days <= 1 ? TONE.red : days <= 3 ? TONE.orange : TONE.olive);
+const subOn = (s) => (s.status === 'cancelled' ? '' : (s.status === 'trial' ? s.trialEndsOn : s.nextChargeOn) || '');
+
+function subBadge(on, today, { big = false } = {}) {
+  if (!on) return dateBadge({ color: TONE.none, day: '?', month: L('b_sub_noDate') }, { big });
+  return dateBadge({ color: subTone(diffDays(today, on)), day: String(Number(on.slice(8))), month: formatDay(on, currentLang(), 'mon') }, { big });
+}
+
+/** "หมดพรุ่งนี้" / "Charges in 5 days" / "ยกเลิกเมื่อ 3 ต.ค." for a subscription. */
+export function subCountdown(sub, today, timeZone) {
+  if (sub.status === 'cancelled') return sub.cancelledAt ? L('b_sub_cancelledOn', { date: dayMonth(zoned(sub.cancelledAt, timeZone).key) }) : L('b_sub_secCancelled');
+  const on = subOn(sub);
+  if (!on) return sub.status === 'trial' ? L('b_sub_secTrials') : cycleWord(sub.cycle);
+  const n = diffDays(today, on);
+  if (sub.status === 'trial') {
+    if (n < 0) return L('b_sub_trialOver');
+    if (n === 0) return L('b_sub_endsToday');
+    if (n === 1) return L('b_sub_endsTomorrow');
+    return L('b_sub_endsIn', { n });
+  }
+  if (n <= 0) return L('b_sub_chargesToday');
+  if (n === 1) return L('b_sub_chargesTomorrow');
+  return L('b_sub_chargesIn', { n });
+}
+
+function hrow(...items) {
+  return { type: 'box', layout: 'horizontal', spacing: 'sm', contents: items.filter(Boolean) };
+}
+
+/** A charge JaiJa has not seen before: amount, where, and "is this a subscription?". */
+export function chargeQuestionCard(pending) {
+  const c = pending.charge;
+  const amount = money(c.amount, c.currency);
+  const name = c.service || c.merchant;
+  const short = shortTitle(name, 24);
+  const facts = [
+    c.on ? `${dayMonth(c.on)}${c.time ? ` · ${formatTime(c.time, currentLang())}` : ''}` : '',
+    c.cardLast4 ? L('b_sub_card', { d: c.cardLast4 }) : '',
+  ].filter(Boolean).join(' · ');
+  const reason = L(`b_sub_reason_${pending.reason || 'asked'}`, { date: dayMonth(c.on) });
+  const p = `p=${pending.id}`;
+  const contents = [
+    heading(L('b_sub_newTitle')),
+    { type: 'text', text: amount || '–', size: 'xxl', weight: 'bold', color: C.title, margin: 'md' },
+    body(shortTitle(name, 60), { size: 'sm', extra: { weight: 'bold' } }),
+    ...(facts ? [muted(facts)] : []),
+    ...(reason && !reason.startsWith('b_sub_') ? [muted(reason)] : []),
+    body(L('b_sub_question'), { size: 'sm', extra: { margin: 'lg' } }),
+  ];
+  const footer = [
+    button(L('b_sub_btnMonthly'), postbackAction(label20(L('b_sub_btnMonthly')), `action=sub_track&${p}&c=monthly`, L('b_sub_trackSaid', { name: short, cycle: cycleWord('monthly') }))),
+    hrow(
+      button(L('b_sub_btnYearly'), postbackAction(label20(L('b_sub_btnYearly')), `action=sub_track&${p}&c=yearly`, L('b_sub_trackSaid', { name: short, cycle: cycleWord('yearly') })), 'secondary'),
+      button(L('b_sub_btnOnce'), postbackAction(label20(L('b_sub_btnOnce')), `action=sub_once&${p}`, L('b_sub_onceSaid', { name: short })), 'secondary'),
+    ),
+    textLink(L('b_sub_btnUnknown'), postbackAction(label20(L('b_sub_btnUnknown')), `action=sub_unknown&${p}`, L('b_sub_unknownSaid', { name: short })), { align: 'center', margin: 'md' }),
+  ];
+  return flexMessage(L('b_sub_altNew', { price: amount, merchant: name }), bubble({ contents, footer }));
+}
+
+/** A saved subscription or trial: price, the next date, what JaiJa will remind, and quick changes. */
+export function subscriptionCard(sub, { title, timeZone, now = new Date(), alertTime = '09:00' } = {}) {
+  const today = todayIso(now, timeZone);
+  const trial = sub.status === 'trial';
+  const cancelled = sub.status === 'cancelled';
+  const time = formatTime(alertTime, currentLang());
+  const on = subOn(sub);
+  let dateLine = '';
+  if (trial) dateLine = sub.trialEndsOn ? L('b_sub_trialEnds', { date: thaiFullDate(sub.trialEndsOn) }) : L('b_sub_trialNoDate', { name: sub.name });
+  else if (!cancelled) dateLine = sub.nextChargeOn ? L('b_sub_nextCharge', { date: thaiFullDate(sub.nextChargeOn) }) : L('b_sub_noNextDate', { name: sub.name });
+  let remindLine = '';
+  if (!cancelled) {
+    if (!sub.remind) remindLine = L('b_sub_remindOff');
+    else if (trial) remindLine = L('b_sub_remindTrial', { time });
+    else remindLine = L(sub.cycle === 'yearly' ? 'b_sub_remindYearly' : 'b_sub_remindMonthly', { time });
+  }
+  const contents = [
+    heading(title || (trial ? L('b_sub_savedTrial') : L('b_sub_saved'))),
+    {
+      type: 'box',
+      layout: 'horizontal',
+      spacing: 'md',
+      margin: 'lg',
+      contents: [
+        subBadge(on, today),
+        {
+          type: 'box',
+          layout: 'vertical',
+          flex: 1,
+          spacing: 'xs',
+          justifyContent: 'center',
+          contents: [
+            { type: 'text', text: shortTitle(sub.name, 50), size: 'md', weight: 'bold', color: C.title, wrap: true, maxLines: 2 },
+            { type: 'text', text: priceOf(sub) || cycleWord(sub.cycle), size: 'sm', color: C.text },
+            { type: 'text', text: subCountdown(sub, today, timeZone), size: 'sm', weight: 'bold', color: subTone(on ? diffDays(today, on) : null), wrap: true },
+          ],
+        },
+      ],
+    },
+    ...(dateLine ? [body(dateLine, { size: 'sm', extra: { margin: 'lg' } })] : []),
+    ...(remindLine ? [muted(remindLine)] : []),
+  ];
+  const id = `id=${sub.id}`;
+  const short = shortTitle(sub.name, 24);
+  const footer = [];
+  if (!cancelled) {
+    const remind = sub.remind
+      ? button(L('b_sub_btnRemindOff'), postbackAction(label20(L('b_sub_btnRemindOff')), `action=sub_remind&${id}&on=0`, L('b_sub_remindOffSaid', { name: short })), 'secondary')
+      : button(L('b_sub_btnRemindOn'), postbackAction(label20(L('b_sub_btnRemindOn')), `action=sub_remind&${id}&on=1`, L('b_sub_remindOnSaid', { name: short })), 'secondary');
+    footer.push(hrow(
+      button(L('b_sub_btnCancelled'), postbackAction(label20(L('b_sub_btnCancelled')), `action=sub_cancelled&${id}`, L('b_sub_cancelledSaid', { name: short })), 'secondary'),
+      remind,
+    ));
+  } else {
+    footer.push(button(L('b_sub_btnStillUsing'), postbackAction(label20(L('b_sub_btnStillUsing')), `action=sub_keep&${id}`, L('b_sub_stillUsingSaid', { name: short })), 'secondary'));
+  }
+  footer.push(textLink(L('b_sub_seeAll'), postbackAction(label20(L('b_sub_seeAll')), 'action=sub_list', L('b_sub_seeAllSaid')), { align: 'center', margin: 'md' }));
+  return flexMessage(L('b_sub_altSaved', { name: sub.name }), bubble({ contents, footer }));
+}
+
+/** When an alert fires: the trial end or charge date, big, with "cancelled" right there. */
+export function subscriptionAlertBubble({ sub, on, kind, daysLeft }, { timeZone, now = new Date() } = {}) {
+  const today = todayIso(now, timeZone);
+  const trial = kind === 'trial';
+  const n = daysLeft ?? diffDays(today, on);
+  const countdown = trial
+    ? (n <= 0 ? L('b_sub_endsToday') : n === 1 ? L('b_sub_endsTomorrow') : L('b_sub_endsIn', { n }))
+    : (n <= 0 ? L('b_sub_chargesToday') : n === 1 ? L('b_sub_chargesTomorrow') : L('b_sub_chargesIn', { n }));
+  const p = sub.amount ? priceOf(sub) : '';
+  const text = trial
+    ? (p ? L('b_sub_alertTrialBody', { name: sub.name, price: p }) : L('b_sub_alertTrialBodyNoPrice', { name: sub.name }))
+    : (p ? L('b_sub_alertRenewalBody', { price: p }) : L('b_sub_alertRenewalBodyNoPrice'));
+  const id = `id=${sub.id}`;
+  const short = shortTitle(sub.name, 24);
+  const footer = [
+    button(L('b_sub_btnCancelled'), postbackAction(label20(L('b_sub_btnCancelled')), `action=sub_cancelled&${id}`, L('b_sub_cancelledSaid', { name: short }))),
+    trial
+      ? button(L('b_sub_btnKeep'), postbackAction(label20(L('b_sub_btnKeep')), `action=sub_keep&${id}`, L('b_sub_keepSaid', { name: short })), 'secondary')
+      : button(L('b_sub_btnRemindOff'), postbackAction(label20(L('b_sub_btnRemindOff')), `action=sub_remind&${id}&on=0`, L('b_sub_remindOffSaid', { name: short })), 'secondary'),
+    textLink(L('b_sub_seeAll'), postbackAction(label20(L('b_sub_seeAll')), 'action=sub_list', L('b_sub_seeAllSaid')), { align: 'center', margin: 'md' }),
+  ];
+  return bubble({
+    contents: [
+      heading(trial ? L('b_sub_alertTrial') : L('b_sub_alertRenewal')),
+      {
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'md',
+        margin: 'lg',
+        contents: [
+          subBadge(on, today, { big: true }),
+          {
+            type: 'box',
+            layout: 'vertical',
+            flex: 1,
+            justifyContent: 'center',
+            spacing: 'xs',
+            contents: [
+              { type: 'text', text: countdown, size: 'xl', weight: 'bold', color: subTone(n), wrap: true },
+              { type: 'text', text: thaiFullDate(on), size: 'xs', color: C.text, wrap: true },
+            ],
+          },
+        ],
+      },
+      body(sub.name, { extra: { weight: 'bold', margin: 'lg' } }),
+      muted(text),
+    ],
+    footer,
+  });
+}
+
+/** Subscription alerts due together go out as one message. */
+export function subscriptionAlertsMessage(entries, { timeZone, now = new Date() } = {}) {
+  const bubbles = entries.slice(0, 12).map((e) => subscriptionAlertBubble(e, { timeZone, now }));
+  const alt = entries.map((e) => `${e.sub.name} ${e.kind === 'trial' ? L('b_sub_trialEnds', { date: dayMonth(e.on) }) : L('b_sub_nextCharge', { date: dayMonth(e.on) })}`).join(' · ');
+  return flexMessage(`⏰ ${alt}`, bubbles.length === 1 ? bubbles[0] : { type: 'carousel', contents: bubbles });
+}
+
+/** Charges worth telling about: a trial that started charging, a charge after cancelling, a renewal after cancelling, a new price. */
+export function chargeNoticeCard(r, { timeZone, now = new Date() } = {}) {
+  const s = r.sub;
+  const c = r.charge;
+  const name = s?.name || c.service || c.merchant;
+  const amount = money(c.amount, c.currency);
+  const short = shortTitle(name, 24);
+  const id = s ? `id=${s.id}` : '';
+  const seeAll = textLink(L('b_sub_seeAll'), postbackAction(label20(L('b_sub_seeAll')), 'action=sub_list', L('b_sub_seeAllSaid')), { align: 'center', margin: 'md' });
+  const cancelledBtn = (style) => button(L('b_sub_btnCancelled'), postbackAction(label20(L('b_sub_btnCancelled')), `action=sub_cancelled&${id}`, L('b_sub_cancelledSaid', { name: short })), style);
+  const stillUsing = button(L('b_sub_btnStillUsing'), postbackAction(label20(L('b_sub_btnStillUsing')), `action=sub_keep&${id}`, L('b_sub_stillUsingSaid', { name: short })), 'secondary');
+  let title;
+  let contents;
+  let footer;
+  switch (r.outcome) {
+    case 'trial_converted':
+      title = L('b_sub_convertedTitle');
+      contents = [
+        body(L('b_sub_convertedBody', { name, price: amount, date: dayMonth(c.on) }), { size: 'sm', extra: { weight: 'bold', margin: 'md' } }),
+        ...(s?.nextChargeOn ? [muted(L('b_sub_nextCharge', { date: thaiFullDate(s.nextChargeOn) }))] : []),
+        body(L('b_sub_convertedAsk'), { size: 'sm', extra: { margin: 'md' } }),
+      ];
+      footer = [hrow(button(L('b_sub_btnKeep'), postbackAction(label20(L('b_sub_btnKeep')), `action=sub_keep&${id}`, L('b_sub_keepSaid', { name: short })), 'secondary'), cancelledBtn('primary')), seeAll];
+      break;
+    case 'charged_after_cancel':
+      title = L('b_sub_afterCancelTitle');
+      contents = [
+        { type: 'text', text: amount || '–', size: 'xxl', weight: 'bold', color: TONE.red, margin: 'md' },
+        body(L('b_sub_afterCancelBody', { name, price: amount, date: dayMonth(c.on) }), { size: 'sm', extra: { weight: 'bold' } }),
+        muted(L('b_sub_afterCancelTips', { name })),
+      ];
+      footer = [stillUsing, textLink(L('b_sub_btnUnknown'), postbackAction(label20(L('b_sub_btnUnknown')), `action=sub_help&${id}`, L('b_sub_unknownSaid', { name: short })), { align: 'center', margin: 'md' })];
+      break;
+    case 'renewal_after_cancel':
+      title = L('b_sub_renewAfterCancelTitle');
+      contents = [
+        body(L('b_sub_renewAfterCancelBody', { name, date: thaiFullDate(c.on) }), { size: 'sm', extra: { weight: 'bold', margin: 'md' } }),
+        muted(L('b_sub_afterCancelTips', { name })),
+      ];
+      footer = [stillUsing, seeAll];
+      break;
+    default: // price_change
+      title = L('b_sub_priceTitle');
+      contents = [
+        body(L('b_sub_priceBody', { name, old: money(r.previousAmount, s?.currency || c.currency), new: amount }), { extra: { weight: 'bold', margin: 'md' } }),
+        ...(s?.nextChargeOn ? [muted(L('b_sub_nextCharge', { date: thaiFullDate(s.nextChargeOn) }))] : []),
+      ];
+      footer = [cancelledBtn('secondary'), seeAll];
+  }
+  return flexMessage(`${title} ${name} ${amount}`.slice(0, 400), bubble({ contents: [heading(title), ...contents], footer }));
+}
+
+/** One subscription in the list: date badge | name, price, countdown. Tap opens it. */
+function subscriptionRow(sub, today, timeZone) {
+  const on = subOn(sub);
+  return {
+    type: 'box',
+    layout: 'horizontal',
+    spacing: 'md',
+    margin: 'md',
+    paddingAll: '10px',
+    backgroundColor: C.cardAlt,
+    borderWidth: '2px',
+    borderColor: C.stroke,
+    cornerRadius: '14px',
+    action: postbackAction(L('b_view'), `action=sub_view&id=${sub.id}`, L('b_viewNamed', { title: shortTitle(sub.name, 24) })),
+    contents: [
+      subBadge(on, today),
+      {
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        spacing: 'xs',
+        justifyContent: 'center',
+        contents: [
+          { type: 'text', text: shortTitle(sub.name, 60), size: 'sm', weight: 'bold', color: C.title, wrap: true, maxLines: 2 },
+          { type: 'text', text: subCountdown(sub, today, timeZone), size: 'md', weight: 'bold', color: sub.status === 'cancelled' ? TONE.past : subTone(on ? diffDays(today, on) : null), wrap: true },
+          { type: 'text', text: priceOf(sub) || cycleWord(sub.cycle), size: 'xxs', color: C.muted },
+        ],
+      },
+    ],
+  };
+}
+
+/** Trials first (soonest end), then paid plans by next charge, a few cancelled ones, the monthly total and open questions. */
+export function subscriptionListCard(subs, { pendingCount = 0, timeZone, now = new Date(), appUrl = '' } = {}) {
+  const today = todayIso(now, timeZone);
+  const contents = [heading(L('b_sub_listTitle'))];
+  const trials = subs.filter((s) => s.status === 'trial');
+  const active = subs.filter((s) => s.status === 'active');
+  const cancelled = subs.filter((s) => s.status === 'cancelled').slice(0, 3);
+  let rows = 0;
+  const section = (label, list) => {
+    if (!list.length || rows >= MAX_LIST_ROWS) return;
+    contents.push(sectionLabel(label));
+    for (const s of list) {
+      if (rows >= MAX_LIST_ROWS) break;
+      contents.push(subscriptionRow(s, today, timeZone));
+      rows++;
+    }
+  };
+  if (!subs.length) contents.push(muted(L('b_sub_listEmpty')));
+  section(L('b_sub_secTrials'), trials);
+  section(L('b_sub_secActive'), active);
+  section(L('b_sub_secCancelled'), cancelled);
+  const shown = trials.length + active.length + cancelled.length;
+  if (shown > rows) contents.push(muted(L('b_andMore', { n: shown - rows })));
+  const totals = Object.entries(monthlyTotals(subs));
+  if (totals.length) contents.push(body(L('b_sub_total', { list: totals.map(([cur, v]) => formatPrice(v, cur, 'monthly', currentLang())).join(' + ') }), { size: 'sm', extra: { weight: 'bold', margin: 'lg' } }));
+  const footer = [];
+  if (pendingCount) {
+    contents.push(muted(L('b_sub_pendingN', { n: pendingCount })));
+    footer.push(button(L('b_sub_btnPending'), postbackAction(label20(L('b_sub_btnPending')), 'action=sub_pending', L('b_sub_pendingSaid'))));
+  }
+  footer.push(hrow(
+    appUrl ? button(L('b_sub_btnApp'), uriAction(label20(L('b_sub_btnApp')), appUrl), 'secondary') : null,
+    button(L('b_sub_btnConnect'), postbackAction(label20(L('b_sub_btnConnect')), 'action=sub_connect', L('b_sub_btnConnect')), 'secondary'),
+  ));
+  return flexMessage(L('b_sub_altList', { n: subs.length }), bubble({ contents, footer }));
 }
 
 // ----------------------------------------------------------- calendar

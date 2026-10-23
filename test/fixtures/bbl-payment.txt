@@ -1,0 +1,49 @@
+บริการอัตโนมัติ: ยืนยันการจ่ายเงิน ผ่านโมบายแบงก์กิ้งธนาคารกรุงเทพ
+ 
+ไปที่:
+ 	รหัสบริษัท / รหัสผู้ให้บริการ	 000000000000000
+ 	ชื่อบริษัท / ชื่อผู้ให้บริการ	 DEMO NOODLE SHOP (ทดสอบ)
+จาก:
+ 	เลขที่บัญชี / หมายเลขบัตรเครดิต	 123-4-xxx567
+ 	เลขที่อ้างอิง 1	 DEMO0000000000001
+ 	เลขที่อ้างอิง 2	 DEMOREFERENCE
+ 	เลขที่อ้างอิง 3	 0000
+ 	จำนวนเงิน (บาท)	 45.00
+ 	ค่าธรรมเนียม (บาท)	 0.00
+ 	บันทึก	 
+ 	หมายเลขอ้างอิง	 000001
+ 	วันที่	 5 ตุลาคม 2569 เวลา 12:30:05 น.
+ 		 
+ 
+อีเมลฉบับนี้เป็นการแจ้งข้อมูลโดยอัตโนมัติ เพื่อยืนยันการจ่ายเงินจากบัญชีของคุณที่ได้ดำเนินการเรียบร้อยแล้ว
+หากคุณไม่ได้ทำรายการตามรายละเอียดข้างต้น หรือหากพบว่ามีข้อมูลหรือสิ่งผิดปกติใดๆ ที่ไม่ถูกต้อง
+โปรดติดต่อคอลเซนเตอร์ธนาคารกรุงเทพ โดยทันที
+ 
+ขอแสดงความนับถือ
+ธนาคารกรุงเทพ จำกัด (มหาชน)
+ 
+หมายเหตุ:
+-	อีเมลฉบับนี้เป็นการแจ้งข้อมูลโดยอัตโนมัติ กรุณาอย่าตอบกลับ
+-	ธนาคารไม่มีนโยบายที่จะสอบถามรหัสลับแรกเข้า รหัสลับส่วนตัว หรือรหัสผ่านของคุณ กรุณาเก็บรักษาข้อมูลส่วนตัวดังกล่าวของคุณไว้เป็นความลับ
+ 
+Automatic e-mail: Payment confirmation
+ 
+To:
+ 	Service code / Payee ID	  000000000000000
+ 	Service name / Payee name	  DEMO NOODLE SHOP (ทดสอบ)
+From:
+ 	Account no. / credit card no.	  123-4-xxx567
+ 	Reference no. 1	  DEMO0000000000001
+ 	Amount (Baht)	  45.00
+ 	Fee (Baht)	  0.00
+ 	Note	 
+ 	Date	  5 October 2026 at 12:30:05 (Thailand time)
+ 
+This is an automatically generated message to confirm that a payment has been made from your account.
+ 
+Yours sincerely,
+Bangkok Bank PCL.
+ 
+Note:
+-	This e-mail is automatically generated - please do not reply to this e-mail.
+-	Bangkok Bank will never ask for your Password or PIN or Mobile PIN. Do not give this information to anyone. For more security information, please visit the Bangkok Bank’s website.

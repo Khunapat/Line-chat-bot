@@ -57,6 +57,16 @@ export function renderMe(app) {
     }
     wrap.append(counts);
 
+    // Subscriptions and free trials (personal).
+    if (me.connected) {
+      const sc = c?.subscriptions;
+      wrap.append(h('section', { class: 'card' },
+        h('h2', { class: 'row', style: { gap: '8px', fontSize: '17px' } }, icon('card', { size: 20 }), T('subsTitle')),
+        sc ? h('p', { class: 'sm' }, T('meSubsLine', { t: sc.trials, a: sc.active }), sc.pending ? h('b', null, ` · ${T('meSubsPending', { n: sc.pending })}`) : null) : null,
+        h('a', { class: 'li', href: '#/subscriptions' }, icon('card', { size: 20 }), h('span', { class: 'grow' }, T('subsTitle')), sc?.pending ? h('span', { class: 'tag u' }, String(sc.pending)) : null),
+        h('a', { class: 'li', href: '#/subscriptions/connect' }, icon('bell', { size: 20 }), h('span', { class: 'grow' }, T('subsConnH')))));
+    }
+
     // Shared AI usage: our own count, so it is an estimate.
     const ai = h('section', { class: 'card' },
       h('h2', { class: 'row', style: { gap: '8px', fontSize: '17px' } }, icon('ai', { size: 20 }), T('aiH'), h('span', { class: 'tag est' }, T('estimated'))),

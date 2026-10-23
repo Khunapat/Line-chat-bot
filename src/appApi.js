@@ -18,6 +18,10 @@
  *   GET  /api/app/library, /files/:id     files, links, remembered facts
  *   DELETE /api/app/memories/:id          forget a fact
  *   POST /api/app/disconnect              stop using Drive (confirm: true)
+ *   GET/POST /api/app/subscriptions       subscriptions and free trials (personal only)
+ *   PATCH/DELETE /api/app/subscriptions/:id
+ *   POST /api/app/subscriptions/pending/:id  answer "is this new charge a subscription?"
+ *   GET/POST /api/app/money-hook          the person's forwarding link for bank e-mails / SMS
  *
  * Every data route needs `Authorization: Bearer <session>` issued by
  * /session after LINE verified the ID token. `ctx=me` (default) is the
@@ -36,6 +40,9 @@ import { daysUntil } from './opportunities.js';
 import { isScopeError } from './calendar.js';
 import { withLock } from './lock.js';
 import { shortId } from './store.js';
+import * as subs from './subscriptionService.js';
+import { chargeDatesBetween, monthlyTotals, CYCLES, STATUSES } from './subscriptions.js';
+import { hookToken, newNonce } from './moneyHook.js';
 
 const GROUP_ID = /^[CR][0-9a-f]{32}$/;
 const MEMBER_TTL_MS = 10 * 60 * 1000;
@@ -78,6 +85,8 @@ function isDriveAuthError(err) {
  * @param deps.connectUrlFor (req, userId) => signed Drive connect URL, or ''
  * @param deps.onLangChanged async (userId, lang) => { menuSwitched }
  * @param deps.settings      { liffId, rootFolderName, botName, multiUser, preview }
+ * @param deps.hookBaseFor   (req) => public base URL for the forwarding link
+ * @param deps.hookSecret    HMAC secret of forwarding-link tokens
  * @param deps.now           () => Date (tests)
  */
 export function registerAppRoutes(app, deps) {
@@ -85,7 +94,7 @@ export function registerAppRoutes(app, deps) {
   const {
     tenants, lineClient, verifyIdToken, sessionSecret, prefs, timeZone = 'Asia/Bangkok',
     aiUsage = async () => null, thumbUrlFor = () => '', connectUrlFor = () => '', onLangChanged = async () => ({ menuSwitched: false }),
-    settings = {}, now: clock = () => new Date(),
+    settings = {}, now: clock = () => new Date(), hookBaseFor = () => '', hookSecret = sessionSecret,
   } = deps;
   const root = settings.rootFolderName || 'LineArchive';
   const memberCache = new Map(); // `${groupId}|${userId}` -> { ok, at }
@@ -119,6 +128,8 @@ export function registerAppRoutes(app, deps) {
       if (err.code === 'verify_unavailable') return res.status(503).json({ error: 'verify_unavailable' });
       return res.status(401).json({ error: err.code === 'session_expired' ? 'session_expired' : 'unauthenticated' });
     }
+    if (err?.code === 'personal_only') return res.status(403).json({ error: 'forbidden' });
+    if (err?.code === 'limit') return res.status(409).json({ error: 'limit' });
     if (isDriveAuthError(err)) return res.status(409).json({ error: 'drive_disconnected' });
     console.error('app api failed', err?.stack || err);
     return res.status(502).json({ error: 'upstream_failed' });
@@ -308,15 +319,22 @@ export function registerAppRoutes(app, deps) {
     let calendar = 'error';
     try { await svc.calendar.listUpcoming({ days: 1, max: 1 }); calendar = 'ok'; } catch (err) { calendar = isScopeError(err) ? 'no_scope' : 'error'; }
 
-    const [files, links, memories, reminders, opps, alerts, hosted] = await Promise.all([
+    const [files, links, memories, reminders, opps, alerts, hosted, subList, pend] = await Promise.all([
       tryCount(async () => (await svc.drive.allFiles()).filter(isArchiveFile).length),
       tryCount(async () => (await svc.store.links()).length),
       tryCount(async () => (await svc.store.memories()).length),
-      tryCount(async () => (await svc.store.reminders()).filter((r) => !r.oppId && !r.firedAt).length),
+      tryCount(async () => (await svc.store.reminders()).filter((r) => !r.oppId && !r.subId && !r.firedAt).length),
       tryCount(async () => svc.store.opportunities()),
       tryCount(async () => deadlines.alertSettings(svc)),
       tryCount(async () => (await tenants.groupsHostedBy(uid)).length),
+      tryCount(async () => subs.listSubscriptions(svc)),
+      tryCount(async () => (await subs.listPending(svc, { now })).length),
     ]);
+    const subCounts = subList ? {
+      trials: subList.filter((x) => x.status === 'trial').length,
+      active: subList.filter((x) => x.status === 'active').length,
+      pending: pend ?? 0,
+    } : null;
     let dl = null;
     if (opps) {
       dl = { open: 0, applied: 0, closed: 0 };
@@ -326,7 +344,7 @@ export function registerAppRoutes(app, deps) {
         else dl.open++;
       }
     }
-    res.json({ ...base, ai, drive, calendar, alerts, groupsHosted: hosted ?? 0, counts: { files, links, memories, reminders, deadlines: dl } });
+    res.json({ ...base, ai, drive, calendar, alerts, groupsHosted: hosted ?? 0, counts: { files, links, memories, reminders, deadlines: dl, subscriptions: subCounts } });
   }));
 
   router.put('/prefs', authed(async (req, res) => {
@@ -383,11 +401,27 @@ export function registerAppRoutes(app, deps) {
       saved = { status: 'error', items: [] };
     }
 
+    // Trial ends and charge dates: personal only, like the calendar.
+    let subscriptions = { status: 'not_applicable', items: [] };
+    if (kind === 'user') {
+      try {
+        const list = await subs.listSubscriptions(svc);
+        const items = [];
+        for (const x of list) {
+          for (const d of chargeDatesBetween(x, from, to)) items.push({ id: x.id, name: x.name, on: d.on, kind: d.kind, amount: x.amount || 0, currency: x.currency || 'THB', cycle: x.cycle, status: x.status });
+        }
+        subscriptions = { status: 'ok', items };
+      } catch (err) {
+        console.warn('planner subscriptions failed', err?.message || err);
+        subscriptions = { status: 'error', items: [] };
+      }
+    }
+
     res.json({
       today: zoned(now, timeZone).key, now: now.toISOString(), timeZone, from, to,
-      reminders: reminders.filter((r) => !r.oppId && (!r.firedAt || Date.parse(r.firedAt) >= cutoff)).map(reminderView),
+      reminders: reminders.filter((r) => !r.oppId && !r.subId && (!r.firedAt || Date.parse(r.firedAt) >= cutoff)).map(reminderView),
       deadlines: opps.map((o) => oppView(o, req, tenant, now)),
-      events, saved,
+      events, saved, subscriptions,
     });
   }));
 
@@ -400,7 +434,7 @@ export function registerAppRoutes(app, deps) {
     const cutoff = now.getTime() - DONE_WINDOW_MS;
     res.json({
       now: now.toISOString(), timeZone,
-      items: list.filter((r) => !r.oppId && (!r.firedAt || Date.parse(r.firedAt) >= cutoff)).map(reminderView),
+      items: list.filter((r) => !r.oppId && !r.subId && (!r.firedAt || Date.parse(r.firedAt) >= cutoff)).map(reminderView),
       deadlineAlerts: list.filter((r) => r.oppId && !r.firedAt).length,
     });
   }));
@@ -454,6 +488,7 @@ export function registerAppRoutes(app, deps) {
     const r = (await svc.store.reminders()).find((x) => x.id === id);
     if (!r) throw new HttpError(404, 'not_found');
     if (r.oppId) throw new HttpError(409, 'deadline_alert');
+    if (r.subId) throw new HttpError(409, 'subscription_alert');
     return r;
   }
 
@@ -740,6 +775,145 @@ export function registerAppRoutes(app, deps) {
     res.json({ ok: true });
   }));
 
+  // --------------------------------------------------- subscriptions
+  // Personal only: ctx must be the person's own Drive, never a group.
+
+  function subView(x, today) {
+    const on = subs.nextDate(x);
+    return {
+      id: x.id, name: x.name, status: x.status, amount: x.amount || 0, currency: x.currency || 'THB', cycle: x.cycle || 'monthly',
+      trialEndsOn: x.trialEndsOn || '', nextChargeOn: x.nextChargeOn || '', anchorDay: x.anchorDay ?? null, remind: Boolean(x.remind),
+      cardLast4: x.cardLast4 || '', note: x.note || '', lastChargedOn: x.lastChargedOn || '', cancelledAt: x.cancelledAt || null,
+      createdAt: x.createdAt || null, updatedAt: x.updatedAt || x.createdAt || null, source: x.source || '',
+      daysLeft: on ? diffDays(today, on) : null,
+      charges: (x.charges || []).slice(-6).map((c) => ({ on: c.on, amount: c.amount, currency: c.currency || 'THB' })),
+    };
+  }
+
+  function pendingView(p) {
+    const c = p.charge || {};
+    return {
+      id: p.id, at: p.at, reason: p.reason || 'asked', cycle: p.cycle || 'monthly',
+      charge: { kind: c.kind, merchant: c.merchant || '', service: c.service || '', amount: c.amount || 0, currency: c.currency || 'THB', on: c.on || '', time: c.time || '', cardLast4: c.cardLast4 || '' },
+    };
+  }
+
+  /** Body fields for create / edit; `partial` allows leaving any of them out. */
+  function readSub(body, { partial }) {
+    const fields = {};
+    const out = {};
+    if (body.name !== undefined || !partial) {
+      const name = String(body.name ?? '').replace(/\s+/g, ' ').trim();
+      if (!name) fields.name = 'required';
+      else if (name.length > 60) fields.name = 'too_long';
+      else out.name = name;
+    }
+    if (body.status !== undefined) {
+      if (!STATUSES.includes(body.status)) fields.status = 'invalid';
+      else out.status = body.status;
+    }
+    if (body.amount !== undefined) {
+      const n = Number(body.amount);
+      if (!Number.isFinite(n) || n < 0 || n >= 10_000_000) fields.amount = 'invalid';
+      else out.amount = n;
+    }
+    if (body.currency !== undefined) {
+      if (!/^[A-Z]{3}$/.test(String(body.currency))) fields.currency = 'invalid';
+      else out.currency = body.currency;
+    }
+    if (body.cycle !== undefined) {
+      if (!CYCLES.includes(body.cycle)) fields.cycle = 'invalid';
+      else out.cycle = body.cycle;
+    }
+    for (const k of ['trialEndsOn', 'nextChargeOn']) {
+      if (body[k] === undefined) continue;
+      if (body[k] !== '' && !isDayKey(String(body[k]))) fields[k] = 'invalid';
+      else out[k] = body[k];
+    }
+    if (body.remind !== undefined) {
+      if (typeof body.remind !== 'boolean') fields.remind = 'invalid';
+      else out.remind = body.remind;
+    }
+    if (body.note !== undefined) out.note = String(body.note).slice(0, 200);
+    if (out.status === 'trial' && !partial && out.trialEndsOn === undefined) out.trialEndsOn = '';
+    if (Object.keys(fields).length) throw bad(fields);
+    return out;
+  }
+
+  async function subsPayload(svc, now) {
+    const today = zoned(now, timeZone).key;
+    const [list, pending] = await Promise.all([subs.listSubscriptions(svc), subs.listPending(svc, { now })]);
+    return { today, items: list.map((x) => subView(x, today)), pending: pending.map(pendingView), totals: monthlyTotals(list) };
+  }
+
+  router.get('/subscriptions', authed(async (req, res) => {
+    const { svc } = await resolve(req, { personalOnly: true });
+    const now = clock();
+    const [payload, nonce] = await Promise.all([subsPayload(svc, now), prefs.hookNonce(req.uid).catch(() => null)]);
+    res.json({ ...payload, hook: { enabled: nonce === null ? null : Boolean(nonce) } });
+  }));
+
+  router.post('/subscriptions', authed(async (req, res) => {
+    const { svc } = await resolve(req, { personalOnly: true });
+    const now = clock();
+    const fields = readSub(req.body || {}, { partial: false });
+    const { sub, created } = await subs.saveSubscription(svc, fields, { userId: req.uid, source: 'app', timeZone, now });
+    res.status(created ? 201 : 200).json({ item: subView(sub, zoned(now, timeZone).key), created });
+  }));
+
+  router.patch('/subscriptions/:id', authed(async (req, res) => {
+    const { svc } = await resolve(req, { personalOnly: true });
+    const now = clock();
+    const patch = readSub(req.body || {}, { partial: true });
+    const sub = await subs.updateSubscription(svc, req.params.id, patch, { timeZone, now });
+    if (!sub) throw new HttpError(404, 'not_found');
+    res.json({ item: subView(sub, zoned(now, timeZone).key) });
+  }));
+
+  router.delete('/subscriptions/:id', authed(async (req, res) => {
+    const { svc } = await resolve(req, { personalOnly: true });
+    const removed = await subs.deleteSubscription(svc, req.params.id);
+    if (!removed) throw new HttpError(404, 'not_found');
+    res.json({ ok: true });
+  }));
+
+  router.post('/subscriptions/pending/:id', authed(async (req, res) => {
+    const { svc } = await resolve(req, { personalOnly: true });
+    const now = clock();
+    const action = req.body?.action;
+    if (!['track', 'once', 'unknown'].includes(action)) throw bad({ action: 'invalid' });
+    const cycle = req.body?.cycle;
+    if (cycle !== undefined && !['monthly', 'yearly', 'weekly'].includes(cycle)) throw bad({ cycle: 'invalid' });
+    const r = await subs.resolvePending(svc, req.params.id, action, { cycle, userId: req.uid, timeZone, now });
+    if (!r) throw new HttpError(404, 'not_found');
+    res.json({ outcome: r.outcome, item: r.sub ? subView(r.sub, zoned(now, timeZone).key) : null });
+  }));
+
+  // The forwarding link. The token is a credential: it is only ever shown to
+  // the verified person it belongs to, and never logged.
+  async function hookPayload(req, nonce) {
+    if (!nonce) return { enabled: false };
+    const token = hookToken(hookSecret, req.uid, nonce);
+    const base = String(hookBaseFor(req) || '').replace(/\/$/, '');
+    return { enabled: true, token, url: `${base}/hooks/money`, pathUrl: `${base}/hooks/money/${token}` };
+  }
+
+  router.get('/money-hook', authed(async (req, res) => {
+    await resolve(req, { personalOnly: true });
+    res.json(await hookPayload(req, await prefs.hookNonce(req.uid)));
+  }));
+
+  router.post('/money-hook', authed(async (req, res) => {
+    await resolve(req, { personalOnly: true });
+    const action = req.body?.action;
+    if (!['enable', 'regenerate', 'disable'].includes(action)) throw bad({ action: 'invalid' });
+    let nonce = await prefs.hookNonce(req.uid);
+    if (action === 'disable') nonce = '';
+    else if (action === 'regenerate' || !nonce) nonce = newNonce();
+    await prefs.setHookNonce(req.uid, nonce);
+    res.json(await hookPayload(req, nonce));
+  }));
+
   // ------------------------------------------------------- connection
 
   router.post('/disconnect', authed(async (req, res) => {
@@ -751,6 +925,8 @@ export function registerAppRoutes(app, deps) {
     const groups = await tenants.groupsHostedBy(req.uid);
     for (const g of groups) await tenants.remove(g.id);
     await tenants.remove(req.uid);
+    // The forwarding link has nowhere to save to any more.
+    await prefs.setHookNonce(req.uid, '').catch((err) => console.warn('turning off the forwarding link failed', err?.message || err));
     res.json({ ok: true, groupsReleased: groups.length });
   }));
 

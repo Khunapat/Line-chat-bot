@@ -14,6 +14,7 @@ import {
   textMessage, fileCard, filesCarousel, reminderCard, reminderListCard, dueReminderCard, eventCard,
   infoCard, linkButton, postbackButton, opportunityCard, opportunityListCard, scanOfferCard,
   deadlineAlertsMessage, alertSettingsCard, appliedCard, deletedCard,
+  chargeQuestionCard, subscriptionCard, subscriptionAlertsMessage, chargeNoticeCard, subscriptionListCard,
 } from './flex.js';
 import {
   extractFromMedia, extractFromText, fetchPageText, sortOpportunities,
@@ -38,6 +39,11 @@ import { registerAppRoutes } from './appApi.js';
 import { registerWebApp } from './webApp.js';
 import { verifyLineIdToken } from './appAuth.js';
 import { formatTime, formatDay, zoned } from '../web/shared/dates.js';
+import { formatMoney, formatPrice } from '../web/shared/money.js';
+import * as subs from './subscriptionService.js';
+import { monthlyTotals } from './subscriptions.js';
+import { parseKnownFormats, fingerprint as chargeFingerprint } from './chargeParse.js';
+import { registerMoneyHook, hookToken, newNonce } from './moneyHook.js';
 
 requireConfig();
 
@@ -162,9 +168,9 @@ const handlers = {
 
   async list_reminders(_input, ctx) {
     const all = pendingReminders(await ctx.svc.store.reminders());
-    // Deadline alerts belong to their deadline (menu Deadline), not this list.
-    const list = all.filter((r) => !r.oppId);
-    const deadlineAlerts = all.length - list.length;
+    // Deadline and subscription alerts belong to their item, not this list.
+    const list = all.filter((r) => !r.oppId && !r.subId);
+    const deadlineAlerts = all.filter((r) => r.oppId).length;
     ctx.attachments.push(reminderListCard(list, { timeZone: tz, now: ctx.now, deadlineAlerts }));
     return {
       reminders: list.map((r) => ({ id: r.id, text: r.text, when: describeWhen(r.at, tz, ctx.now), repeat: r.repeat })),
@@ -255,6 +261,73 @@ const handlers = {
     return { ok: true, scope: 'all', schedule: describeAlerts(r.alerts), note: id ? 'only a time was given, and the time applies to every deadline' : undefined };
   },
 
+  async save_subscription(f, ctx) {
+    if (!personalChat(ctx)) return privateOnly(ctx);
+    const fields = {
+      name: f.name, status: f.status === 'trial' ? 'trial' : 'active', amount: f.amount, currency: f.currency, cycle: f.cycle,
+      trialEndsOn: f.trial_end_date || undefined, nextChargeOn: f.next_charge_date || undefined, cardLast4: f.card_last4 || undefined,
+      remind: f.remind === 'on' ? true : f.remind === 'off' ? false : undefined, note: f.note || undefined,
+    };
+    try {
+      const { sub, created } = await subs.saveSubscription(ctx.svc, fields, { userId: ctx.userId, source: 'chat', timeZone: tz, now: ctx.now });
+      ctx.attachments.push(await subCard(sub, ctx, { title: created ? undefined : L('b_sub_updated') }));
+      return {
+        ok: true, id: sub.id, created, status: sub.status, trial_ends: sub.trialEndsOn || '', next_charge: sub.nextChargeOn || '',
+        reminders: sub.remind ? 'on' : 'off', note: !sub.trialEndsOn && sub.status === 'trial' ? 'ask the user when the trial ends' : undefined,
+      };
+    } catch (err) {
+      if (err.code === 'invalid') return { error: 'name is required' };
+      if (err.code === 'limit') return { error: 'too many subscriptions saved' };
+      throw err;
+    }
+  },
+
+  async list_subscriptions(_input, ctx) {
+    if (!personalChat(ctx)) return privateOnly(ctx);
+    const [list, pending] = await Promise.all([subs.listSubscriptions(ctx.svc), subs.listPending(ctx.svc, { now: ctx.now })]);
+    ctx.attachments.push(subListCard(list, pending, ctx));
+    return {
+      subscriptions: list.map((x) => ({
+        id: x.id, name: x.name, status: x.status, price: formatPrice(x.amount, x.currency, x.cycle, currentLang()) || '',
+        trial_ends: x.trialEndsOn || '', next_charge: x.nextChargeOn || '', reminders: x.remind ? 'on' : 'off',
+      })),
+      monthly_total: monthlyTotals(list),
+      charges_waiting_for_answer: pending.length,
+    };
+  },
+
+  async update_subscription({ id, action, amount, cycle, next_charge_date: next, trial_end_date: trialEnd }, ctx) {
+    if (!personalChat(ctx)) return privateOnly(ctx);
+    if (action === 'delete') {
+      const removed = await subs.deleteSubscription(ctx.svc, id);
+      return removed ? { ok: true, deleted: removed.name } : { error: 'not found' };
+    }
+    const patch = {};
+    if (action === 'cancelled') patch.status = 'cancelled';
+    if (action === 'active') patch.status = 'active';
+    if (action === 'remind_on') patch.remind = true;
+    if (action === 'remind_off') patch.remind = false;
+    if (amount > 0) patch.amount = amount;
+    if (cycle && cycle !== 'same') patch.cycle = cycle;
+    if (next) patch.nextChargeOn = next;
+    if (trialEnd) patch.trialEndsOn = trialEnd;
+    const sub = await subs.updateSubscription(ctx.svc, id, patch, { timeZone: tz, now: ctx.now });
+    if (!sub) return { error: 'not found' };
+    ctx.attachments.push(await subCard(sub, ctx, { title: L('b_sub_updated') }));
+    return { ok: true, name: sub.name, status: sub.status, next_charge: sub.nextChargeOn || '', trial_ends: sub.trialEndsOn || '', reminders: sub.remind ? 'on' : 'off' };
+  },
+
+  async record_charge(f, ctx) {
+    if (!personalChat(ctx)) return privateOnly(ctx);
+    const charge = {
+      kind: f.kind, merchant: f.merchant || f.service, service: f.service, amount: f.amount, currency: f.currency,
+      on: f.date, cardLast4: f.card_last4, cycle: f.cycle, trialEndsOn: f.trial_end_date,
+    };
+    const r = await subs.recordCharge(ctx.svc, charge, { source: 'chat', userId: ctx.userId, keepPending: true, timeZone: tz, now: ctx.now });
+    await chargeReply(r, ctx, { withText: false });
+    return { outcome: r.outcome, subscription: r.sub?.name || '', note: OUTCOME_NOTE[r.outcome] || '' };
+  },
+
   async list_calendar({ days }, ctx) {
     try {
       const events = await ctx.svc.calendar.listUpcoming({ days: Math.min(Math.max(days || 7, 1), 60) });
@@ -331,6 +404,11 @@ app.all('/cron/reminders', async (req, res) => {
           } catch (err) {
             console.warn('re-planning deadline alerts failed', tenant.id, describeError(err));
           }
+          try {
+            await subs.ensureSubsUpToDate(svc, { timeZone: tz, now });
+          } catch (err) {
+            console.warn('subscription upkeep failed', tenant.id, describeError(err));
+          }
           const r = await fireDueReminders(svc.store, async (due) => {
             const messages = await dueMessages(due, svc, tenant, now);
             // One push carries up to 5 messages and counts once against LINE's monthly quota.
@@ -372,7 +450,26 @@ registerAppRoutes(app, {
   thumbUrlFor: (req, tenantId, fileId) => thumbUrl(publicBase || baseUrlOf(req), config.gallerySecret, tenantId, fileId),
   connectUrlFor: (req, userId) => connectUrl(publicBase || baseUrlOf(req), config.gallerySecret, userId),
   onLangChanged: linkRichMenuFor,
+  hookBaseFor: (req) => publicBase || baseUrlOf(req),
+  hookSecret: config.appSessionSecret,
   settings: { liffId: config.liffId, rootFolderName: config.driveRootFolderName, botName: config.botName, multiUser: multiUserEnabled(), preview: false },
+});
+
+// Bank / card e-mails and SMS forwarded by the person's own Gmail script or phone.
+registerMoneyHook(app, {
+  tenants,
+  prefs,
+  secret: config.appSessionSecret,
+  provider,
+  timeZone: tz,
+  notify: async (userId, r, svc) => {
+    const messages = await withLang(await prefs.langFor(userId).catch(() => 'th'), async () => {
+      const ctx = { userId, chatType: 'user', svc, now: new Date(), attachments: [] };
+      await chargeReply(r, ctx, { withText: false, quiet: true });
+      return ctx.attachments;
+    });
+    if (messages.length) await lineClient.pushMessage({ to: userId, messages: messages.slice(0, 5) });
+  },
 });
 
 registerOAuthRoutes(app, {
@@ -492,6 +589,11 @@ async function handleEventIn(event) {
         if (ctx.aiLimited) ctx.attachments.push(textMessage(L('b_aiLimitedFile')));
         if (read?.reg) ctx.attachments.push(textMessage(scanIntro(read.reg)), await oppCardFor(read.reg, ctx));
         else if (buffer && isScannable(mimeType, buffer.length) && brain && config.autoScan === 'ask') ctx.attachments.push(scanOfferCard(saved.id));
+        if (read?.fields?.payment && personalChat(ctx)) {
+          // A card SMS screenshot, receipt or "free trial started" screen: match it, ask only when it is new.
+          const r = await subs.recordCharge(ctx.svc, read.fields.payment, { source: 'image', fp: `image:${saved.id}`, userId, timeZone: tz, now });
+          await chargeReply(r, ctx, { withText: true, quiet: true });
+        }
         break;
       }
       case 'sticker':
@@ -628,6 +730,24 @@ async function handleText(text, ctx) {
     return;
   }
 
+  if (ctx.chatType === 'user') {
+    if (/^(?:ดู)?(?:ค่าสมาชิก|ทดลองใช้(?:ฟรี)?|subscriptions?|my subscriptions)$/i.test(trimmed)) {
+      await handlers.list_subscriptions({}, ctx);
+      return;
+    }
+    if (/^(?:เชื่อม|ตั้งค่า)?แจ้งเตือน(?:จาก)?(?:ธนาคาร|บัตร)$|^connect (?:my )?bank(?: alerts)?$/i.test(trimmed)) {
+      await connectBankCard(ctx);
+      return;
+    }
+    // A pasted bank / card notification in a format JaiJa knows: no AI needed.
+    const parsed = looksLikeBankNotice(trimmed, { strong: true }) ? parseKnownFormats(trimmed) : null;
+    if (parsed) {
+      const r = await subs.recordCharge(ctx.svc, parsed, { source: 'chat', fp: chargeFingerprint({ text: trimmed }), userId: ctx.userId, keepPending: true, timeZone: tz, now: ctx.now });
+      await chargeReply(r, ctx, { withText: true });
+      return;
+    }
+  }
+
   // Bare links (or link + a few words) are archived straight to notes.md.
   const urls = trimmed.match(/https?:\/\/\S+/g) || [];
   const remainder = trimmed.replace(/https?:\/\/\S+/g, '').trim();
@@ -664,8 +784,11 @@ async function handleText(text, ctx) {
       const oppHint = recent.length
         ? `deadline ที่เพิ่งบันทึกในแชทนี้: ${recent.map((o) => `[id=${o.id}] ${o.title} (หมดเขต ${o.deadline || 'ไม่ระบุ'})`).join('; ')} ถ้าข้อความนี้เป็นงานเดียวกัน ให้เรียก save_opportunity พร้อม same_as=id นั้น เพื่อเพิ่มรายละเอียดเข้ารายการเดิม`
         : '';
+      const moneyHint = ctx.chatType === 'user' && looksLikeBankNotice(trimmed)
+        ? 'ข้อความนี้ดูเหมือนแจ้งเตือนจากธนาคารหรือบัตร ถ้าเป็นรายการเงิน (ตัดบัตร จ่ายเงิน ทดลองใช้ ต่ออายุ) ให้เรียก record_charge'
+        : '';
       const { text: answer, attachments } = await brain.chat({
-        userId: ctx.userId, text: trimmed, hint: [hint, oppHint, await styleHint(ctx)].filter(Boolean).join('\n') || undefined,
+        userId: ctx.userId, text: trimmed, hint: [hint, oppHint, moneyHint, await styleHint(ctx)].filter(Boolean).join('\n') || undefined,
         ctx: { svc: ctx.svc, tenant: ctx.tenant, tenantId: ctx.tenantId, chatId: ctx.chatId, chatType: ctx.chatType, oppHintGiven: recent.length > 0 },
       });
       if (answer) ctx.attachments.push(textMessage(answer));
@@ -867,6 +990,65 @@ async function handlePostback(event, ctx) {
       else ctx.attachments.push(textMessage(read?.fields?.caption ? L('b_scanNotOpp', { caption: read.fields.caption }) : L('b_scanNothing')));
       return;
     }
+    case 'sub_track':
+    case 'sub_once':
+    case 'sub_unknown': {
+      if (!personalChat(ctx)) return void ctx.attachments.push(textMessage(L('b_sub_privateOnly')));
+      const act = { sub_track: 'track', sub_once: 'once', sub_unknown: 'unknown' }[action];
+      const r = await subs.resolvePending(ctx.svc, params.get('p'), act, { cycle: params.get('c'), userId: ctx.userId, timeZone: tz, now: ctx.now });
+      if (!r) return void ctx.attachments.push(textMessage(L('b_sub_gone')));
+      if (r.outcome === 'tracked' && r.sub) ctx.attachments.push(await subCard(r.sub, ctx));
+      else if (r.outcome === 'dismissed') ctx.attachments.push(textMessage(L('b_sub_dismissed', { merchant: r.charge.merchant })));
+      else ctx.attachments.push(textMessage(L('b_sub_unknownAdvice', { price: formatMoney(r.charge.amount, r.charge.currency, currentLang()), merchant: r.charge.merchant })));
+      return;
+    }
+    case 'sub_cancelled':
+    case 'sub_keep':
+    case 'sub_remind': {
+      if (!personalChat(ctx)) return void ctx.attachments.push(textMessage(L('b_sub_privateOnly')));
+      const sub = await subs.getSubscription(ctx.svc, id);
+      if (!sub) return void ctx.attachments.push(textMessage(L('b_sub_subGone')));
+      let patch = {};
+      if (action === 'sub_cancelled') patch = { status: 'cancelled' };
+      else if (action === 'sub_remind') patch = { remind: params.get('on') === '1' };
+      else if (sub.status === 'cancelled') patch = { status: 'active' };
+      else if (sub.status === 'trial') patch = { remind: false }; // keeping the trial: no more "ending soon" alerts
+      const u = await subs.updateSubscription(ctx.svc, id, patch, { timeZone: tz, now: ctx.now });
+      if (!u) return void ctx.attachments.push(textMessage(L('b_sub_subGone')));
+      if (action === 'sub_cancelled') return void ctx.attachments.push(textMessage(L('b_sub_cancelledDone', { name: u.name })));
+      const said = action === 'sub_keep' ? L('b_sub_keptDone', { name: u.name }) : u.remind ? L('b_sub_remindOnDone', { name: u.name }) : L('b_sub_remindOffDone', { name: u.name });
+      ctx.attachments.push(textMessage(said), await subCard(u, ctx, { title: L('b_sub_updated') }));
+      return;
+    }
+    case 'sub_list':
+      await handlers.list_subscriptions({}, ctx);
+      return;
+    case 'sub_view': {
+      if (!personalChat(ctx)) return void ctx.attachments.push(textMessage(L('b_sub_privateOnly')));
+      const sub = await subs.getSubscription(ctx.svc, id);
+      ctx.attachments.push(sub ? await subCard(sub, ctx, { title: L('b_sub_detail') }) : textMessage(L('b_sub_subGone')));
+      return;
+    }
+    case 'sub_pending': {
+      if (!personalChat(ctx)) return void ctx.attachments.push(textMessage(L('b_sub_privateOnly')));
+      const pending = (await subs.listPending(ctx.svc, { now: ctx.now })).slice(-4).reverse();
+      if (!pending.length) return void ctx.attachments.push(textMessage(L('b_sub_gone')));
+      ctx.attachments.push(...pending.map((p) => chargeQuestionCard(p)));
+      return;
+    }
+    case 'sub_help': {
+      if (!personalChat(ctx)) return void ctx.attachments.push(textMessage(L('b_sub_privateOnly')));
+      const sub = await subs.getSubscription(ctx.svc, id);
+      const last = sub?.charges?.at(-1);
+      ctx.attachments.push(textMessage(L('b_sub_unknownAdvice', {
+        price: last ? formatMoney(last.amount, last.currency, currentLang()) : formatMoney(sub?.amount, sub?.currency, currentLang()),
+        merchant: last?.merchant || sub?.name || '',
+      })));
+      return;
+    }
+    case 'sub_connect':
+      await connectBankCard(ctx);
+      return;
     case 'list_reminders':
     case 'menu_reminders':
       await handlers.list_reminders({}, ctx);
@@ -954,6 +1136,7 @@ async function handlePostback(event, ctx) {
         postbackButton(L('b_btnDlAlerts'), 'action=alerts_menu', L('b_alertSettingsSaid')),
         ...(provider ? [postbackButton(L('b_btnAi'), 'action=menu_ai', L('b_btnAiSaid'))] : []),
       ] });
+      if (personalChat(ctx)) buttons.push(postbackButton(L('b_sub_btnSubs'), 'action=sub_list', L('b_sub_btnSubsSaid')));
       if (ctx.tenant.type === 'group' && ctx.tenant.hostUserId === ctx.userId) {
         buttons.push(postbackButton(L('b_shareFolder'), 'action=group_share', L('b_shareFolder')));
       } else if (ctx.chatType === 'user' && !tenants.isOwner(ctx.userId) && multiUserEnabled()) {
@@ -1024,7 +1207,7 @@ async function readMediaNow(buffer, mimeType, file, ctx) {
     const base = (mimeType || '').split(';')[0].trim().toLowerCase();
     // The saved list lets the model say "this poster is item X" (same call, other words).
     const candidates = oppCandidates(await store.opportunities(), tz, ctx.now);
-    const fields = await extractFromMedia(provider, { mimeType: base, base64: buffer.toString('base64') }, { now: ctx.now, timeZone: tz, candidates });
+    const fields = await extractFromMedia(provider, { mimeType: base, base64: buffer.toString('base64') }, { now: ctx.now, timeZone: tz, candidates, payment: personalChat(ctx) });
     if (!fields) return null;
     let current = file;
     if (fields.caption && /^\d{2}-\d{2}-\d{2}_(image|file|video|audio)_/.test(file.name)) {
@@ -1210,7 +1393,7 @@ async function removeOpportunityWithUndo(id, ctx) {
  * their snooze card. Alerts for deadlines that already closed are dropped.
  */
 async function dueMessages(due, svc, tenant, now) {
-  const regular = due.filter((r) => !r.oppId);
+  const regular = due.filter((r) => !r.oppId && !r.subId);
   const alertFor = new Set(due.filter((r) => r.oppId).map((r) => r.oppId));
   const opps = alertFor.size
     ? (await svc.store.opportunities()).filter((o) => alertFor.has(o.id) && o.status !== 'applied' && o.deadline && daysUntil(o.deadline, tz, now) >= 0)
@@ -1220,7 +1403,129 @@ async function dueMessages(due, svc, tenant, now) {
     opps.sort((a, b) => a.deadline.localeCompare(b.deadline));
     for (let i = 0; i < opps.length; i += 12) messages.push(deadlineAlertsMessage(opps.slice(i, i + 12), { timeZone: tz, now }));
   }
+  // Trials ending and charges coming up; dropped when the date moved or it was cancelled.
+  const subAlerts = tenant.type === 'group' ? [] : await subs.dueAlerts(svc, due, { timeZone: tz, now });
+  for (let i = 0; i < subAlerts.length; i += 12) messages.push(subscriptionAlertsMessage(subAlerts.slice(i, i + 12), { timeZone: tz, now }));
   return messages;
+}
+
+// ---------------------------------------------------------------------------
+// Subscriptions and free trials (personal chats only)
+// ---------------------------------------------------------------------------
+
+/** 1:1 chat with the person's own Drive: the only place money things live. */
+function personalChat(ctx) {
+  return ctx.chatType === 'user' && ctx.tenant?.type !== 'group' && ctx.svc?.tenant?.type !== 'group';
+}
+
+function privateOnly(ctx) {
+  ctx.attachments.push(textMessage(L('b_sub_privateOnly')));
+  return { error: 'subscriptions work only in the private chat with the bot' };
+}
+
+// What the AI is told after record_charge (it should not repeat the card).
+const OUTCOME_NOTE = {
+  new: 'a new charge: a card asking the user what it is is attached; say you noticed it, briefly',
+  matched: 'matches a saved subscription; nothing to do',
+  one_off: 'looks like a one-time payment; not tracked (a button to track it anyway is attached)',
+  duplicate: 'already recorded before',
+  refund: 'refund noted',
+  ignored: 'not a card charge; nothing recorded',
+  trial_saved: 'free trial saved with reminders before it ends; a card is attached',
+  trial_converted: 'the free trial turned into a paid plan; a card is attached',
+  charged_after_cancel: 'charged although the user marked it cancelled; warn the user, a card with tips is attached',
+  price_change: 'the price changed; a card is attached',
+  renewal_after_cancel: 'it says it will renew although the user marked it cancelled; a card is attached',
+};
+
+/**
+ * A pasted message that reads like a bank or card notification. `strong`
+ * (read without AI) needs card digits, a bank, or a confirmation heading, so
+ * "spent 5000 baht at the mall" stays a normal chat message.
+ */
+function looksLikeBankNotice(text, { strong = false } = {}) {
+  if (text.length < 25 || !/\d/.test(text)) return false;
+  if (/x{2,}\d{3,4}|\*{2,}\d{3,4}|•{2,}\s?\d{3,4}|ending(?:\s+in)?\s+\d{3,4}|ลงท้าย(?:ด้วย)?\s*\d{3,4}|ธนาคาร|\bbank\b|ยืนยันการ(?:จ่าย|โอน|ชำระ)|payment confirmation/i.test(text)) return true;
+  return !strong && /บัตร|\bcard\b|transaction|ใช้จ่าย|ตัดบัญชี|หักบัญชี|charged|debited|ทดลองใช้ฟรี|free trial|renew/i.test(text);
+}
+
+async function subCard(sub, ctx, { title } = {}) {
+  const { time } = await deadlines.alertSettings(ctx.svc);
+  return subscriptionCard(sub, { title, timeZone: tz, now: ctx.now, alertTime: time });
+}
+
+function subListCard(list, pending, ctx) {
+  return subscriptionListCard(list, { pendingCount: pending.length, timeZone: tz, now: ctx.now, appUrl: config.liffId ? liffUrl('/subscriptions') : '' });
+}
+
+/**
+ * Cards (and in chat, a line of text) for what a charge turned out to be.
+ * `quiet`: say nothing for one-off, duplicate and ignored (screenshots,
+ * forwarded messages). Returns true when something was added.
+ */
+async function chargeReply(r, ctx, { withText = true, quiet = false } = {}) {
+  const c = r.charge;
+  const price = formatMoney(c.amount, c.currency, currentLang());
+  const name = r.sub?.name || c.service || c.merchant;
+  const before = ctx.attachments.length;
+  switch (r.outcome) {
+    case 'new':
+      if (r.pending) ctx.attachments.push(chargeQuestionCard(r.pending));
+      break;
+    case 'trial_saved':
+      if (r.sub) ctx.attachments.push(await subCard(r.sub, ctx, { title: L('b_sub_savedTrial') }));
+      break;
+    case 'trial_converted':
+    case 'charged_after_cancel':
+    case 'price_change':
+    case 'renewal_after_cancel':
+      ctx.attachments.push(chargeNoticeCard(r, { timeZone: tz, now: ctx.now }));
+      break;
+    case 'matched':
+      if (withText) {
+        ctx.attachments.push(textMessage(r.sub?.nextChargeOn
+          ? L('b_sub_matched', { name, price, date: formatDay(r.sub.nextChargeOn, currentLang(), 'dm') })
+          : L('b_sub_matchedNoDate', { name, price })));
+      }
+      break;
+    case 'one_off':
+      if (quiet) break;
+      if (r.pending) {
+        ctx.attachments.push(infoCard('💳 ' + shortName(c.merchant), [L('b_sub_oneOff', { price, merchant: c.merchant })], {
+          buttons: [postbackButton(L('b_sub_btnTrackAnyway'), `action=sub_track&p=${r.pending.id}&c=monthly`, L('b_sub_trackSaid', { name: shortName(name), cycle: L('b_sub_cycle_monthly') }))],
+        }));
+      } else if (withText) {
+        ctx.attachments.push(textMessage(L('b_sub_oneOff', { price, merchant: c.merchant })));
+      }
+      break;
+    case 'refund':
+      if (withText) ctx.attachments.push(textMessage(L('b_sub_refund', { price, merchant: c.merchant })));
+      break;
+    case 'duplicate':
+      if (withText && !quiet) ctx.attachments.push(textMessage(L('b_sub_duplicate')));
+      break;
+    default:
+      if (withText && !quiet) ctx.attachments.push(textMessage(L('b_sub_ignored')));
+  }
+  return ctx.attachments.length > before;
+}
+
+const shortName = (s) => (String(s).length > 24 ? `${String(s).slice(0, 23)}…` : String(s));
+
+/** How to let bank e-mails and SMS reach JaiJa: the app page, or the link itself when there is no app. */
+async function connectBankCard(ctx) {
+  if (!personalChat(ctx)) return void ctx.attachments.push(textMessage(L('b_sub_privateOnly')));
+  if (config.liffId) {
+    ctx.attachments.push(infoCard(L('b_sub_connectTitle'), [L('b_sub_connectBody')], { buttons: [linkButton(L('b_sub_connectBtn'), liffUrl('/subscriptions/connect'))] }));
+    return;
+  }
+  let nonce = await prefs.hookNonce(ctx.userId);
+  if (!nonce) {
+    nonce = newNonce();
+    await prefs.setHookNonce(ctx.userId, nonce);
+  }
+  const url = `${publicBase || ''}/hooks/money/${hookToken(config.appSessionSecret, ctx.userId, nonce)}`;
+  ctx.attachments.push(textMessage(L('b_sub_connectBody')), textMessage(L('b_sub_connectNoApp', { url })));
 }
 
 function buildFileName(message, mimeType, when, ctx) {

@@ -79,6 +79,7 @@ Phone/PC ─LINE─▶ LINE Platform ─webhook─▶ Cloud Run (this app) ─�
 * `src/gallery.js` – the calendar gallery page and its API, signed expiring links, thumbnail proxy.
 * `src/tenants.js`, `src/oauth.js` – one Drive per person or group; the "connect your Drive" flow.
 * `src/flex.js` – the beige cards with olive buttons.
+* `src/subscriptions.js`, `src/subscriptionService.js`, `src/chargeParse.js`, `src/moneyHook.js` – subscriptions and free trials: reminders before a trial ends, matching card charges from forwarded bank e-mails / SMS, questions about new ones. See [docs/subscriptions.md](docs/subscriptions.md).
 * `scripts/get-refresh-token.js` – one-time Google OAuth (Drive + Calendar scopes).
 * `src/appApi.js`, `src/appAuth.js`, `src/webApp.js`, `web/app/` – the web app: LINE-verified sessions, the JSON API, the static page.
 * `web/shared/` – `i18n.js` (every Thai/English string for app and bot), `dates.js`, `recurrence.js`; used by server and browser alike.

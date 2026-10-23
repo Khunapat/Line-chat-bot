@@ -37,6 +37,29 @@ export class Prefs {
     });
   }
 
+  /**
+   * The nonce behind a person's bank-alert forwarding link (moneyHook.js), or
+   * '' when it is off. Read errors are thrown, so a Drive hiccup refuses the
+   * request instead of treating the link as valid or as switched off.
+   */
+  async hookNonce(userId) {
+    if (!userId) return '';
+    const all = await this.store.read(DOC, {});
+    return all[userId]?.moneyHook?.nonce || '';
+  }
+
+  /** Turn the forwarding link on with a new nonce (old links stop working), or off with ''. */
+  async setHookNonce(userId, nonce) {
+    if (!userId) throw new Error('userId required');
+    return this.store.update(DOC, {}, (all) => {
+      const cur = all[userId] || {};
+      if (nonce) cur.moneyHook = { nonce, at: new Date().toISOString() };
+      else delete cur.moneyHook;
+      all[userId] = cur;
+      return Boolean(nonce);
+    });
+  }
+
   /** Language for a chat: the speaker's choice in 1:1, the host's for group pushes. */
   async langFor(userId) {
     return (await this.get(userId)).lang;

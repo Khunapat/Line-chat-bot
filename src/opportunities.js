@@ -6,6 +6,7 @@
  * human-readable Opportunities.md.
  */
 import { zonedParts, describeWhen } from './reminders.js';
+import { PAYMENT_SCHEMA, normalizePayment } from './chargeParse.js';
 
 export const KINDS = ['competition', 'application', 'scholarship', 'course', 'event', 'other'];
 
@@ -42,6 +43,23 @@ export const SCHEMA = {
   additionalProperties: false,
 };
 
+/**
+ * Images and PDFs in a personal chat are also checked for a money movement
+ * (a card SMS screenshot, a bank app notice, a receipt, a "your free trial
+ * started" e-mail), so subscriptions and trials can be tracked from them.
+ */
+export const MEDIA_SCHEMA = {
+  ...SCHEMA,
+  properties: {
+    ...SCHEMA.properties,
+    payment: { ...PAYMENT_SCHEMA, description: 'only for a bank / card notification, payment confirmation, receipt or a subscription / free-trial screen: the money movement it shows; otherwise kind "none"' },
+  },
+  required: [...SCHEMA.required, 'payment'],
+};
+
+const PAYMENT_NOTE = `
+Also fill payment. If the image is a bank or card notification, a payment confirmation, a receipt, or a subscription / free-trial / renewal screen or e-mail, describe that money movement (kind charge / payment / transfer / refund / trial_started / subscription_started / renewal_notice) with the merchant as printed, the amount, the date (Gregorian YYYY-MM-DD) and the last card digits if shown. A bank transfer slip to a person is kind "transfer". For anything else, and for one-time passwords, use kind "none" with empty fields.`;
+
 export function systemPrompt(todayIso) {
   return `You read posters, web pages and messages and decide whether they announce something a person can apply to, register for, compete in, attend, or get funding from (competition, job/program application, scholarship, course/training, event/seminar).
 Today is ${todayIso}. Dates in Thai may use the Buddhist year (พ.ศ.): subtract 543 to get the Gregorian year (2569 -> 2026). If only day and month are given, assume the next occurrence on or after today.
@@ -62,17 +80,23 @@ ${lines}
 If this content announces the SAME activity as one of these (same program / event / round, even if worded differently or in another language), set same_as to that id. Otherwise set same_as to "".`;
 }
 
-/** Ask the provider to read an image / PDF. */
-export async function extractFromMedia(provider, { mimeType, base64 }, { now = new Date(), timeZone, candidates } = {}) {
+/**
+ * Ask the provider to read an image / PDF. With `payment: true` (personal
+ * chats) it also reports a money movement as `payment` (a charge, or null).
+ */
+export async function extractFromMedia(provider, { mimeType, base64 }, { now = new Date(), timeZone, candidates, payment = false } = {}) {
   const today = todayIso(now, timeZone);
-  return normalize(await provider.extract({
-    system: systemPrompt(today),
+  const raw = await provider.extract({
+    system: systemPrompt(today) + (payment ? PAYMENT_NOTE : ''),
     parts: [
       { inlineData: { mimeType, data: base64 } },
       { text: `Read this and fill the schema.\n\n${savedListNote(candidates)}` },
     ],
-    schema: SCHEMA,
-  }), candidates);
+    schema: payment ? MEDIA_SCHEMA : SCHEMA,
+  });
+  const out = normalize(raw, candidates);
+  if (out && payment) out.payment = normalizePayment(raw?.payment);
+  return out;
 }
 
 /** Ask the provider to read text (a fetched web page, or a pasted message). */
