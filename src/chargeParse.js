@@ -191,9 +191,49 @@ export function parseGenericCard(text) {
   };
 }
 
-/** Pattern readers in order; null when none of them understands the text. */
-export function parseKnownFormats(text) {
-  return parseBangkokBank(text) || parseGenericCard(text);
+/** A day and month without a year ("14/10"): the most recent one, not in the future. */
+export function dayMonthToKey(d, m, { now = new Date(), timeZone = 'Asia/Bangkok' } = {}) {
+  const today = zoned(now, timeZone).key;
+  const y = Number(today.slice(0, 4));
+  for (const year of [y, y - 1]) {
+    const k = makeKey(year, Number(m), Number(d));
+    if (isDayKey(k) && k <= today) return k;
+  }
+  return '';
+}
+
+/**
+ * Bangkok Bank card SMS:
+ *   "14/10 09:33 ชำระ189.00บ โดยบัตร x'1111 ณGOOGLE(GOOGLE ONE"
+ * and the messages that only report the account side or a balance, which
+ * are the same money again and are read as kind "none":
+ *   "ถอน/โอน/จ่ายเงินจากบ/ชX0000 ผ่านบัตร 699.00บ ใช้ได้697.49บ"
+ *   "บ/ชX0000 วันที่ 19/10 เวลา 06:01 เงินในบ/ชใช้ได้ 697.49 บ"
+ */
+export function parseBangkokBankSms(text, opts = {}) {
+  const s = cleanText(text).replace(/\s+/g, ' ').trim();
+  const m = /(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+(\d{1,2}):(\d{2})\s*(ชำระ|คืนเงิน|ยกเลิก(?:รายการ)?)\s*([\d,]+\.\d{2})\s*บ\.?\s*(?:โดย)?บัตร\s*[xX*]'?\s*(\d{3,4})\s*ณ\s*(.+)$/.exec(s);
+  if (m) {
+    const on = m[3] ? (() => { const y = normYear(m[3]); const k = y ? makeKey(y, Number(m[2]), Number(m[1])) : ''; return isDayKey(k) ? k : ''; })() : dayMonthToKey(m[1], m[2], opts);
+    const merchant = m[9].trim().replace(/[.,;]+$/, '').slice(0, 80);
+    if (!merchant) return null;
+    return {
+      kind: m[6] === 'ชำระ' ? 'charge' : 'refund', merchant, service: '', amount: num(m[7]), currency: 'THB',
+      on, time: `${m[4].padStart(2, '0')}:${m[5]}`, cardLast4: m[8], cycle: 'unknown', trialEndsOn: '', looksRecurring: false, parser: 'bbl-sms',
+    };
+  }
+  if (/บ\/ช\s*[xX*]?\d{3,4}/.test(s) && /ใช้ได้\s*[\d,]+\.\d{2}\s*บ/.test(s) && !/\sณ\S/.test(s)) {
+    return { kind: 'none', merchant: '', service: '', amount: 0, currency: 'THB', on: '', time: '', cardLast4: '', cycle: 'unknown', trialEndsOn: '', looksRecurring: false, parser: 'bbl-sms' };
+  }
+  return null;
+}
+
+/**
+ * Pattern readers in order; null when none of them understands the text.
+ * kind "none" means "understood, and it is not a new charge" (a balance).
+ */
+export function parseKnownFormats(text, opts = {}) {
+  return parseBangkokBankSms(text, opts) || parseBangkokBank(text) || parseGenericCard(text);
 }
 
 /** AI result (PAYMENT_SCHEMA) -> charge, or null when it is not a money movement. */

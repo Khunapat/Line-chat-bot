@@ -73,7 +73,12 @@ const cleanDigits = (d) => String(d || '').replace(/\D/g, '').slice(-4);
 
 /** "OPENAI *CHATGPT SUBSCR" -> "Openai Chatgpt Subscr"; keeps names that already have lower case. */
 export function displayName(merchant) {
-  const s = cleanName(String(merchant || '').replace(/[*_]+/g, ' ').replace(/\s+\S*\d\S*$/, ''));
+  let raw = String(merchant || '');
+  // "GOOGLE(GOOGLE ONE" -> "GOOGLE ONE", "GOOGLE(CLOUD FR2SV9" -> "GOOGLE CLOUD"
+  const paren = /^([^(]+)\((.+)$/.exec(raw);
+  if (paren) raw = paren[2].trim().toLowerCase().startsWith(paren[1].trim().toLowerCase()) ? paren[2] : `${paren[1]} ${paren[2]}`;
+  raw = raw.replace(/[()]/g, ' ').replace(/\s+(?:SUBS|SUBSCR|SUBSCRIPTION|BILL|PAYMENT)\s*$/i, '');
+  const s = cleanName(raw.replace(/[*_]+/g, ' ').replace(/\s+\S*\d\S*$/, ''));
   if (!s) return '';
   if (/[a-z]/.test(s) || !/[A-Z]/.test(s)) return s;
   return s.toLowerCase().replace(/(^|[\s./-])([a-z])/g, (_, p, c) => p + c.toUpperCase());

@@ -242,7 +242,7 @@ test('groups never hold subscriptions', async () => {
 
 test('display names from card descriptors', () => {
   assert.equal(subs.displayName('SPOTIFY P1A2B3'), 'Spotify');
-  assert.equal(subs.displayName('OPENAI *CHATGPT SUBSCR'), 'Openai Chatgpt Subscr');
+  assert.equal(subs.displayName('OPENAI *CHATGPT SUBSCR'), 'Openai Chatgpt');
   assert.equal(subs.displayName('Netflix.com'), 'Netflix.com');
   assert.equal(subs.displayName('NETFLIX.COM'), 'Netflix.Com');
   assert.equal(subs.displayName('ร้านทดสอบ'), 'ร้านทดสอบ');

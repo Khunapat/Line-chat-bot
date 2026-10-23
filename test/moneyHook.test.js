@@ -124,6 +124,17 @@ test('a test call checks the link without reading or storing anything', async ()
   assert.equal(JSON.stringify(svc.drive.docs.get('charges.json') || null), before);
 });
 
+test('a Bangkok Bank balance SMS is understood without AI and stays quiet', async () => {
+  const t = await enable(ALICE);
+  const r = await post(t, 'ถอน/โอน/จ่ายเงินจากบ/ชX0000 ผ่านบัตร 699.00บ ใช้ได้697.49บ', { type: 'text/plain' });
+  assert.deepEqual(await r.json(), { ok: true, outcome: 'ignored', read: 'pattern' });
+  assert.equal(aiCalls.length, 0);
+  assert.equal(pushed.length, 0);
+  const c = await post(t, "21/10 09:33 ชำระ189.00บ โดยบัตร x'1111 ณGOOGLE(GOOGLE ONE", { type: 'text/plain' });
+  assert.equal((await c.json()).outcome, 'new');
+  assert.deepEqual(pushed, [{ userId: ALICE, outcome: 'new' }]);
+});
+
 test('one-time passwords are dropped before anything is read', async () => {
   const t = await enable(ALICE);
   const r = await post(t, { text: 'OTP=829112 (Ref: AB12) for payment of THB 419.00 at NETFLIX.COM' });

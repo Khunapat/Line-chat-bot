@@ -740,7 +740,7 @@ async function handleText(text, ctx) {
       return;
     }
     // A pasted bank / card notification in a format JaiJa knows: no AI needed.
-    const parsed = looksLikeBankNotice(trimmed, { strong: true }) ? parseKnownFormats(trimmed) : null;
+    const parsed = looksLikeBankNotice(trimmed, { strong: true }) ? parseKnownFormats(trimmed, { now: ctx.now, timeZone: tz }) : null;
     if (parsed) {
       const r = await subs.recordCharge(ctx.svc, parsed, { source: 'chat', fp: chargeFingerprint({ text: trimmed }), userId: ctx.userId, keepPending: true, timeZone: tz, now: ctx.now });
       await chargeReply(r, ctx, { withText: true });
@@ -1445,7 +1445,7 @@ const OUTCOME_NOTE = {
  */
 function looksLikeBankNotice(text, { strong = false } = {}) {
   if (text.length < 25 || !/\d/.test(text)) return false;
-  if (/x{2,}\d{3,4}|\*{2,}\d{3,4}|•{2,}\s?\d{3,4}|ending(?:\s+in)?\s+\d{3,4}|ลงท้าย(?:ด้วย)?\s*\d{3,4}|ธนาคาร|\bbank\b|ยืนยันการ(?:จ่าย|โอน|ชำระ)|payment confirmation/i.test(text)) return true;
+  if (/x{2,}\d{3,4}|บัตร\s*[xX*]'?\s*\d{3,4}|บ\/ช\s*[xX*]?\d{3,4}|\*{2,}\d{3,4}|•{2,}\s?\d{3,4}|ending(?:\s+in)?\s+\d{3,4}|ลงท้าย(?:ด้วย)?\s*\d{3,4}|ธนาคาร|\bbank\b|ยืนยันการ(?:จ่าย|โอน|ชำระ)|payment confirmation/i.test(text)) return true;
   return !strong && /บัตร|\bcard\b|transaction|ใช้จ่าย|ตัดบัญชี|หักบัญชี|charged|debited|ทดลองใช้ฟรี|free trial|renew/i.test(text);
 }
 

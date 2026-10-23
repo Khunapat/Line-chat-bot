@@ -129,3 +129,19 @@ test('extractCharge sends the text with today in the prompt', async () => {
   assert.equal(c.service, 'Netflix');
   assert.equal(c.parser, 'ai');
 });
+
+test('Bangkok Bank card SMS: no year in the date, merchant after ณ', async () => {
+  const now = new Date('2026-10-23T03:10:00Z');
+  const a = parseKnownFormats("14/10 09:33 ชำระ189.00บ โดยบัตร x'1111 ณGOOGLE(GOOGLE ONE", { now });
+  assert.deepEqual([a.kind, a.on, a.time, a.amount, a.cardLast4, a.merchant, a.parser], ['charge', '2026-10-14', '09:33', 189, '1111', 'GOOGLE(GOOGLE ONE', 'bbl-sms']);
+  assert.equal(parseKnownFormats("22/10 20:50 ชำระ99.00บ โดยบัตร x'1111 ณNetflix.com", { now }).merchant, 'Netflix.com');
+  // a day later in the year than today is last year's
+  assert.equal(parseKnownFormats("30/12 10:00 ชำระ1,290.00บ โดยบัตร x'1111 ณADOBE", { now }).on, '2025-12-30');
+  // the account side of the same card payment, and a balance: understood, not a charge
+  assert.equal(parseKnownFormats('ถอน/โอน/จ่ายเงินจากบ/ชX0000 ผ่านบัตร 699.00บ ใช้ได้697.49บ', { now }).kind, 'none');
+  assert.equal(parseKnownFormats('บ/ชX0000 วันที่ 19/10 เวลา 06:01 เงินในบ/ชใช้ได้ 697.49 บ', { now }).kind, 'none');
+  const { displayName } = await import('../src/subscriptionService.js');
+  assert.equal(displayName('GOOGLE(GOOGLE ONE'), 'Google One');
+  assert.equal(displayName('GOOGLE(CLOUD FR2SV9'), 'Google Cloud');
+  assert.equal(displayName('OPENAI (CHATGPT SUBS'), 'Openai Chatgpt');
+});

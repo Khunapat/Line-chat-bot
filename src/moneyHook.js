@@ -140,7 +140,7 @@ export function registerMoneyHook(app, deps) {
       const fp = fingerprint({ source: msg.source, id: msg.id, text: msg.id ? '' : text });
       if (await subs.isSeen(svc, fp)) return res.json({ ok: true, outcome: 'duplicate' });
 
-      let charge = parseKnownFormats(text);
+      let charge = parseKnownFormats(text, { now: at, timeZone });
       let read = charge ? 'pattern' : 'none';
       if (!charge && provider && looksLikeMoney(`${msg.subject}\n${text}`)) {
         if (!aiAllowed(userId, at.getTime())) return res.status(429).json({ error: 'ai_limit' });
